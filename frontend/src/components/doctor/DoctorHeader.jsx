@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import api from '../../utils/api'; // Import the configured axios instance
+import { useAuth } from '../../context/AuthContext.jsx'; // Import the useAuth hook
 
 // Reusable animated switch toggle for the status
 const SwitchToggle = ({ enabled, setEnabled, labels }) => (
@@ -32,9 +33,11 @@ const DoctorHeader = ({ isSidebarOpen, setIsSidebarOpen }) => {
     const [isAvailable, setIsAvailable] = useState(true);
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
-    const [userProfilePicture, setUserProfilePicture] = useState('');
-    const [userName, setUserName] = useState('Doctor');
-    const [userSpecialty, setUserSpecialty] = useState('');
+    const { user, logout } = useAuth(); // useAuth se user aur logout function lo
+    
+    const userProfilePicture = user?.profilePicture || '/placeholders/default_avatar.jpg';
+    const userName = user?.name || 'Doctor';
+    const userSpecialty = user?.doctorSpecialty || ''; // Assuming doctorSpecialty is part of user object
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -48,34 +51,6 @@ const DoctorHeader = ({ isSidebarOpen, setIsSidebarOpen }) => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, [dropdownRef]);
-
-    // Load user data from localStorage
-    useEffect(() => {
-        const storedProfilePicture = localStorage.getItem('profilePicture');
-        const storedUserName = localStorage.getItem('userName'); // Assuming userName is stored in localStorage
-        const storedUserSpecialty = localStorage.getItem('userSpecialty'); // Assuming userSpecialty is stored in localStorage
-
-        if (storedProfilePicture) {
-            setUserProfilePicture(storedProfilePicture);
-        }
-        if (storedUserName) {
-            setUserName(storedUserName);
-        }
-        if (storedUserSpecialty) {
-            setUserSpecialty(storedUserSpecialty);
-        }
-    }, []);
-
-    const handleLogout = async () => {
-        try {
-            await api.post('/api/users/logout');
-            localStorage.clear(); // Clear all local storage items
-            navigate('/login');
-        } catch (error) {
-            console.error("Logout failed:", error);
-            alert("Logout failed. Please try again.");
-        }
-    };
 
     return (
         <header className="flex items-center justify-between p-4 bg-card border-b border-border sticky top-0 z-40">
@@ -152,7 +127,7 @@ const DoctorHeader = ({ isSidebarOpen, setIsSidebarOpen }) => {
                                 <Link to="/doctor/profile" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-3 w-full px-3 py-2 text-sm text-foreground hover:bg-muted rounded-md"><User size={16}/> My Profile</Link>
                                 <Link to="/doctor/settings" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-3 w-full px-3 py-2 text-sm text-foreground hover:bg-muted rounded-md"><Settings size={16}/> Settings</Link>
                                 <div className="h-px bg-border my-1"></div>
-                                <button onClick={handleLogout} className="flex items-center gap-3 w-full px-3 py-2 text-sm text-red-500 hover:bg-muted rounded-md"><LogOut size={16}/> Logout</button>
+                                <button onClick={logout} className="flex items-center gap-3 w-full px-3 py-2 text-sm text-red-500 hover:bg-muted rounded-md"><LogOut size={16}/> Logout</button>
                             </div>
                         </motion.div>
                     )}

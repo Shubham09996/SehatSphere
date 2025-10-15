@@ -15,14 +15,16 @@ const EPrescriptions = ({ ePrescriptions }) => {
                             <div className="bg-background p-4 rounded-lg border border-border">
                                 <div className="flex justify-between items-start">
                                     <div>
-                                        <h4 className="font-bold text-base sm:text-lg text-foreground">Dr. {prescription.doctorName}</h4>
-                                        <p className="text-sm text-muted-foreground">{new Date(prescription.date).toLocaleDateString()}</p>
+                                        <h4 className="font-bold text-base sm:text-lg text-foreground">Dr. {prescription.doctor?.user?.name || 'N/A'}</h4>
+                                        <p className="text-sm text-muted-foreground">{new Date(prescription.issueDate).toLocaleDateString()}</p>
                                     </div>
                                     <span className="text-xs text-muted-foreground font-mono">{prescription.prescriptionId}</span>
                                 </div>
                                 <ul className="list-disc list-inside text-sm text-foreground mt-2 space-y-1">
-                                    {prescription.medicines.map((medicine, index) => (
-                                        <li key={index}>{medicine.name} {medicine.dosage}</li>
+                                    {prescription.medicines.map((medicineItem, index) => (
+                                        <li key={index}>
+                                            {`${medicineItem.medicine?.brandName || medicineItem.medicine?.genericName || 'Unknown Medicine'} ${medicineItem.dosage || ''}`.trim()}
+                                        </li>
                                     ))}
                                 </ul>
                                 <div className="text-right mt-3">

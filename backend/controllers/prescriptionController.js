@@ -11,7 +11,7 @@ import Appointment from '../models/Appointment.js'; // Import Appointment model 
 // @desc    Get all prescriptions (Admin) or prescriptions issued by a specific doctor (Doctor)
 // @route   GET /api/prescriptions
 // @access  Private/Admin or Doctor
-const getPrescriptions = asyncHandler(async (req, res) => {
+const getPrescriptionsForDoctor = asyncHandler(async (req, res) => {
   let query = {};
 
   if (req.user.role === 'Doctor') {
@@ -87,13 +87,16 @@ const getPrescriptionById = asyncHandler(async (req, res) => {
 const createPrescription = asyncHandler(async (req, res) => {
   const { patientId, doctorId, issueDate, expiryDate, medicines, notes, prescriptionImage } = req.body;
 
+  console.log('Backend: createPrescription hit!');
+  console.log('Received req.body:', req.body);
+
   const patient = await Patient.findById(patientId);
   if (!patient) {
     res.status(404);
     throw new Error('Patient not found');
   }
 
-  const doctor = await Doctor.findById(doctorId);
+  const doctor = await Doctor.findOne({ medicalRegistrationNumber: doctorId });
   if (!doctor) {
     res.status(404);
     throw new Error('Doctor not found');
@@ -106,8 +109,8 @@ const createPrescription = asyncHandler(async (req, res) => {
   }
 
   const prescription = new Prescription({
-    patient: patientId,
-    doctor: doctorId,
+    patient: patient._id,
+    doctor: doctor._id, // Use the MongoDB _id of the found doctor
     prescriptionId: `PRX-${Math.floor(100000 + Math.random() * 900000)}`,
     issueDate,
     expiryDate,
@@ -117,6 +120,7 @@ const createPrescription = asyncHandler(async (req, res) => {
   });
 
   const createdPrescription = await prescription.save();
+  console.log('Prescription saved to DB:', createdPrescription);
 
   // Notify patient about new prescription
   if (patient.user) {
@@ -214,4 +218,4 @@ const deletePrescription = asyncHandler(async (req, res) => {
   }
 });
 
-export { getPrescriptions, getPrescriptionById, createPrescription, updatePrescription, deletePrescription, getPatientPrescriptions };
+export { getPrescriptionsForDoctor, getPrescriptionById, createPrescription, updatePrescription, deletePrescription, getPatientPrescriptions };

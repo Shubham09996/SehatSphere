@@ -17,6 +17,7 @@ const Step4Confirmation = ({ onNext, details, onBack }) => {
                 date,
                 time,
                 reason: "General check-up", // You might want a dedicated field for this
+                specialty: department.name, // Add specialty here
             };
             const response = await api.post('/api/appointments', appointmentData);
             onNext({ token: response.data.tokenNumber, appointmentId: response.data._id });

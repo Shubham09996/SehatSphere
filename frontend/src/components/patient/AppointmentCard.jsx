@@ -8,7 +8,7 @@ const statusStyles = {
     Cancelled: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
 };
 
-const AppointmentCard = ({ appointment }) => {
+const AppointmentCard = ({ appointment, onCancel, onReschedule }) => {
     const { doctor, specialty, hospital, date, time, status } = appointment;
 
     return (
@@ -20,8 +20,8 @@ const AppointmentCard = ({ appointment }) => {
                         <User className="text-muted-foreground" />
                     </div>
                     <div>
-                        <h4 className="font-bold text-foreground text-lg">{doctor}</h4>
-                        <p className="text-sm text-muted-foreground">{specialty}</p>
+                        <h4 className="font-bold text-foreground text-lg">Dr. {doctor || 'Unknown Doctor'}</h4>
+                        <p className="text-sm text-muted-foreground">{specialty || 'N/A'}</p>
                     </div>
                 </div>
                 {/* Status Badge */}
@@ -53,8 +53,8 @@ const AppointmentCard = ({ appointment }) => {
             <div className="border-t border-border mt-4 pt-4 flex flex-col sm:flex-row justify-end items-center gap-3">
                 {status === 'Upcoming' && (
                     <>
-                        <button className="w-full sm:w-auto text-sm text-muted-foreground font-semibold hover:text-foreground">Reschedule</button>
-                        <button className="w-full sm:w-auto text-sm text-red-500 font-semibold hover:text-red-700">Cancel Appointment</button>
+                        <button onClick={() => onReschedule(appointment._id)} className="w-full sm:w-auto text-sm text-muted-foreground font-semibold hover:text-foreground">Reschedule</button>
+                        <button onClick={() => onCancel(appointment._id)} className="w-full sm:w-auto text-sm text-red-500 font-semibold hover:text-red-700">Cancel Appointment</button>
                         <button className="w-full sm:w-auto text-sm font-semibold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">
                             View Queue →
                         </button>

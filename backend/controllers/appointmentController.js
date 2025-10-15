@@ -43,7 +43,14 @@ const getMyAppointments = asyncHandler(async (req, res) => {
 
     const appointments = await Appointment.find(query)
       .populate('patient', 'patientId dob gender bloodGroup isPremium user')
-      .populate('doctor', 'specialty qualifications averageRating numberOfReviews user')
+      .populate({
+        path: 'doctor',
+        select: 'specialty qualifications averageRating numberOfReviews user',
+        populate: {
+          path: 'user',
+          select: 'name profilePicture'
+        }
+      })
       .populate('hospital', 'name location');
 
     res.json(appointments);
@@ -80,7 +87,7 @@ const getAppointmentById = asyncHandler(async (req, res) => {
 // @route   POST /api/appointments
 // @access  Private/Patient
 const createAppointment = asyncHandler(async (req, res) => {
-  const { doctorId, hospitalId, date, time, reason } = req.body;
+  const { doctorId, hospitalId, date, time, reason, specialty } = req.body;
 
   const patient = await Patient.findOne({ user: req.user._id });
   if (!patient) {
@@ -88,33 +95,52 @@ const createAppointment = asyncHandler(async (req, res) => {
     throw new Error('Patient profile not found');
   }
 
-  const doctor = await Doctor.findById(doctorId).populate('user');
-  if (!doctor) {
+  let doctorToBook;
+  if (doctorId === 'first_available') {
+      // Find an available doctor for the given hospital, specialty, date, and time
+      const availableDoctors = await Doctor.find({
+          hospital: hospitalId,
+          specialty: specialty,
+          isAvailable: true,
+      }).populate('user');
+
+      if (availableDoctors.length === 0) {
+          res.status(400);
+          throw new Error('No doctors available for this specialty at this hospital.');
+      }
+
+      // For simplicity, pick the first available doctor from the list
+      // More sophisticated logic might involve checking individual doctor schedules for the exact slot
+      doctorToBook = availableDoctors[0];
+  } else {
+      doctorToBook = await Doctor.findById(doctorId).populate('user');
+  }
+
+  if (!doctorToBook) {
       res.status(404);
       throw new Error('Doctor not found');
   }
 
   // Basic check for doctor availability (more complex logic would be needed here)
-  // This example assumes 'isAvailable' is a simple flag.
-  if (!doctor.isAvailable) {
+  if (!doctorToBook.isAvailable) {
       res.status(400);
       throw new Error('Doctor is not available for appointments');
   }
 
   // Check for existing appointments at the same time for the doctor and hospital
-  const existingAppointment = await Appointment.findOne({ doctor: doctorId, hospital: hospitalId, date, time, status: { $ne: 'Cancelled' } });
+  const existingAppointment = await Appointment.findOne({ doctor: doctorToBook._id, hospital: hospitalId, date, time, status: { $ne: 'Cancelled' } });
   if (existingAppointment) {
     res.status(400);
     throw new Error('Doctor already has an appointment at this time in this hospital');
   }
 
   // Generate token number (simple sequential for the day, per doctor and hospital)
-  const appointmentsToday = await Appointment.countDocuments({ doctor: doctorId, hospital: hospitalId, date: new Date(date), status: { $ne: 'Cancelled' } });
+  const appointmentsToday = await Appointment.countDocuments({ doctor: doctorToBook._id, hospital: hospitalId, date: new Date(date), status: { $ne: 'Cancelled' } });
   const tokenNumber = (appointmentsToday + 1).toString();
 
   const appointment = new Appointment({
     patient: patient._id,
-    doctor: doctorId,
+    doctor: doctorToBook._id,
     hospital: hospitalId,
     date,
     time,
@@ -129,12 +155,12 @@ const createAppointment = asyncHandler(async (req, res) => {
   // if (patient.user && patient.user.phoneNumber) {
   //     const patientUser = await User.findById(patient.user);
   //     if (patientUser && patientUser.phoneNumber) {
-  //       const msg = `Hello ${patientUser.name}, your appointment with Dr. ${doctor.user.name} on ${new Date(date).toDateString()} at ${time} is pending confirmation. Your token number is ${tokenNumber}.`;
+  //       const msg = `Hello ${patientUser.name}, your appointment with Dr. ${doctorToBook.user.name} on ${new Date(date).toDateString()} at ${time} is pending confirmation. Your token number is ${tokenNumber}.`;
   //       sendSms(patientUser.phoneNumber, msg);
   //     }
   // }
-  // if (doctor.user && doctor.user.phoneNumber) {
-  //     const doctorUser = await User.findById(doctor.user);
+  // if (doctorToBook.user && doctorToBook.user.phoneNumber) {
+  //     const doctorUser = await User.findById(doctorToBook.user);
   //     if (doctorUser && doctorUser.phoneNumber) {
   //       const msg = `Hello Dr. ${doctorUser.name}, a new appointment request from ${patient.user.name} on ${new Date(date).toDateString()} at ${time} is pending. Token: ${tokenNumber}.`;
   //       sendSms(doctorUser.phoneNumber, msg);
@@ -166,13 +192,13 @@ const createAppointment = asyncHandler(async (req, res) => {
       recipient: patient._id,
       onModel: 'Patient',
       title: 'Appointment Created',
-      message: `Your appointment with Dr. ${doctor.user.name} on ${new Date(date).toDateString()} at ${time} is pending. Your token number is ${tokenNumber}.`,
+      message: `Your appointment with Dr. ${doctorToBook.user.name} on ${new Date(date).toDateString()} at ${time} is pending. Your token number is ${tokenNumber}.`,
       category: 'Appointment',
       link: `/patient/appointments/${createdAppointment._id}`,
   });
 
   await Notification.create({
-      recipient: doctor._id,
+      recipient: doctorToBook._id,
       onModel: 'Doctor',
       title: 'New Appointment Request',
       message: `New appointment request from ${patient.user.name} on ${new Date(date).toDateString()} at ${time}. Token: ${tokenNumber}.`,

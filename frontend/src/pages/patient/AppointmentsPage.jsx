@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { CalendarPlus } from 'lucide-react';
 import AppointmentCard from '../../components/patient/AppointmentCard';
 import { Link } from 'react-router-dom'; // Button ko link banane ke liye import
+import { useEffect } from 'react';
+import api from '../../utils/api';
 
 // Dummy data for demonstration
 const upcomingAppointmentsData = [
@@ -45,8 +47,94 @@ const previousAppointmentsData = [
 
 const AppointmentsPage = () => {
     const [activeTab, setActiveTab] = useState('upcoming');
+    const [dynamicUpcomingAppointments, setDynamicUpcomingAppointments] = useState([]);
+    const [dynamicPreviousAppointments, setDynamicPreviousAppointments] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    const appointmentsToShow = activeTab === 'upcoming' ? upcomingAppointmentsData : previousAppointmentsData;
+    // Function to fetch all appointments
+    const fetchAppointments = async () => {
+        try {
+            setLoading(true);
+            const response = await api.get('/api/appointments/myappointments');
+            const fetchedAppointments = response.data;
+
+            const now = new Date();
+            const upcoming = [];
+            const previous = [];
+
+            fetchedAppointments.forEach(appt => {
+                const apptDateTime = new Date(`${appt.date}T${appt.time}:00`);
+                let mappedStatus = appt.status;
+                if (['Pending', 'Confirmed', 'Now Serving', 'Up Next', 'Waiting'].includes(appt.status)) {
+                    mappedStatus = 'Upcoming';
+                }
+
+                const formattedAppt = {
+                    _id: appt._id, // Pass the original _id for API calls
+                    doctor: appt.doctor?.user?.name,
+                    specialty: appt.doctor?.specialty,
+                    hospital: appt.hospital?.name,
+                    date: new Date(appt.date).toDateString(),
+                    time: appt.time,
+                    status: mappedStatus,
+                };
+
+                if (apptDateTime > now) {
+                    upcoming.push(formattedAppt);
+                } else {
+                    previous.push(formattedAppt);
+                }
+            });
+
+            setDynamicUpcomingAppointments(upcoming);
+            setDynamicPreviousAppointments(previous);
+        } catch (err) {
+            setError(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchAppointments();
+    }, []);
+
+    const handleCancel = async (appointmentId) => {
+        if (window.confirm('Are you sure you want to cancel this appointment?')) {
+            try {
+                await api.put(`/api/appointments/${appointmentId}`, { status: 'Cancelled' });
+                alert('Appointment cancelled successfully!');
+                fetchAppointments(); // Refresh the list
+            } catch (error) {
+                console.error('Error cancelling appointment:', error);
+                alert('Failed to cancel appointment.');
+            }
+        }
+    };
+
+    const handleReschedule = async (appointmentId) => {
+        // For simplicity, we'll just show an alert. 
+        // A real implementation would involve a date picker modal or navigation.
+        alert('Reschedule functionality coming soon!');
+        // You would typically navigate to a rescheduling page or open a modal here.
+        // Example: navigate(`/patient/reschedule-appointment/${appointmentId}`);
+        // Or: onOpenRescheduleModal(appointmentId);
+    };
+
+
+    if (loading) {
+        return <div className="text-center py-12 text-foreground">Loading appointments...</div>;
+    }
+
+    if (error) {
+        return <div className="text-center py-12 text-red-500">Error loading appointments: {error.message}</div>;
+    }
+
+    const combinedUpcomingAppointments = [...upcomingAppointmentsData, ...dynamicUpcomingAppointments];
+    const combinedPreviousAppointments = [...previousAppointmentsData, ...dynamicPreviousAppointments];
+
+    const appointmentsToShow = activeTab === 'upcoming' ? combinedUpcomingAppointments : combinedPreviousAppointments;
 
     return (
         <div className="space-y-6">
@@ -97,7 +185,7 @@ const AppointmentsPage = () => {
             <div className="space-y-4">
                 {appointmentsToShow.length > 0 ? (
                     appointmentsToShow.map((appt, index) => (
-                        <AppointmentCard key={index} appointment={appt} />
+                        <AppointmentCard key={appt._id || index} appointment={appt} onCancel={handleCancel} onReschedule={handleReschedule} />
                     ))
                 ) : (
                     <div className="text-center py-12 bg-card rounded-lg border border-dashed">

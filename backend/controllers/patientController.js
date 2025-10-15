@@ -24,7 +24,9 @@ const getPatients = asyncHandler(async (req, res) => {
       query = { _id: { $in: patientIds } };
   }
 
-  const patients = await Patient.find(query).populate('user', 'name email profilePicture phoneNumber');
+  const patients = await Patient.find(query)
+    .populate('user', 'name email profilePicture phoneNumber')
+    .select('patientId dob gender bloodGroup emergencyContact allergies chronicConditions recentVitals recentActivity'); // Select additional fields
   res.json(patients);
 });
 
@@ -288,6 +290,15 @@ const getPatientDashboardStats = asyncHandler(async (req, res) => {
 
     const upcomingAppointmentsCount = await Appointment.countDocuments(upcomingAppointmentsQuery);
 
+    // Calculate total unique patients for this doctor
+    const doctor = await Doctor.findOne({ user: req.user._id });
+    let totalPatientsCount = 0;
+    if (doctor) {
+        const patientAppointments = await Appointment.find({ doctor: doctor._id }).select('patient');
+        const uniquePatientIds = [...new Set(patientAppointments.map(app => app.patient.toString()))];
+        totalPatientsCount = uniquePatientIds.length;
+    }
+
     const nextAppointment = await Appointment.findOne(upcomingAppointmentsQuery)
     .sort('date time').populate('doctor', 'user specialty').populate('hospital', 'name').select('date time tokenNumber doctor hospital');
 
@@ -329,6 +340,7 @@ const getPatientDashboardStats = asyncHandler(async (req, res) => {
             appointmentsCount: upcomingAppointmentsCount,
             prescriptionsCount: activePrescriptions,
             rewardPoints,
+            totalPatients: { value: totalPatientsCount, change: '' }, // Add dynamic totalPatients count
         },
         // Kept for backward compatibility or if needed separately
         upcomingAppointmentsCount,
@@ -401,7 +413,16 @@ const getUpcomingAppointments = asyncHandler(async (req, res) => {
         status: { $in: ['Pending', 'Confirmed', 'Now Serving', 'Up Next', 'Waiting'] },
     };
 
-    const upcomingAppointments = await Appointment.find(upcomingAppointmentsQuery).sort('date time').populate('doctor', 'user specialty').populate('hospital', 'name').select('date time tokenNumber doctor hospital');
+    const upcomingAppointments = await Appointment.find(upcomingAppointmentsQuery).sort('date time')
+    .populate({
+        path: 'doctor',
+        select: 'user specialty',
+        populate: {
+          path: 'user',
+          select: 'name profilePicture'
+        }
+      })
+    .populate('hospital', 'name').select('date time tokenNumber doctor hospital');
 
     res.json({ upcomingAppointments: upcomingAppointments.map(app => ({
         _id: app._id,

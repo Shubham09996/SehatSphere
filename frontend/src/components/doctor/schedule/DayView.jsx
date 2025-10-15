@@ -3,25 +3,28 @@ import { motion } from "framer-motion";
 
 // Utility: detect overlaps & assign columns
 function calculateOverlaps(appointments) {
-  const sorted = [...appointments].sort((a, b) => a.start - b.start);
+  const sorted = [...appointments].sort((a, b) => new Date(a.start) - new Date(b.start));
   const result = [];
 
   sorted.forEach((apt) => {
     let overlapCols = 0;
 
+    const aptStart = new Date(apt.start);
+    const aptEnd = new Date(apt.end);
+
     // Count overlaps (those that start before this one ends and end after it starts)
     const overlapping = sorted.filter(
       (other) =>
         other !== apt &&
-        other.start < apt.end &&
-        other.end > apt.start
+        new Date(other.start) < aptEnd &&
+        new Date(other.end) > aptStart
     );
 
     overlapCols = overlapping.length + 1;
 
     // Find this appointment’s position among overlapping ones
     const overlapIndex = overlapping.filter(
-      (other) => other.start < apt.start
+      (other) => new Date(other.start) < aptStart
     ).length;
 
     result.push({ ...apt, overlapCols, overlapIndex });
@@ -38,15 +41,26 @@ const AppointmentBlock = ({ apt, calendarStartHour }) => {
       "bg-green-500/10 border-green-500 text-green-800 dark:text-green-300",
     Blocked:
       "bg-gray-500/10 border-gray-500 text-gray-700 dark:text-gray-300",
+    Patient:
+      "bg-purple-500/10 border-purple-500 text-purple-800 dark:text-purple-300",
+    Meeting:
+      "bg-yellow-500/10 border-yellow-500 text-yellow-800 dark:text-yellow-300",
+    Internal:
+      "bg-teal-500/10 border-teal-500 text-teal-800 dark:text-teal-300",
+    Personal:
+      "bg-pink-500/10 border-pink-500 text-pink-800 dark:text-pink-300",
   };
 
+  const aptStart = new Date(apt.start);
+  const aptEnd = new Date(apt.end);
+
   const startMinutes =
-    apt.start.getHours() * 60 +
-    apt.start.getMinutes() -
+    aptStart.getHours() * 60 +
+    aptStart.getMinutes() -
     calendarStartHour * 60;
   const endMinutes =
-    apt.end.getHours() * 60 +
-    apt.end.getMinutes() -
+    aptEnd.getHours() * 60 +
+    aptEnd.getMinutes() -
     calendarStartHour * 60;
 
   const pxPerMinute = 2.5; // adjust height density
@@ -60,7 +74,7 @@ const AppointmentBlock = ({ apt, calendarStartHour }) => {
   const left = apt.overlapIndex * horizontalOffset;
   const zIndex = 10 + apt.overlapIndex; // Stagger z-index for overlapping blocks
 
-  const startTime = apt.start.toLocaleTimeString([], {
+  const startTime = aptStart.toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
@@ -70,7 +84,7 @@ const AppointmentBlock = ({ apt, calendarStartHour }) => {
     <motion.div
       animate={{ opacity: 1, scale: 1 }}
       whileHover={{ scale: 1.02, zIndex: 50 }}
-      className={`absolute rounded-lg border-l-4 p-1 shadow-sm cursor-pointer ${colors[apt.type]}`}
+      className={`absolute rounded-lg border-l-4 p-1 shadow-sm cursor-pointer ${colors[apt.type] || colors.Blocked}`}
       style={{
         top,
         left: `${left}%`,
@@ -79,8 +93,8 @@ const AppointmentBlock = ({ apt, calendarStartHour }) => {
         zIndex,
       }}
     >
-      <p className="font-bold text-sm">{apt.patientName}</p>
-      <p className="text-xs opacity-80">{apt.reason}</p>
+      <p className="font-bold text-sm">{apt.title}</p>
+      <p className="text-xs opacity-80">{apt.description || apt.reason}</p>
       <p className="text-xs font-semibold mt-1 opacity-90">{startTime}</p>
     </motion.div>
   );

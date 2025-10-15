@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 const Hero = () => {
   const containerVariants = {
@@ -11,6 +12,8 @@ const Hero = () => {
     hidden: { opacity: 0, y: 50 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.7, ease: "easeOut" } },
   };
+
+  const navigate = useNavigate(); // Initialize useNavigate
 
   return (
     <motion.section
@@ -46,6 +49,7 @@ const Hero = () => {
         <motion.button 
           className="w-full sm:w-auto bg-gradient-to-r from-[#0096C7] via-[#2A9D8F] to-[#7E57C2] text-primary-foreground px-5 py-2.5 rounded-md flex items-center justify-center space-x-2 font-medium hover:opacity-90 transition-transform hover:scale-105"
           whileHover={{ scale: 1.07 }} transition={{ duration: 0.2 }}
+          onClick={() => navigate('/signup')} // Redirect to signup page
         >
           <span>Get Started</span>
           <span className="font-bold text-lg">→</span>

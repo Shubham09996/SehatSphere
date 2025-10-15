@@ -1,22 +1,55 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus, Trash2, Mic, FileJson } from 'lucide-react';
-import { patientsData } from '../../../data/patientsData'; // Reuse patient data
-import { medicinesList } from '../../../data/medicinesList';
+// import { patientsData } from '../../../data/patientsData'; // Removed hardcoded patientsData import
+import api from '../../../utils/api'; // Import API utility
+import { useAuth } from '../../../context/AuthContext'; // Corrected import path for AuthContext
 
 const PrescriptionWriter = ({ isOpen, onClose, preselectedPatient }) => {
-    const [medicines, setMedicines] = useState([{ name: '', strength: '', frequency: '', duration: '' }]);
+    const [medicines, setMedicines] = useState([{ medicine: '', dosage: '', frequency: '', duration: '', instructions: '' }]);
     const [notes, setNotes] = useState('');
-    const [selectedPatient, setSelectedPatient] = useState(preselectedPatient ? preselectedPatient.id : '');
+    const [issueDate, setIssueDate] = useState(new Date().toISOString().split('T')[0]); // Default to today
+    const [expiryDate, setExpiryDate] = useState(() => {
+        const today = new Date();
+        today.setDate(today.getDate() + 7); // Default to 7 days from now
+        return today.toISOString().split('T')[0];
+    });
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [availableMedicines, setAvailableMedicines] = useState([]); // State for medicines from API
+    const { user } = useAuth(); // Get logged-in user (doctor)
+
+    const doctorId = user?.specificProfileId; // Assuming specificProfileId is stored in user object for doctor
 
     useEffect(() => {
-        if (preselectedPatient) {
-            setSelectedPatient(preselectedPatient.id);
+        if (isOpen) {
+            // Fetch medicines from backend
+            const fetchMedicines = async () => {
+                try {
+                    setLoading(true);
+                    const { data } = await api.get('/api/medicines');
+                    setAvailableMedicines(data);
+                } catch (err) {
+                    setError(err.response?.data?.message || 'Failed to fetch medicines');
+                } finally {
+                    setLoading(false);
+                }
+            };
+            fetchMedicines();
         }
-    }, [preselectedPatient]);
+        if (!isOpen) { // Reset form when closed
+            setMedicines([{ medicine: '', dosage: '', frequency: '', duration: '', instructions: '' }]);
+            setNotes('');
+            setIssueDate(new Date().toISOString().split('T')[0]);
+            const today = new Date();
+            today.setDate(today.getDate() + 7);
+            setExpiryDate(today.toISOString().split('T')[0]);
+            setError(null);
+        }
+    }, [isOpen]);
 
     const handleAddMedicine = () => {
-        setMedicines([...medicines, { name: '', strength: '', frequency: '', duration: '' }]);
+        setMedicines([...medicines, { medicine: '', dosage: '', frequency: '', duration: '', instructions: '' }]);
     };
 
     const handleRemoveMedicine = (index) => {
@@ -30,6 +63,65 @@ const PrescriptionWriter = ({ isOpen, onClose, preselectedPatient }) => {
         const list = [...medicines];
         list[index][name] = value;
         setMedicines(list);
+    };
+
+    const handleSubmitPrescription = async () => {
+        setError(null);
+        if (!preselectedPatient) {
+            setError('No patient selected for prescription.');
+            return;
+        }
+        if (!doctorId) {
+            setError('Doctor ID not found. Please log in again.');
+            return;
+        }
+        if (medicines.every(med => !med.medicine)) {
+            setError('Please add at least one medicine.');
+            return;
+        }
+
+        try {
+            setLoading(true);
+
+            const formattedMedicines = medicines.filter(med => med.medicine).map(med => {
+                const medicineDetails = availableMedicines.find(m => 
+                    m.brandName.toLowerCase() === med.medicine.toLowerCase() || 
+                    m.genericName.toLowerCase() === med.medicine.toLowerCase()
+                ); // Find medicine by brandName or genericName
+                return {
+                    medicine: medicineDetails ? medicineDetails._id : null, // Use medicine _id if found, otherwise null
+                    name: med.medicine, // Always include the typed medicine name
+                    dosage: med.dosage,
+                    frequency: med.frequency,
+                    duration: med.duration,
+                    instructions: med.instructions,
+                };
+            }); // No longer filter out medicines not found in list
+
+            if (formattedMedicines.length === 0) {
+                setError('No valid medicines added to prescription.');
+                setLoading(false);
+                return;
+            }
+
+            const prescriptionData = {
+                patientId: preselectedPatient.patient._id, // Use the actual patient's MongoDB _id
+                doctorId: doctorId,
+                issueDate: issueDate,
+                expiryDate: expiryDate,
+                medicines: formattedMedicines,
+                notes: notes,
+                // prescriptionImage: null, // No image upload for now
+            };
+
+            await api.post('/api/prescriptions', prescriptionData);
+            alert('Prescription issued successfully!');
+            onClose();
+        } catch (err) {
+            setError(err.response?.data?.message || err.message);
+        } finally {
+            setLoading(false);
+        }
     };
 
     if (!isOpen) return null;
@@ -62,33 +154,57 @@ const PrescriptionWriter = ({ isOpen, onClose, preselectedPatient }) => {
                             {preselectedPatient ? (
                                 <input
                                     type="text"
-                                    value={`${preselectedPatient.name} (${preselectedPatient.id})`}
+                                    value={`${preselectedPatient.name} (${preselectedPatient.patientId})`}
                                     className="mt-1 w-full bg-background border border-border rounded-md p-2 cursor-not-allowed text-muted-foreground"
                                     disabled
                                 />
                             ) : (
-                                <select 
-                                    className="mt-1 w-full bg-background border border-border rounded-md p-2"
-                                    value={selectedPatient}
-                                    onChange={(e) => setSelectedPatient(e.target.value)}
-                                >
-                                    <option value="">Select a patient...</option>
-                                    {patientsData.map(p => <option key={p.id} value={p.id}>{p.name} ({p.id})</option>)}
-                                </select>
+                                <p className="mt-1 text-red-500">No patient pre-selected. This component is typically used from the Now Serving card.</p>
+                                // Original select dropdown was here, removed for this specific use case
                             )}
                         </div>
                         
+                        {/* Dates */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-sm font-medium">Issue Date</label>
+                                <input 
+                                    type="date"
+                                    value={issueDate}
+                                    onChange={(e) => setIssueDate(e.target.value)}
+                                    className="mt-1 w-full bg-background border border-border rounded-md p-2"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium">Expiry Date</label>
+                                <input 
+                                    type="date"
+                                    value={expiryDate}
+                                    onChange={(e) => setExpiryDate(e.target.value)}
+                                    className="mt-1 w-full bg-background border border-border rounded-md p-2"
+                                />
+                            </div>
+                        </div>
+
                         {/* Medicines List */}
                         <div className="space-y-4">
                              {medicines.map((med, i) => (
                                 <div key={i} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
-                                    <input list="medicines" name="name" value={med.name} onChange={e => handleMedicineChange(e, i)} placeholder="Medicine Name" className="sm:col-span-4 bg-background border border-border rounded-md p-2" />
+                                    <input 
+                                        list="medicines" 
+                                        name="medicine"
+                                        value={med.medicine} 
+                                        onChange={e => handleMedicineChange(e, i)} 
+                                        placeholder="Medicine Name" 
+                                        className="sm:col-span-4 bg-background border border-border rounded-md p-2" 
+                                    />
                                     <datalist id="medicines">
-                                        {medicinesList.map(m => <option key={m.name} value={m.name} />)}
+                                        {availableMedicines.map(m => <option key={m._id} value={m.name} />)}
                                     </datalist>
-                                    <input name="strength" value={med.strength} onChange={e => handleMedicineChange(e, i)} placeholder="Strength (e.g., 500mg)" className="sm:col-span-2 bg-background border border-border rounded-md p-2" />
+                                    <input name="dosage" value={med.dosage} onChange={e => handleMedicineChange(e, i)} placeholder="Dosage (e.g., 500mg)" className="sm:col-span-2 bg-background border border-border rounded-md p-2" />
                                     <input name="frequency" value={med.frequency} onChange={e => handleMedicineChange(e, i)} placeholder="Frequency (e.g., 1-0-1)" className="sm:col-span-2 bg-background border border-border rounded-md p-2" />
-                                    <input name="duration" value={med.duration} onChange={e => handleMedicineChange(e, i)} placeholder="Duration (e.g., 5 days)" className="sm:col-span-3 bg-background border border-border rounded-md p-2" />
+                                    <input name="duration" value={med.duration} onChange={e => handleMedicineChange(e, i)} placeholder="Duration (e.g., 5 days)" className="sm:col-span-2 bg-background border border-border rounded-md p-2" />
+                                    <input name="instructions" value={med.instructions} onChange={e => handleMedicineChange(e, i)} placeholder="Instructions" className="sm:col-span-2 bg-background border border-border rounded-md p-2" />
                                     <button onClick={() => handleRemoveMedicine(i)} className="sm:col-span-1 text-red-500 hover:bg-red-500/10 p-2 rounded-md"><Trash2 size={18}/></button>
                                 </div>
                             ))}
@@ -101,6 +217,8 @@ const PrescriptionWriter = ({ isOpen, onClose, preselectedPatient }) => {
                             <textarea value={notes} onChange={e => setNotes(e.target.value)} rows="3" placeholder="Add any special instructions..." className="mt-1 w-full bg-background border border-border rounded-md p-2 pr-10"></textarea>
                             <Mic size={16} className="absolute right-3 top-9 text-muted-foreground cursor-pointer"/>
                         </div>
+                        {error && <p className="text-red-500 text-sm mt-2">Error: {error}</p>}
+                        {loading && <p className="text-foreground text-sm mt-2">Loading medicines...</p>}
                     </div>
 
                     {/* Footer */}
@@ -108,8 +226,12 @@ const PrescriptionWriter = ({ isOpen, onClose, preselectedPatient }) => {
                         <button className="flex-1 flex items-center justify-center gap-2 font-semibold py-2 px-4 rounded-lg border border-border text-foreground hover:bg-muted">
                             <FileJson size={16}/> Preview
                         </button>
-                        <button onClick={onClose} className="flex-1 flex items-center justify-center gap-2 font-bold py-2 px-4 rounded-lg bg-primary text-primary-foreground hover:opacity-90">
-                           Issue Prescription
+                        <button 
+                            onClick={handleSubmitPrescription} 
+                            className="flex-1 flex items-center justify-center gap-2 font-bold py-2 px-4 rounded-lg bg-primary text-primary-foreground hover:opacity-90"
+                            disabled={loading}
+                        >
+                            {loading ? 'Issuing...' : 'Issue Prescription'}
                         </button>
                     </div>
                 </motion.div>

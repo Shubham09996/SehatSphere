@@ -7,25 +7,60 @@ import { Heart, Search, MapPin, Calendar, Users, Droplets, FlaskConical, Stethos
 const DonatePage = () => {
     const [showConfirmation, setShowConfirmation] = useState(false);
     const [donationCenters, setDonationCenters] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    // const [loading, setLoading] = useState(true);
+    // const [error, setError] = useState(null);
 
     // Dummy patient data for demonstration. In a real app, this would come from authenticated user context.
     const currentPatientId = '65239a24687d603a11cf8743'; // Replace with actual patient ID from context/store
     const patientBloodGroup = 'A+'; // Replace with actual patient blood group from context/store
 
+    const mockDonationCenters = [
+        {
+            _id: '1',
+            name: 'City Blood Bank',
+            address: '123 Main St, Cityville',
+            location: 'Cityville',
+            contactPhone: '123-456-7890',
+            contactEmail: 'info@citybloodbank.com',
+            operatingHours: 'Mon-Fri: 9 AM - 5 PM',
+            image: '/uploads/city_blood_bank.jpg',
+        },
+        {
+            _id: '2',
+            name: 'Community Donation Center',
+            address: '456 Oak Ave, Townsville',
+            location: 'Townsville',
+            contactPhone: '987-654-3210',
+            contactEmail: 'contact@communitydonate.org',
+            operatingHours: 'Mon-Sat: 10 AM - 4 PM',
+            image: '/uploads/community_donation_center.jpg',
+        },
+        {
+            _id: '3',
+            name: 'Red Cross Donation Hub',
+            address: '789 Pine Ln, Villageton',
+            location: 'Villageton',
+            contactPhone: '555-123-4567',
+            contactEmail: 'donate@redcross.org',
+            operatingHours: 'Tue-Sun: 11 AM - 6 PM',
+            image: '/uploads/red_cross_hub.jpg',
+        },
+    ];
+
     useEffect(() => {
-        const fetchDonationCenters = async () => {
-            try {
-                const { data } = await api.get('/api/donationcenters');
-                setDonationCenters(data.camps);
-            } catch (err) {
-                setError(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchDonationCenters();
+        // const fetchDonationCenters = async () => {
+        //     try {
+        //         const { data } = await api.get('/api/donationcenters');
+        //         setDonationCenters(data);
+        //     } catch (err) {
+        //         setError(err);
+        //     } finally {
+        //         setLoading(false);
+        //     }
+        // };
+        // fetchDonationCenters();
+        setDonationCenters(mockDonationCenters);
+        // setLoading(false); // Manually set loading to false for mock data
     }, []);
 
     const handleScheduleDonation = async (centerId, centerName) => {
@@ -42,17 +77,19 @@ const DonatePage = () => {
             };
             
             // Make API call to backend to create a donation request
-            await api.post('/donations', scheduleData);
+            // await api.post('/donations', scheduleData);
 
             setShowConfirmation(true);
             setTimeout(() => setShowConfirmation(false), 5000); // Hide confirmation after 5 seconds
         } catch (err) {
-            setError(err.response?.data?.message || err.message);
+            // setError(err.response?.data?.message || err.message);
+            console.error("Error scheduling donation:", err);
+            alert("Failed to schedule donation.");
         }
     };
 
-    if (loading) return <p className="text-center">Loading donation centers...</p>;
-    if (error) return <p className="text-center text-red-500">Error: {error}</p>;
+    // if (loading) return <p className="text-center">Loading donation centers...</p>;
+    // if (error) return <p className="text-center text-red-500">Error: {error}</p>;
 
     return (
         <div className="text-foreground min-h-screen">

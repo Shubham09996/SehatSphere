@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../utils/api'; // Import the configured axios instance
+import { useAuth } from '../context/AuthContext'; // Import useAuth hook
 
 // Self-contained Google Icon to remove dependency errors (copied from SignupPage.jsx)
 const GoogleIcon = () => (
@@ -48,16 +49,6 @@ const roleData = {
             { icon: CheckCircle, title: "Inventory Sync", desc: "Keep your stock updated with our smart inventory system." }
         ]
     },
-    donor: {
-        icon: Heart,
-        welcome: "Be a Lifesaver",
-        subtext: "Find blood donation camps, track your donations, and help save lives.",
-        features: [
-            { icon: Ambulance, title: "Find Camps", desc: "Easily locate nearby blood donation drives and events." },
-            { icon: Heart, title: "Donation History", desc: "Keep a record of your donations and see your impact." },
-            { icon: Syringe, title: "Eligibility Check", desc: "Quickly check if you are eligible for donation." }
-        ]
-    },
     admin: {
         icon: Shield,
         welcome: "Administrator Control",
@@ -75,8 +66,10 @@ const LoginPage = () => {
     const [email, setEmail] = useState(''); // State for email input
     const [password, setPassword] = useState(''); // State for password input
     const [showPassword, setShowPassword] = useState(false);
+    const [loading, setLoading] = useState(false); // Add loading state
     const selectedRoleData = roleData[role];
     const navigate = useNavigate();
+    const { login } = useAuth(); // Use the login function from AuthContext
 
     // Google Auth related states and functions
     const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID; // Access Client ID from environment
@@ -96,20 +89,26 @@ const LoginPage = () => {
                 const res = await api.post('/users/google-auth', { idToken: response.credential });
                 if (res.data) {
                     console.log("Google Login Successful:", res.data);
-                    localStorage.setItem('profilePicture', res.data.profilePicture);
-                    localStorage.setItem('userName', res.data.name); // Save user name to localStorage
+                    // Removed direct localStorage.setItem for profilePicture and userName
                     const userRole = res.data.role.toLowerCase();
+                    let doctorSpecialty = null;
                     if (userRole === 'doctor' && res.data.specificProfileId) {
                         // Fetch doctor's specialty to store in localStorage
                         try {
                             const doctorRes = await api.get(`/api/doctors/${res.data.specificProfileId}`);
                             if (doctorRes.data && doctorRes.data.personalInfo && doctorRes.data.personalInfo.specialty) {
-                                localStorage.setItem('userSpecialty', doctorRes.data.personalInfo.specialty);
+                                doctorSpecialty = doctorRes.data.personalInfo.specialty;
                             }
                         } catch (fetchError) {
                             console.error("Error fetching doctor specialty for Google login:", fetchError);
                         }
                     }
+
+                    // Call login from AuthContext with all user data
+                    login({
+                        ...res.data,
+                        doctorSpecialty: doctorSpecialty, // Add doctorSpecialty if available
+                    });
                     navigate(`/${userRole}/dashboard`);
                 }
             } catch (error) {
@@ -127,36 +126,44 @@ const LoginPage = () => {
 
     const handleNormalLogin = async (e) => {
         e.preventDefault();
+        setLoading(true); // Set loading to true
         try {
             const res = await api.post('/api/users/auth', { email, password });
             if (res.data) {
                 console.log("Normal Login Successful:", res.data);
-                localStorage.setItem('profilePicture', res.data.profilePicture);
-                localStorage.setItem('userName', res.data.name); // Save user name to localStorage
+                // Removed direct localStorage.setItem for profilePicture, userName, and specificRole IDs
                 const userRole = res.data.role.toLowerCase();
-                if (res.data.specificProfileId) {
-                  localStorage.setItem(`${userRole}Id`, res.data.specificProfileId);
+                let doctorSpecialty = null;
 
-                  if (userRole === 'doctor') {
-                    // Fetch doctor's specialty to store in localStorage
-                    try {
-                        const doctorRes = await api.get(`/api/doctors/${res.data.specificProfileId}`);
-                        if (doctorRes.data && doctorRes.data.personalInfo && doctorRes.data.personalInfo.specialty) {
-                            localStorage.setItem('userSpecialty', doctorRes.data.personalInfo.specialty);
+                if (res.data.specificProfileId) {
+                    // localStorage.setItem(`${userRole}Id`, res.data.specificProfileId); // Removed direct localStorage.setItem
+
+                    if (userRole === 'doctor') {
+                        // Fetch doctor's specialty to store in localStorage
+                        try {
+                            const doctorRes = await api.get(`/api/doctors/${res.data.specificProfileId}`);
+                            if (doctorRes.data && doctorRes.data.personalInfo && doctorRes.data.personalInfo.specialty) {
+                                doctorSpecialty = doctorRes.data.personalInfo.specialty;
+                            }
+                        } catch (fetchError) {
+                            console.error("Error fetching doctor specialty for normal login:", fetchError);
                         }
-                    } catch (fetchError) {
-                        console.error("Error fetching doctor specialty for normal login:", fetchError);
                     }
-                  }
+                } else {
+                    console.warn(`specificProfileId not found in login response for role: ${userRole}`);
                 }
-              else {
-                 console.warn(`specificProfileId not found in login response for role: ${userRole}`);
-              }
+                // Call login from AuthContext with all user data
+                login({
+                    ...res.data,
+                    doctorSpecialty: doctorSpecialty, // Add doctorSpecialty if available
+                });
                 navigate(`/${userRole}/dashboard`); // Navigate to the dashboard
             }
         } catch (error) {
             console.error("Normal Login Failed:", error);
             alert(error.response?.data?.message || "Login failed. Please check your credentials.");
+        } finally {
+            setLoading(false); // Set loading to false in finally block
         }
     };
 
@@ -304,8 +311,9 @@ const LoginPage = () => {
                             className="w-full bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-primary-foreground py-3 rounded-md font-semibold hover:opacity-90 transition-opacity"
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
+                            disabled={loading} // Disable button when loading
                         >
-                            Sign In
+                            {loading ? 'Signing In...' : 'Sign In'} {/* Change button text/add spinner */}
                         </motion.button>
                     </form>
 

@@ -1,21 +1,122 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserPlus, Search } from 'lucide-react';
-import { patientsData as initialPatients } from '../../data/patientsData';
+// import { patientsData as initialPatients } from '../../data/patientsData'; // Commented out hardcoded data import
 import PatientListTable from '../../components/doctor/patients/PatientListTable';
 import PatientDetailDrawer from '../../components/doctor/patients/PatientDetailDrawer';
 import AddPatientModal from '../../components/doctor/patients/AddPatientModal';
 import { useLocation } from 'react-router-dom';
+import api from '../../utils/api'; // Import api for backend calls
 
 const filterOptions = ['All', 'New', 'Active', 'Needs Follow-up'];
 
 const MyPatientsPage = () => {
-    const [patients, setPatients] = useState(initialPatients);
+    const [patients, setPatients] = useState([]); // Initialize with empty array
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedPatientId, setSelectedPatientId] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [activeFilter, setActiveFilter] = useState('All');
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const location = useLocation();
+
+    // Hardcoded patients data
+    const hardcodedPatientsData = [
+        {
+            id: 'PID-102938',
+            name: 'Ravi Kumar',
+            pfp: 'https://avatar.iran.liara.run/public/boy?username=Ravi',
+            age: 34,
+            gender: 'Male',
+            lastVisit: '10/5/2025',
+            status: 'Active',
+            contact: { phone: '9650843194', email: 'bittu123@gmail.com' },
+            criticalInfo: { allergies: ['Penicillin'], chronicConditions: ['Asthma'] },
+            recentVitals: { bloodPressure: '120/80', bloodSugar: '90 mg/dL' },
+            recentActivity: [
+                { date: '10/5/2025', title: 'Consultation with Dr. Sharma' },
+                { date: '9/15/2025', title: 'Lab Report - Blood Test' },
+            ],
+        },
+        {
+            id: 'PID-102939',
+            name: 'Sunita Sharma',
+            pfp: 'https://avatar.iran.liara.run/public/girl?username=Sunita',
+            age: 28,
+            gender: 'Female',
+            lastVisit: '10/2/2025',
+            status: 'Needs Follow-up',
+            contact: { phone: '8877665544', email: 'sunita.sharma@example.com' },
+            criticalInfo: { allergies: ['None'], chronicConditions: ['Hypothyroidism'] },
+            recentVitals: { bloodPressure: '110/70', bloodSugar: '100 mg/dL' },
+            recentActivity: [
+                { date: '10/2/2025', title: 'Follow-up with Dr. Gupta' },
+            ],
+        },
+        {
+            id: 'PID-102940',
+            name: 'Amit Singh',
+            pfp: 'https://avatar.iran.liara.run/public/boy?username=Amit',
+            age: 45,
+            gender: 'Male',
+            lastVisit: '9/28/2025',
+            status: 'Active',
+            contact: { phone: '7788990011', email: 'amit.singh@example.com' },
+            criticalInfo: { allergies: ['Dust'], chronicConditions: ['Diabetes'] },
+            recentVitals: { bloodPressure: '130/85', bloodSugar: '140 mg/dL' },
+            recentActivity: [
+                { date: '9/28/2025', title: 'Consultation with Dr. Khan' },
+            ],
+        },
+    ];
+
+    useEffect(() => {
+        const fetchPatients = async () => {
+            try {
+                setLoading(true);
+                const medicalRegistrationNumber = localStorage.getItem('doctorId');
+                if (!medicalRegistrationNumber) {
+                    setError(new Error('Doctor ID not found.'));
+                    setLoading(false);
+                    return;
+                }
+                const response = await api.get(`/api/patients`);
+                
+                const formattedDynamicPatients = response.data.map(p => ({
+                    id: p.patientId, // Use patientId as id
+                    name: p.user.name,
+                    pfp: p.user.profilePicture || 'https://avatar.iran.liara.run/public/boy?username=Default', // Fallback for profile picture
+                    age: new Date().getFullYear() - new Date(p.dob).getFullYear(),
+                    gender: p.gender,
+                    lastVisit: p.recentActivity && p.recentActivity.length > 0 ? new Date(p.recentActivity[0].date).toLocaleDateString() : 'N/A',
+                    status: p.status || 'Active', // Assuming patient has a status or default to Active
+                    contact: { phone: p.user.phoneNumber, email: p.user.email },
+                    criticalInfo: { 
+                        allergies: p.allergies && p.allergies.length > 0 ? p.allergies : ['None'], 
+                        chronicConditions: p.chronicConditions && p.chronicConditions.length > 0 ? p.chronicConditions : ['None'],
+                    },
+                    recentVitals: { 
+                        bloodPressure: p.recentVitals?.bloodPressure?.value || 'N/A',
+                        bloodSugar: p.recentVitals?.bloodSugar?.value || 'N/A',
+                    },
+                    recentActivity: p.recentActivity || [],
+                }));
+
+                // Merge dynamic patients with hardcoded patients, prioritizing hardcoded if IDs conflict
+                const mergedPatients = hardcodedPatientsData.map(hp => {
+                    const dynamicMatch = formattedDynamicPatients.find(dp => dp.id === hp.id);
+                    return dynamicMatch ? { ...dynamicMatch, ...hp } : hp; // Prioritize hardcoded for specific fields
+                }).concat(formattedDynamicPatients.filter(dp => !hardcodedPatientsData.some(hp => hp.id === dp.id)));
+
+                setPatients(mergedPatients);
+            } catch (err) {
+                setError(err.response?.data?.message || err.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchPatients();
+    }, []);
 
     useEffect(() => {
         const queryParams = new URLSearchParams(location.search);
@@ -43,6 +144,7 @@ const MyPatientsPage = () => {
     }, [selectedPatientId, patients]);
 
     const handleAddPatient = (newPatientData) => {
+        // For now, only add to frontend state
         const newPatient = {
             id: `PID-${Math.floor(100000 + Math.random() * 900000)}`,
             name: newPatientData.name,
@@ -67,6 +169,9 @@ const MyPatientsPage = () => {
         setPatients(prevPatients => [newPatient, ...prevPatients]);
         setIsModalOpen(false);
     };
+
+    if (loading) return <p className="text-center text-foreground mt-8">Loading patients...</p>;
+    if (error) return <p className="text-center text-red-500 mt-8">Error: {error}</p>;
 
     return (
         <div className="space-y-6 h-full flex flex-col">

@@ -362,7 +362,7 @@ const getDoctorDashboardStats = asyncHandler(async (req, res) => {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const totalPatients = await Appointment.distinct('patient', { doctor: doctor._id, status: 'Completed' });
+    const totalPatients = await Appointment.distinct('patient', { doctor: doctor._id }); // Removed status filter
 
     const completedAppointmentsToday = await Appointment.find({
         doctor: doctor._id,
@@ -501,15 +501,34 @@ const getDoctorAppointmentQueue = asyncHandler(async (req, res) => {
         date: { $gte: today },
         status: { $in: ['Now Serving', 'Up Next', 'Waiting', 'Pending', 'Confirmed'] }
     })
-    .populate('patient', 'name profilePicture')
+    .populate({
+        path: 'patient',
+        select: 'patientId dob gender medicalHistory allergies chronicConditions emergencyContact recentVitals user',
+        populate: {
+            path: 'user',
+            select: 'name profilePicture'
+        }
+    })
     .sort('date time');
 
-    const formattedQueue = appointmentQueue.map(app => ({
-        id: app._id,
-        name: app.patient.name,
-        time: app.time,
-        status: app.status,
-    }));
+    const formattedQueue = appointmentQueue.map(app => {
+        const dob = new Date(app.patient.dob);
+        const ageDiffMs = Date.now() - dob.getTime();
+        const ageDate = new Date(ageDiffMs);
+        const age = Math.abs(ageDate.getUTCFullYear() - 1970);
+
+        return {
+            id: app._id,
+            patientId: app.patient.patientId, // Include patientId here
+            name: app.patient.user.name, // Access name from populated user
+            profilePicture: app.patient.user.profilePicture, // Access profilePicture from populated user
+            age: age,
+            time: app.time,
+            status: app.status,
+            reason: app.reason,
+            patient: app.patient, // Include the entire patient object
+        };
+    });
 
     res.json(formattedQueue);
 });

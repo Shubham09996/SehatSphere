@@ -26,11 +26,11 @@ const WeekView = ({ date, appointments }) => {
                     <div key={day} className={`p-1 border-r border-border ${dayIndex === 6 ? 'border-r-0' : ''}`}>
                        {appointments
                             .filter(apt => new Date(apt.start).toDateString() === day.toDateString())
-                            .sort((a,b) => a.start - b.start)
+                            .sort((a,b) => new Date(a.start) - new Date(b.start)) // Convert to Date objects for sorting
                             .map(apt => (
-                                <div key={apt.id} className={`p-1.5 rounded-md mb-1 text-xs cursor-pointer ${colors[apt.type] || colors['Follow-up']}`}>
-                                    <p className="font-bold truncate">{apt.patientName}</p>
-                                    <p className="opacity-80">{apt.start.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true})}</p>
+                                <div key={apt.id} className={`p-1.5 rounded-md mb-1 text-xs cursor-pointer ${colors[apt.type] || colors['Blocked']}`}>
+                                    <p className="font-bold truncate">{apt.title}</p>
+                                    <p className="opacity-80">{new Date(apt.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', hour12: true})}</p>
                                 </div>
                             ))
                        }

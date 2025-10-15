@@ -18,33 +18,37 @@ const PatientDashboardPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    useEffect(() => {
-        const fetchPatientDashboardData = async () => {
-            try {
-                setLoading(true);
-                const patientId = localStorage.getItem('patientId'); // Retrieve patientId from localStorage
-                if (!patientId) {
-                    throw new Error("Patient ID not found in local storage.");
-                }
-                const [statsRes, appointmentsRes, prescriptionsRes, doctorsRes] = await Promise.all([
-                    api.get(`/api/patients/dashboard-stats`),
-                    api.get(`/api/patients/upcoming-appointments`),
-                    api.get(`/api/prescriptions/patient`),
-                    api.get(`/api/doctors`), // New API call to fetch all doctors
-                ]);
-
-                setPatientDashboardStats(statsRes.data.dashboardStats);
-                setPatientName(statsRes.data.patientName);
-                setUpcomingAppointments(appointmentsRes.data.upcomingAppointments);
-                setEPrescriptions(prescriptionsRes.data.prescriptions);
-                setDoctors(doctorsRes.data); // Set the fetched doctors data
-            } catch (err) {
-                setError(err);
-            } finally {
-                setLoading(false);
+    // Function to fetch all dashboard data
+    const fetchPatientDashboardData = async () => {
+        try {
+            setLoading(true);
+            const patientId = localStorage.getItem('patientId'); // Retrieve patientId from localStorage
+            if (!patientId) {
+                throw new Error("Patient ID not found in local storage.");
             }
-        };
+            const [statsRes, appointmentsRes, prescriptionsRes, doctorsRes] = await Promise.all([
+                api.get(`/api/patients/dashboard-stats`),
+                api.get(`/api/patients/upcoming-appointments`),
+                api.get(`/api/prescriptions/patient`),
+                api.get(`/api/doctors`), // New API call to fetch all doctors
+            ]);
 
+            setPatientDashboardStats(statsRes.data.dashboardStats);
+            setPatientName(statsRes.data.patientName);
+            
+            // Remove the redundant formatting here, as it's already formatted by the backend
+            setUpcomingAppointments(appointmentsRes.data.upcomingAppointments);
+            
+            setEPrescriptions(prescriptionsRes.data.prescriptions);
+            setDoctors(doctorsRes.data); // Set the fetched doctors data
+        } catch (err) {
+            setError(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
         fetchPatientDashboardData();
     }, []);
 
@@ -75,7 +79,7 @@ const PatientDashboardPage = () => {
             {patientDashboardStats && <DashboardStats stats={patientDashboardStats} />}
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                <UpcomingAppointments upcomingAppointments={upcomingAppointments} />
+                <UpcomingAppointments upcomingAppointments={upcomingAppointments} onAppointmentUpdate={fetchPatientDashboardData} />
                 <EPrescriptions ePrescriptions={ePrescriptions} />
             </div>
 
