@@ -1,16 +1,20 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserPlus, Search, Trash2, UserX } from 'lucide-react';
-import { usersData as initialUsers } from '../../data/usersData';
+// Removed: import { usersData as initialUsers } from '../../data/usersData';
 import UserList from '../../components/admin/users/UserList';
 import Pagination from '../../components/admin/users/Pagination';
 import EditUserModal from '../../components/admin/users/EditUserModal';
 import ConfirmationModal from '../../components/admin/users/ConfirmationModal';
+import api from '../../utils/api'; // Import API utility
+import { toast } from 'react-toastify';
 
 const filterOptions = ['All', 'Patient', 'Doctor', 'Shop', 'Donor'];
 
 const UserManagementPage = () => {
-    const [users, setUsers] = useState(initialUsers);
+    const [users, setUsers] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState('All');
     const [selectedUsers, setSelectedUsers] = useState([]);
@@ -19,10 +23,27 @@ const UserManagementPage = () => {
     const [editingUser, setEditingUser] = useState(null);
     const [confirmAction, setConfirmAction] = useState(null);
 
+    const fetchUsers = async () => {
+        try {
+            setLoading(true);
+            const response = await api.get('/api/users/all');
+            setUsers(response.data);
+        } catch (err) {
+            setError(err.response?.data?.message || err.message);
+            toast.error(err.response?.data?.message || err.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchUsers();
+    }, []);
+
     const filteredUsers = useMemo(() => {
         return users
             .filter(u => activeFilter === 'All' || u.role === activeFilter)
-            .filter(u => u.name.toLowerCase().includes(searchTerm.toLowerCase()) || u.id.toLowerCase().includes(searchTerm.toLowerCase()));
+            .filter(u => u.name.toLowerCase().includes(searchTerm.toLowerCase()) || u._id.toLowerCase().includes(searchTerm.toLowerCase()));
     }, [users, searchTerm, activeFilter]);
 
     const usersPerPage = 10;
@@ -32,23 +53,42 @@ const UserManagementPage = () => {
     const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
 
     const handleEditUser = (updatedUser) => {
-        setUsers(users.map(u => u.id === updatedUser.id ? updatedUser : u));
+        setUsers(prevUsers => prevUsers.map(u => u._id === updatedUser._id ? updatedUser : u));
         setEditingUser(null);
     };
 
-    const handleActionConfirm = () => {
+    const handleActionConfirm = async () => {
         if (!confirmAction) return;
         const { type, payload } = confirmAction;
+        setLoading(true);
+        setError(null);
 
-        if (type === 'delete') {
-            setUsers(users.filter(u => !payload.includes(u.id)));
-        } else if (type === 'suspend') {
-            setUsers(users.map(u => payload.includes(u.id) ? { ...u, status: u.status === 'Active' ? 'Suspended' : 'Active' } : u));
+        try {
+            if (type === 'delete') {
+                await Promise.all(payload.map(id => api.delete(`/api/users/${id}`)));
+                toast.success(`${payload.length} user(s) deleted successfully!`);
+            } else if (type === 'suspend') {
+                await Promise.all(payload.map(id => api.put(`/api/users/${id}`, { status: 'Suspended' })));
+                toast.success(`${payload.length} user(s) suspended successfully!`);
+            }
+            fetchUsers(); // Re-fetch users to reflect changes
+        } catch (err) {
+            setError(err.response?.data?.message || err.message);
+            toast.error(err.response?.data?.message || err.message);
+        } finally {
+            setSelectedUsers([]);
+            setConfirmAction(null);
+            setLoading(false);
         }
-        
-        setSelectedUsers([]);
-        setConfirmAction(null);
     };
+
+    if (loading) {
+        return <div className="text-center text-foreground p-8">Loading users...</div>;
+    }
+
+    if (error) {
+        return <div className="text-center text-red-500 p-8">Error loading users: {error}</div>;
+    }
 
     return (
         <div className="space-y-6 h-full flex flex-col">
@@ -86,7 +126,11 @@ const UserManagementPage = () => {
             </div>
 
             <div className="flex-1 overflow-hidden">
-                <UserList users={currentUsers} selectedUsers={selectedUsers} setSelectedUsers={setSelectedUsers} onEdit={setEditingUser} onSuspend={id => setConfirmAction({type: 'suspend', payload: [id]})} onDelete={id => setConfirmAction({type: 'delete', payload: [id]})}/>
+                {filteredUsers.length > 0 ? (
+                    <UserList users={currentUsers} selectedUsers={selectedUsers} setSelectedUsers={setSelectedUsers} onEdit={setEditingUser} onSuspend={id => setConfirmAction({type: 'suspend', payload: [id]})} onDelete={id => setConfirmAction({type: 'delete', payload: [id]})}/>
+                ) : (
+                    <p className="text-center text-muted-foreground p-8">No users found matching your criteria.</p>
+                )}
             </div>
             
             <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />

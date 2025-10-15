@@ -69,6 +69,9 @@ import AdminAnalyticsPage from './pages/admin/AdminAnalyticsPage.jsx';
 import AdminSecurityPage from './pages/admin/AdminSecurityPage.jsx';
 import AdminNotificationsPage from './pages/admin/AdminNotificationsPage.jsx';
 import AdminProfilePage from './pages/admin/AdminProfilePage.jsx'; 
+import AddHospitalPage from './pages/admin/hospitals/AddHospitalPage.jsx'; // Import AddHospitalPage
+import AddUserPage from './pages/admin/users/AddUserPage.jsx'; // Import AddUserPage
+import AdminProfileSettings from './components/admin/settings/AdminProfileSettings.jsx'; // Import AdminProfileSettings
 
 // Placeholder for other pages
 const Placeholder = ({ title }) => (
@@ -165,11 +168,14 @@ function App() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<AdminDashboardPage />} />
           <Route path="users" element={<UserManagementPage />} />
+          <Route path="users/add" element={<AddUserPage />} /> {/* New route for adding users */}
           <Route path="hospitals" element={<HospitalManagementPage />} />
+          <Route path="hospitals/add" element={<AddHospitalPage />} /> {/* New route for adding hospitals */}
           <Route path="analytics" element={<AdminAnalyticsPage />} />
           <Route path="security" element={<AdminSecurityPage />} />
           <Route path="notifications" element={<AdminNotificationsPage />} />
           <Route path="profile" element={<AdminProfilePage />} />
+          <Route path="profile/settings" element={<AdminProfileSettings />} /> {/* New route for admin profile settings */}
         </Route>
 
       </Routes>

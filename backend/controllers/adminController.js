@@ -40,8 +40,17 @@ const getPlatformKpis = asyncHandler(async (req, res) => {
 // @route   GET /api/admin/user-growth
 // @access  Private/Admin
 const getUserGrowthData = asyncHandler(async (req, res) => {
-    const userGrowth = await User.aggregate([
-        { $match: { createdAt: { $gte: new Date(new Date().setFullYear(new Date().getFullYear() - 1)) } } }, // Last 12 months
+    const userGrowthPatients = await User.aggregate([
+        { $match: { role: 'Patient', createdAt: { $gte: new Date(new Date().setFullYear(new Date().getFullYear() - 1)) } } }, // Last 12 months
+        { $group: {
+            _id: { year: { $year: "$createdAt" }, month: { $month: "$createdAt" } },
+            count: { $sum: 1 }
+        } },
+        { $sort: { "_id.year": 1, "_id.month": 1 } }
+    ]);
+
+    const userGrowthDoctors = await User.aggregate([
+        { $match: { role: 'Doctor', createdAt: { $gte: new Date(new Date().setFullYear(new Date().getFullYear() - 1)) } } }, // Last 12 months
         { $group: {
             _id: { year: { $year: "$createdAt" }, month: { $month: "$createdAt" } },
             count: { $sum: 1 }
@@ -54,18 +63,24 @@ const getUserGrowthData = asyncHandler(async (req, res) => {
         date.setMonth(date.getMonth() - i);
         return {
             month: date.toLocaleString('en-US', { month: 'short' }),
-            Patients: 0, // Placeholder, actual logic to differentiate patients/doctors needed
-            Doctors: 0,  // Placeholder
+            Patients: 0,
+            Doctors: 0,
         };
     }).reverse();
 
-    userGrowth.forEach(data => {
+    userGrowthPatients.forEach(data => {
         const monthName = new Date(data._id.year, data._id.month - 1).toLocaleString('en-US', { month: 'short' });
         const monthIndex = formattedUserGrowth.findIndex(item => item.month === monthName);
         if (monthIndex !== -1) {
-            // This needs to be refined to separate patients and doctors
-            // For now, combining them under 'Patients'
-            formattedUserGrowth[monthIndex].Patients += data.count;
+            formattedUserGrowth[monthIndex].Patients = data.count;
+        }
+    });
+
+    userGrowthDoctors.forEach(data => {
+        const monthName = new Date(data._id.year, data._id.month - 1).toLocaleString('en-US', { month: 'short' });
+        const monthIndex = formattedUserGrowth.findIndex(item => item.month === monthName);
+        if (monthIndex !== -1) {
+            formattedUserGrowth[monthIndex].Doctors = data.count;
         }
     });
 
@@ -405,10 +420,12 @@ const getAdminAnalyticsKpis = asyncHandler(async (req, res) => {
     const platformRating = platformRatingResult.length > 0 ? platformRatingResult[0].avgRating.toFixed(1) : 0;
 
     res.json({
-        totalRevenue: { value: `₹${totalRevenue.toLocaleString('en-IN')}`, change: '+10%' }, // Placeholder change
-        newUserGrowth: { value: newUserGrowthCount, change: '+5%' }, // Placeholder change
-        avgWaitTime: { value: avgWaitTime, change: '-2%' }, // Placeholder change
-        platformRating: { value: platformRating, change: '+0.1' }, // Placeholder change
+        kpis: { // Wrap the object in a 'kpis' key
+            totalRevenue: { value: `₹${totalRevenue.toLocaleString('en-IN')}`, change: '+10%' }, // Placeholder change
+            newUserGrowth: { value: newUserGrowthCount, change: '+5%' }, // Placeholder change
+            avgWaitTime: { value: avgWaitTime, change: '-2%' }, // Placeholder change
+            platformRating: { value: platformRating, change: '+0.1' }, // Placeholder change
+        }
     });
 });
 
@@ -482,11 +499,13 @@ const getAdminRevenueStreams = asyncHandler(async (req, res) => {
     ]);
     const totalAppointmentRevenue = totalAppointmentRevenueResult.length > 0 ? totalAppointmentRevenueResult[0].total : 0;
 
-    res.json([
-        { name: 'Shop Orders', value: totalShopRevenue },
-        { name: 'Appointment Fees', value: totalAppointmentRevenue },
-        { name: 'Other Revenue', value: 5000 }, // Placeholder for other revenue streams
-    ]);
+    res.json({ 
+        revenueStreams: [
+            { name: 'Shop Orders', value: totalShopRevenue },
+            { name: 'Appointment Fees', value: totalAppointmentRevenue },
+            { name: 'Other Revenue', value: 5000 }, // Placeholder for other revenue streams
+        ]
+    });
 });
 
 // @desc    Get admin top performing hospitals data
@@ -588,6 +607,113 @@ const deleteSystemAlert = asyncHandler(async (req, res) => {
     res.json({ message: 'System alert removed successfully' });
 });
 
+// @desc    Get security metrics (Admin only)
+// @route   GET /api/admin/security/metrics
+// @access  Private/Admin
+const getSecurityMetrics = asyncHandler(async (req, res) => {
+    const totalUsers = await User.countDocuments();
+    // Assuming 2FA status is stored on the User model
+    const usersWith2FA = await User.countDocuments({ is2FAEnabled: true }); // Assuming `is2FAEnabled` field on User
+
+    const twoFactorAuthEnabledPercentage = totalUsers > 0 ? ((usersWith2FA / totalUsers) * 100).toFixed(0) : 0;
+
+    // For simplicity, a dummy security score. In a real app, this would be complex.
+    const securityScore = 85; 
+
+    res.json({
+        securityScore,
+        twoFactorAuth: {
+            enabledPercentage: twoFactorAuthEnabledPercentage,
+        },
+    });
+});
+
+// @desc    Get active sessions (Admin only)
+// @route   GET /api/admin/security/active-sessions
+// @access  Private/Admin
+const getActiveSessions = asyncHandler(async (req, res) => {
+    // This is a simplified approach. Real session management would involve session tokens/records.
+    // For now, let's return some dummy active sessions or fetch based on recent login activity.
+    const recentLoggedInUsers = await User.find({ lastLoginAt: { $exists: true, $gte: new Date(Date.now() - 3600000) } }) // Last 1 hour
+                                        .select('name email lastLoginAt ipAddress device');
+
+    const activeSessions = recentLoggedInUsers.map(user => ({
+        id: user._id,
+        user: user.name,
+        email: user.email,
+        device: user.device || 'Unknown Device',
+        ip: user.ipAddress || 'N/A',
+        location: 'Unknown', // Placeholder, would need IP lookup service
+        lastActivity: user.lastLoginAt,
+    }));
+
+    res.json(activeSessions);
+});
+
+// @desc    Revoke a user session (Admin only)
+// @route   PUT /api/admin/security/revoke-session/:id
+// @access  Private/Admin
+const revokeUserSession = asyncHandler(async (req, res) => {
+    const { id } = req.params; // User ID
+
+    const user = await User.findById(id);
+
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+    }
+
+    // In a real application, you would invalidate the user's JWT or clear their session token.
+    // For this example, we'll just clear their lastLoginAt and device/ip to simulate logout.
+    user.lastLoginAt = null;
+    user.device = null;
+    user.ipAddress = null;
+    await user.save();
+
+    res.json({ message: 'User session revoked successfully' });
+});
+
+// @desc    Get all notifications for admin
+// @route   GET /api/admin/notifications
+// @access  Private/Admin
+const getAdminNotifications = asyncHandler(async (req, res) => {
+    const adminUser = await User.findById(req.user._id); // Assuming req.user is populated by protect middleware
+
+    if (!adminUser || adminUser.role !== 'Admin') {
+        res.status(403);
+        throw new Error('Not authorized as admin');
+    }
+
+    const notifications = await Notification.find({ recipient: adminUser._id, onModel: 'Admin' })
+                                                .sort({ createdAt: -1 });
+    res.json(notifications);
+});
+
+// @desc    Mark notification as read for admin
+// @route   PUT /api/admin/notifications/:id/read
+// @access  Private/Admin
+const markNotificationAsRead = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+
+    const notification = await Notification.findById(id);
+
+    if (!notification) {
+        res.status(404);
+        throw new Error('Notification not found');
+    }
+
+    // Ensure admin is the recipient of this notification
+    if (notification.recipient.toString() !== req.user._id.toString()) {
+        res.status(403);
+        throw new Error('Not authorized to mark this notification as read');
+    }
+
+    notification.isRead = true;
+    await notification.save();
+
+    res.json({ message: 'Notification marked as read' });
+});
+
 export { 
     getPlatformKpis,
     getUserGrowthData,
@@ -608,4 +734,9 @@ export {
     createSystemAlert,
     updateSystemAlert,
     deleteSystemAlert,
+    getSecurityMetrics,
+    getActiveSessions,
+    revokeUserSession,
+    getAdminNotifications,
+    markNotificationAsRead,
 };

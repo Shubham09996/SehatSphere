@@ -18,6 +18,19 @@ const sendSms = async (to, message) => {
   }
 };
 
-// You can add other Twilio functionalities here, e.g., send voice calls, WhatsApp messages
+const makeCall = async (to, twimlUrl) => {
+    try {
+        const result = await client.calls.create({
+            url: twimlUrl,
+            to: to,
+            from: config.twilio.phoneNumber,
+        });
+        console.log(`Call initiated to ${to}: ${result.sid}`);
+        return result;
+    } catch (error) {
+        console.error(`Error initiating call to ${to}: ${error.message}`);
+        throw error;
+    }
+};
 
-export { sendSms };
+export { sendSms, makeCall };

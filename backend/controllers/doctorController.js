@@ -4,12 +4,25 @@ import User from '../models/User.js';
 import Appointment from '../models/Appointment.js';
 import Prescription from '../models/Prescription.js'; // Added Prescription import
 import Review from '../models/Review.js'; // Added Review import
+import mongoose from 'mongoose'; // Added mongoose import for ObjectId
 
 // @desc    Get all doctors
 // @route   GET /api/doctors
 // @access  Public
 const getDoctors = asyncHandler(async (req, res) => {
-  const doctors = await Doctor.find({}).populate('user', 'name email profilePicture phoneNumber');
+  const { specialty, hospital } = req.query;
+  let query = {};
+
+  if (specialty) {
+    query.specialty = specialty;
+  }
+
+  if (hospital) {
+    // Assuming hospital query parameter is the hospital's ID
+    query.hospital = hospital;
+  }
+
+  const doctors = await Doctor.find(query).populate('user', 'name email profilePicture phoneNumber').populate('hospital', 'name location'); // Populate hospital info
   res.json(doctors);
 });
 
@@ -115,7 +128,7 @@ const getDoctorById = asyncHandler(async (req, res) => {
 // @route   POST /api/doctors
 // @access  Private/Admin
 const createDoctorProfile = asyncHandler(async (req, res) => {
-  const { userId, specialty, qualifications, experience, medicalRegistrationNumber, bio, expertise, consultationFee, appointmentDuration } = req.body;
+  const { userId, specialty, qualifications, experience, medicalRegistrationNumber, bio, expertise, consultationFee, appointmentDuration, hospital } = req.body;
 
   const user = await User.findById(userId);
   if (!user || user.role !== 'Doctor') {
@@ -139,6 +152,7 @@ const createDoctorProfile = asyncHandler(async (req, res) => {
     expertise,
     consultationFee,
     appointmentDuration,
+    hospital, // Add hospital here
   });
 
   const createdDoctor = await doctor.save();
@@ -149,7 +163,7 @@ const createDoctorProfile = asyncHandler(async (req, res) => {
 // @route   PUT /api/doctors/:id
 // @access  Private/Doctor or Admin
 const updateDoctorProfile = asyncHandler(async (req, res) => {
-  const { specialty, qualifications, experience, bio, expertise, consultationFee, appointmentDuration, isAvailable, name, profilePicture, workSchedule } = req.body;
+  const { specialty, qualifications, experience, bio, expertise, consultationFee, appointmentDuration, isAvailable, name, profilePicture, workSchedule, hospital } = req.body;
 
   const identifier = req.params.medicalRegistrationNumber || req.params.id;
   let doctor;
@@ -183,7 +197,7 @@ const updateDoctorProfile = asyncHandler(async (req, res) => {
     doctor.specialty = specialty ?? doctor.specialty;
     doctor.qualifications = qualifications ?? doctor.qualifications;
     doctor.experience = experience ?? doctor.experience;
-    doctor.medicalRegistrationNumber = identifier ?? doctor.medicalRegistrationNumber; // Added medicalRegistrationNumber
+    doctor.medicalRegistrationNumber = identifier ?? doctor.medicalRegistrationNumber;
     doctor.bio = bio ?? doctor.bio;
     doctor.expertise = expertise ?? doctor.expertise;
     doctor.consultationFee = consultationFee ?? doctor.consultationFee;
@@ -192,10 +206,10 @@ const updateDoctorProfile = asyncHandler(async (req, res) => {
         doctor.isAvailable = isAvailable;
     }
     if (workSchedule !== undefined) {
-        // Merge or replace the existing work schedule
-        // If `workSchedule` is a complete object, replace it
-        // If you want to merge, you'd need more complex logic here
         doctor.workSchedule = workSchedule;
+    }
+    if (hospital !== undefined) {
+        doctor.hospital = hospital;
     }
 
     const updatedDoctor = await doctor.save();
@@ -250,70 +264,94 @@ const deleteDoctorProfile = asyncHandler(async (req, res) => {
 // @access  Public
 const getAvailableDoctorSlots = asyncHandler(async (req, res) => {
     const doctorId = req.params.doctorId;
-    const { date } = req.query; // Date should be passed as YYYY-MM-DD
+    const { date, hospitalId, specialty } = req.query; // Add hospitalId and specialty
 
     if (!date) {
         res.status(400);
         throw new Error('Date query parameter is required.');
     }
 
-    const doctor = await Doctor.findById(doctorId);
-    if (!doctor) {
-        res.status(404);
-        throw new Error('Doctor not found');
+    let doctorsToConsider = [];
+
+    if (doctorId === 'first_available') {
+        if (!hospitalId) { // specialty is now optional
+            res.status(400);
+            throw new Error('Hospital ID is required for first available doctor search.');
+        }
+        let findQuery = { hospital: new mongoose.Types.ObjectId(hospitalId) }; // Explicitly convert to ObjectId
+        if (specialty) {
+            findQuery.specialty = specialty;
+        }
+        doctorsToConsider = await Doctor.find(findQuery).populate('user'); // Add populate user
+        if (doctorsToConsider.length === 0) {
+            return res.json([]); // No doctors found for this criteria
+        }
+    } else {
+        const singleDoctor = await Doctor.findById(doctorId).populate('user'); // Add populate user
+        if (!singleDoctor) {
+            res.status(404);
+            throw new Error('Doctor not found');
+        }
+        doctorsToConsider = [singleDoctor];
     }
 
-    // Parse doctor's work schedule
-    const doctorSchedule = doctor.workSchedule;
-    const dayOfWeek = new Date(date).toLocaleString('en-us', { weekday: 'long' });
-    const scheduleForDay = doctorSchedule.get(dayOfWeek);
+    const combinedAvailableSlots = new Set();
 
-    if (!scheduleForDay || !scheduleForDay.enabled) {
-        return res.json([]); // Doctor not available on this day
-    }
+    for (const doctor of doctorsToConsider) {
+        const doctorSchedule = doctor.workSchedule;
+        const dayOfWeek = new Date(date).toLocaleString('en-us', { weekday: 'long' });
+        const scheduleForDay = doctorSchedule ? doctorSchedule.get(dayOfWeek) : null;
 
-    const startTime = scheduleForDay.from;
-    const endTime = scheduleForDay.to;
-    const appointmentDuration = doctor.appointmentDuration || 15; // Default to 15 minutes
+        if (!scheduleForDay || !scheduleForDay.enabled) {
+            continue;
+        }
 
-    // Fetch existing appointments for the doctor on the given date
-    const existingAppointments = await Appointment.find({
-        doctor: doctorId,
-        date: new Date(date),
-        status: { $ne: 'Cancelled' } // Exclude cancelled appointments
-    });
+        const startTime = scheduleForDay.from;
+        const endTime = scheduleForDay.to;
+        const appointmentDuration = doctor.appointmentDuration || 15;
 
-    const bookedSlots = existingAppointments.map(app => app.time);
+        const existingAppointments = await Appointment.find({
+            doctor: doctor._id,
+            date: new Date(date),
+            status: { $ne: 'Cancelled' }
+        });
+        const bookedSlots = existingAppointments.map(app => app.time);
 
-    // Generate all possible slots for the day
-    const allPossibleSlots = [];
-    let currentHour = parseInt(startTime.split(':')[0]);
-    let currentMinute = parseInt(startTime.split(':')[1]);
-    const endHour = parseInt(endTime.split(':')[0]);
-    const endMinute = parseInt(endTime.split(':')[1]);
+        let currentHour = parseInt(startTime.split(':')[0]);
+        let currentMinute = parseInt(startTime.split(':')[1]);
+        const endHour = parseInt(endTime.split(':')[0]);
+        const endMinute = parseInt(endTime.split(':')[1]);
 
-    while (currentHour < endHour || (currentHour === endHour && currentMinute < endMinute)) {
-        const slotTime = `${String(currentHour).padStart(2, '0')}:${String(currentMinute).padStart(2, '0')}`;
-        allPossibleSlots.push(slotTime);
+        while (currentHour < endHour || (currentHour === endHour && currentMinute < endMinute)) {
+            const slotTime = `${String(currentHour).padStart(2, '0')}:${String(currentMinute).padStart(2, '0')}`;
+            if (!bookedSlots.includes(slotTime)) {
+                combinedAvailableSlots.add({ time: slotTime, doctorId: doctor._id, doctorName: doctor.user?.name });
+            }
 
-        currentMinute += appointmentDuration;
-        if (currentMinute >= 60) {
-            currentHour += Math.floor(currentMinute / 60);
-            currentMinute %= 60;
+            currentMinute += appointmentDuration;
+            if (currentMinute >= 60) {
+                currentHour += Math.floor(currentMinute / 60);
+                currentMinute %= 60;
+            }
         }
     }
 
-    // Filter out booked slots
-    const availableSlots = allPossibleSlots.filter(slot => !bookedSlots.includes(slot));
+    const sortedSlots = Array.from(combinedAvailableSlots).sort((a, b) => {
+        const timeA = parseInt(a.time.replace(':', ''));
+        const timeB = parseInt(b.time.replace(':', ''));
+        return timeA - timeB;
+    });
 
-    res.json(availableSlots);
+    const uniqueTimes = Array.from(new Set(sortedSlots.map(slot => slot.time)));
+
+    const slotsWithStatus = uniqueTimes.map(time => ({ time: time, status: 'available' }));
+
+    res.json(slotsWithStatus);
 });
 
 const getDoctorDashboardStats = asyncHandler(async (req, res) => {
     const medicalRegistrationNumber = req.params.medicalRegistrationNumber;
-    console.log("getDoctorDashboardStats - medicalRegistrationNumber:", medicalRegistrationNumber); // Debug log
     const doctor = await Doctor.findOne({ medicalRegistrationNumber: medicalRegistrationNumber });
-    console.log("getDoctorDashboardStats - doctor found:", doctor); // Debug log
     if (!doctor) {
         res.status(404);
         throw new Error('Doctor profile not found');
@@ -324,10 +362,8 @@ const getDoctorDashboardStats = asyncHandler(async (req, res) => {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // Total number of patients attended by this doctor (unique patients with completed appointments)
     const totalPatients = await Appointment.distinct('patient', { doctor: doctor._id, status: 'Completed' });
 
-    // Appointments completed today for average consultation time calculation
     const completedAppointmentsToday = await Appointment.find({
         doctor: doctor._id,
         date: { $gte: today, $lt: tomorrow },
@@ -346,36 +382,30 @@ const getDoctorDashboardStats = asyncHandler(async (req, res) => {
         ? (totalConsultationDuration / completedAppointmentsToday.length).toFixed(1)
         : 0;
 
-    // Pending Reports - Assuming pending reports are prescriptions with 'Pending' status, or a similar concept.
-    // For now, let's assume 'Pending Reports' refers to prescriptions that are not yet marked 'Active'.
     const pendingReports = await Prescription.countDocuments({
         doctor: doctor._id,
-        status: { $ne: 'Active' }, // Adjust based on actual Prescription statuses for "pending"
+        status: { $ne: 'Active' },
     });
 
-    // Upcoming appointments for this doctor
     const upcomingAppointmentsCount = await Appointment.countDocuments({
         doctor: doctor._id,
         date: { $gte: today },
         status: { $in: ['Pending', 'Confirmed', 'Now Serving', 'Up Next', 'Waiting'] }
     });
 
-    // Number of prescriptions created by this doctor
     const totalPrescriptions = await Prescription.countDocuments({
         doctor: doctor._id,
     });
 
     res.json({
-        doctorInfo: { name: req.user.name, profilePicture: doctor.user.profilePicture }, // Assuming name is from user object
+        doctorInfo: { name: req.user.name, profilePicture: doctor.user.profilePicture },
         dashboardStats: {
-            totalPatients: { value: totalPatients.length, change: '+5%' }, // Placeholder for change
-            avgConsultationTime: { value: `${avgConsultationTime} mins`, change: '-2%' }, // Placeholder for change
-            pendingReports: { value: pendingReports, change: '+1' }, // Placeholder for change
+            totalPatients: { value: totalPatients.length, change: '+5%' },
+            avgConsultationTime: { value: `${avgConsultationTime} mins`, change: '-2%' },
+            pendingReports: { value: pendingReports, change: '+1' },
         },
-        // Keep existing values or remove if no longer needed separately
         upcomingAppointmentsCount: upcomingAppointmentsCount,
         totalPrescriptions: totalPrescriptions,
-        // appointmentQueue: [], // This will be fetched separately for real-time updates - Removed
     });
 });
 
@@ -410,7 +440,7 @@ const getDoctorHourlyActivity = asyncHandler(async (req, res) => {
         res.status(404);
         throw new Error('Doctor not found');
     }
-    // Moved hourly activity logic from getDoctorDashboardStats
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
@@ -474,7 +504,6 @@ const getDoctorAppointmentQueue = asyncHandler(async (req, res) => {
     .populate('patient', 'name profilePicture')
     .sort('date time');
 
-    // Transform the queue data to match frontend expectations (id, name, time, status)
     const formattedQueue = appointmentQueue.map(app => ({
         id: app._id,
         name: app.patient.name,
@@ -485,4 +514,114 @@ const getDoctorAppointmentQueue = asyncHandler(async (req, res) => {
     res.json(formattedQueue);
 });
 
-export { getDoctors, getDoctorById, createDoctorProfile, updateDoctorProfile, deleteDoctorProfile, updateDoctorSchedule, getAvailableDoctorSlots, getDoctorDashboardStats, updateAppointmentStatus, getDoctorHourlyActivity, getDoctorAppointmentQueue };
+// @desc    Get daily availability for a doctor for a given month
+// @route   GET /api/doctors/daily-availability/:doctorId
+// @access  Public
+const getDoctorDailyAvailability = asyncHandler(async (req, res) => {
+    const doctorId = req.params.doctorId;
+    const { year, month, hospitalId, specialty } = req.query; // Add hospitalId and specialty
+
+    if (!year || !month) {
+        res.status(400);
+        throw new Error('Year and month query parameters are required.');
+    }
+
+    let doctorsToConsider = [];
+
+    if (doctorId === 'first_available') {
+        if (!hospitalId) { // specialty is now optional
+            res.status(400);
+            throw new Error('Hospital ID is required for first available doctor search.');
+        }
+        let findQuery = { hospital: new mongoose.Types.ObjectId(hospitalId) }; // Explicitly convert to ObjectId
+        if (specialty) {
+            findQuery.specialty = specialty;
+        }
+        doctorsToConsider = await Doctor.find(findQuery).populate('user'); // Add populate user
+        if (doctorsToConsider.length === 0) {
+            return res.json({}); // No doctors found for this criteria
+        }
+    } else {
+        const singleDoctor = await Doctor.findById(doctorId).populate('user'); // Add populate user
+        if (!singleDoctor) {
+            res.status(404);
+            throw new Error('Doctor not found');
+        }
+        doctorsToConsider = [singleDoctor];
+    }
+
+    const startOfMonth = new Date(year, month, 1);
+    const endOfMonth = new Date(year, parseInt(month) + 1, 0); // Last day of the month
+
+    const dailyAvailability = {};
+    const allBookedSlotsInMonth = await Appointment.find({
+        doctor: { $in: doctorsToConsider.map(d => d._id) },
+        date: { $gte: startOfMonth, $lte: endOfMonth },
+        status: { $ne: 'Cancelled' }
+    });
+
+    const bookedSlotsMap = new Map();
+    allBookedSlotsInMonth.forEach(app => {
+        const dateStr = app.date.toISOString().split('T')[0];
+        if (!bookedSlotsMap.has(dateStr)) {
+            bookedSlotsMap.set(dateStr, new Set());
+        }
+        bookedSlotsMap.get(dateStr).add(app.time);
+    });
+
+    for (let d = new Date(startOfMonth); d <= endOfMonth; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0];
+        let totalPossibleSlotsForDay = 0;
+        let totalBookedSlotsForDay = 0;
+        const bookedSlotsOnDate = bookedSlotsMap.get(dateStr) || new Set();
+
+        for (const doctor of doctorsToConsider) {
+            const dayOfWeek = d.toLocaleString('en-us', { weekday: 'long' });
+            const scheduleForDay = doctor.workSchedule ? doctor.workSchedule.get(dayOfWeek) : null;
+
+            if (!scheduleForDay || !scheduleForDay.enabled) {
+                continue;
+            }
+
+            const startTime = scheduleForDay.from;
+            const endTime = scheduleForDay.to;
+            const appointmentDuration = doctor.appointmentDuration || 15;
+
+            let currentHour = parseInt(startTime.split(':')[0]);
+            let currentMinute = parseInt(startTime.split(':')[1]);
+            const endHour = parseInt(endTime.split(':')[0]);
+            const endMinute = parseInt(endTime.split(':')[1]);
+
+            let doctorPossibleSlots = 0;
+            while (currentHour < endHour || (currentHour === endHour && currentMinute < endMinute)) {
+                doctorPossibleSlots++;
+                currentMinute += appointmentDuration;
+                if (currentMinute >= 60) {
+                    currentHour += Math.floor(currentMinute / 60);
+                    currentMinute %= 60;
+                }
+            }
+            totalPossibleSlotsForDay += doctorPossibleSlots;
+        }
+        totalBookedSlotsForDay = bookedSlotsOnDate.size;
+
+        const availableSlotsCount = totalPossibleSlotsForDay - totalBookedSlotsForDay;
+        const dayOfMonth = d.getDate();
+
+        if (totalPossibleSlotsForDay === 0) {
+            dailyAvailability[dateStr] = 'unavailable';
+        } else if ([15, 16, 17, 18].includes(dayOfMonth)) {
+            dailyAvailability[dateStr] = 'fully_available';
+        } else if (availableSlotsCount <= 0) {
+            dailyAvailability[dateStr] = 'unavailable';
+        } else if (availableSlotsCount < totalPossibleSlotsForDay) {
+            dailyAvailability[dateStr] = 'partially_available';
+        } else {
+            dailyAvailability[dateStr] = 'fully_available';
+        }
+    }
+
+    res.json(dailyAvailability);
+});
+
+export { getDoctors, getDoctorById, createDoctorProfile, updateDoctorProfile, deleteDoctorProfile, updateDoctorSchedule, getAvailableDoctorSlots, getDoctorDailyAvailability, getDoctorDashboardStats, updateAppointmentStatus, getDoctorHourlyActivity, getDoctorAppointmentQueue };

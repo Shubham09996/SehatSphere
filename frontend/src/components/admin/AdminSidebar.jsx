@@ -1,14 +1,17 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, Building, BarChart2, Shield, ChevronsLeft, ChevronsRight, LifeBuoy } from 'lucide-react';
+import { LayoutDashboard, Users, Building, BarChart2, Shield, ChevronsLeft, ChevronsRight, LifeBuoy, PlusCircle } from 'lucide-react';
 
 const AdminSidebar = ({ isCollapsed, toggleCollapse, onCloseMobileSidebar }) => {
     const navItems = [
         { icon: LayoutDashboard, text: 'Dashboard', path: '/admin/dashboard' },
         { icon: Users, text: 'User Management', path: '/admin/users' },
+        { icon: PlusCircle, text: 'Add User', path: '/admin/users/add' }, // New: Add User link
         { icon: Building, text: 'Hospitals', path: '/admin/hospitals' },
+        { icon: PlusCircle, text: 'Add Hospital', path: '/admin/hospitals/add' },
         { icon: BarChart2, text: 'Analytics', path: '/admin/analytics' },
         { icon: Shield, text: 'Security', path: '/admin/security' },
+        { icon: LifeBuoy, text: 'Notifications', path: '/admin/notifications' }, // New: Notifications link
     ];
 
     return (

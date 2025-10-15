@@ -8,6 +8,7 @@ const config = {
         accountSid: process.env.TWILIO_ACCOUNT_SID,
         authToken: process.env.TWILIO_AUTH_TOKEN,
         phoneNumber: process.env.TWILIO_PHONE_NUMBER,
+        recordedCallUrl: process.env.TWILIO_RECORDED_CALL_URL,
     },
     googleGemini: {
         apiKey: process.env.GOOGLE_GEMINI_API_KEY,

@@ -56,30 +56,30 @@ const UserList = ({ users, selectedUsers, setSelectedUsers, onEdit, onSuspend, o
                             <th className="p-4">User</th>
                             <th className="p-4">Email</th>
                             <th className="p-4">Role</th>
-                            <th className="p-4">Joined</th>
+                            <th className="p-4">Phone Number</th>
                             <th className="p-4">Status</th>
                             <th className="p-4 text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
                         {users.map(user => (
-                            <tr key={user.id}>
-                                <td className="p-4"><input type="checkbox" checked={selectedUsers.includes(user.id)} onChange={e => handleSelectOne(e, user.id)} className="form-checkbox rounded"/></td>
-                                <td className="p-4"><div className="flex items-center gap-3"><img src={user.pfp} className="w-10 h-10 rounded-full"/><p className="font-bold text-foreground">{user.name}</p></div></td>
+                            <tr key={user._id}>
+                                <td className="p-4"><input type="checkbox" checked={selectedUsers.includes(user._id)} onChange={e => handleSelectOne(e, user._id)} className="form-checkbox rounded"/></td>
+                                <td className="p-4"><div className="flex items-center gap-3"><img src={user.profilePicture || "https://via.placeholder.com/100"} className="w-10 h-10 rounded-full object-cover"/><p className="font-bold text-foreground">{user.name}</p></div></td>
                                 <td className="p-4 text-muted-foreground">{user.email}</td>
                                 <td className="p-4 text-muted-foreground">{user.role}</td>
-                                <td className="p-4 text-muted-foreground">{user.joinDate}</td>
+                                <td className="p-4 text-muted-foreground">{user.phoneNumber || 'N/A'}</td>
                                 <td className="p-4"><span className={`text-xs font-semibold px-2 py-1 rounded-full ${statusStyles[user.status]}`}>{user.status}</span></td>
                                 <td className="p-4 text-right">
-                                    <div className="relative inline-block" ref={openMenuId === user.id ? menuRef : null}>
-                                        <button onClick={() => setOpenMenuId(openMenuId === user.id ? null : user.id)} className="p-1 hover:bg-muted rounded-full text-muted-foreground"><MoreHorizontal size={18}/></button>
+                                    <div className="relative inline-block" ref={openMenuId === user._id ? menuRef : null}>
+                                        <button onClick={() => setOpenMenuId(openMenuId === user._id ? null : user._id)} className="p-1 hover:bg-muted rounded-full text-muted-foreground"><MoreHorizontal size={18}/></button>
                                         <AnimatePresence>
-                                        {openMenuId === user.id && (
+                                        {openMenuId === user._id && (
                                             <motion.div initial={{opacity:0, scale:0.9}} animate={{opacity:1, scale:1}} exit={{opacity:0, scale:0.9}} className="absolute right-0 mt-2 w-36 bg-card border border-border rounded-md shadow-lg z-20">
                                                 <div className="p-1">
                                                     <button onClick={() => {onEdit(user); setOpenMenuId(null);}} className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm rounded hover:bg-muted"><Edit size={14}/> Edit</button>
-                                                    <button onClick={() => {onSuspend(user.id); setOpenMenuId(null);}} className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm rounded hover:bg-muted"><UserX size={14}/> Suspend</button>
-                                                    <button onClick={() => {onDelete(user.id); setOpenMenuId(null);}} className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm rounded text-red-500 hover:bg-muted"><Trash2 size={14}/> Delete</button>
+                                                    <button onClick={() => {onSuspend(user._id); setOpenMenuId(null);}} className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm rounded hover:bg-muted"><UserX size={14}/> Suspend</button>
+                                                    <button onClick={() => {onDelete(user._id); setOpenMenuId(null);}} className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm rounded text-red-500 hover:bg-muted"><Trash2 size={14}/> Delete</button>
                                                 </div>
                                             </motion.div>
                                         )}
@@ -99,26 +99,25 @@ const UserList = ({ users, selectedUsers, setSelectedUsers, onEdit, onSuspend, o
                      <span className="text-sm font-semibold text-muted-foreground">Select All ({selectedUsers.length} selected)</span>
                  </div>
                 {users.map(user => (
-                     <div key={user.id} className="border-b border-border p-4 flex items-start gap-4">
-                        <input type="checkbox" checked={selectedUsers.includes(user.id)} onChange={e => handleSelectOne(e, user.id)} className="form-checkbox rounded mt-1"/>
-                        <img src={user.pfp} className="w-10 h-10 rounded-full"/>
+                     <div key={user._id} className="border-b border-border p-4 flex items-start gap-4">
+                        <input type="checkbox" checked={selectedUsers.includes(user._id)} onChange={e => handleSelectOne(e, user._id)} className="form-checkbox rounded mt-1"/>
+                        <img src={user.profilePicture || "https://via.placeholder.com/100"} className="w-10 h-10 rounded-full object-cover"/>
                         <div className="flex-1">
                             <p className="font-bold text-foreground">{user.name}</p>
-                            <p className="text-xs text-muted-foreground">{user.id} • {user.role}</p>
+                            <p className="text-xs text-muted-foreground">ID: {user._id.slice(-6)} • {user.role}</p>
                              <div className="mt-2">
                                 <span className={`text-xs font-semibold px-2 py-1 rounded-full ${statusStyles[user.status]}`}>{user.status}</span>
                             </div>
                         </div>
-                        <div className="relative" ref={openMenuId === user.id ? menuRef : null}>
-                            <button onClick={() => setOpenMenuId(openMenuId === user.id ? null : user.id)} className="p-1 hover:bg-muted rounded-full text-muted-foreground"><MoreHorizontal size={18}/></button>
+                        <div className="relative" ref={openMenuId === user._id ? menuRef : null}>
+                            <button onClick={() => setOpenMenuId(openMenuId === user._id ? null : user._id)} className="p-1 hover:bg-muted rounded-full text-muted-foreground"><MoreHorizontal size={18}/></button>
                             <AnimatePresence>
-                            {openMenuId === user.id && (
+                            {openMenuId === user._id && (
                                 <motion.div initial={{opacity:0, scale:0.9}} animate={{opacity:1, scale:1}} exit={{opacity:0, scale:0.9}} className="absolute right-0 mt-2 w-36 bg-card border border-border rounded-md shadow-lg z-20">
                                     <div className="p-1">
                                         <button onClick={() => {onEdit(user); setOpenMenuId(null);}} className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm rounded hover:bg-muted"><Edit size={14}/> Edit</button>
-                                        <button onClick={() => {onSuspend(user.id); setOpenMenuId(null);}} className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm rounded hover:bg-muted"><UserX size={14}/> Suspend</button>
-                                        {/* FIX: Corrected the size prop from '1á' to '14' */}
-                                        <button onClick={() => {onDelete(user.id); setOpenMenuId(null);}} className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm rounded text-red-500 hover:bg-muted"><Trash2 size={14}/> Delete</button>
+                                        <button onClick={() => {onSuspend(user._id); setOpenMenuId(null);}} className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm rounded hover:bg-muted"><UserX size={14}/> Suspend</button>
+                                        <button onClick={() => {onDelete(user._id); setOpenMenuId(null);}} className="flex items-center gap-2 w-full text-left px-3 py-1.5 text-sm rounded text-red-500 hover:bg-muted"><Trash2 size={14}/> Delete</button>
                                     </div>
                                 </motion.div>
                             )}

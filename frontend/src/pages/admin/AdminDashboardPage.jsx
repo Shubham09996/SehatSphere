@@ -58,22 +58,23 @@ const AdminDashboardPage = () => {
             try {
                 setLoading(true);
                 const [kpisRes, userGrowthRes, userDistributionRes, pendingApprovalsRes, systemAlertsRes, hospitalPerformanceRes] = await Promise.all([
-                    api.get('/admin/dashboard-stats'),
-                    api.get('/admin/user-growth'),
-                    api.get('/admin/user-distribution'),
-                    api.get('/admin/approvals/pending'),
-                    api.get('/admin/alerts'),
-                    api.get('/admin/hospitals/performance'),
+                    api.get('/api/admin/kpis'),
+                    api.get('/api/admin/user-growth'),
+                    api.get('/api/admin/user-distribution'),
+                    api.get('/api/admin/pending-approvals'),
+                    api.get('/api/admin/alerts'),
+                    api.get('/api/admin/hospital-performance'),
                 ]);
 
-                setKpis(kpisRes.data.kpis);
-                setUserGrowthData(userGrowthRes.data.userGrowth);
-                setUserDistributionData(userDistributionRes.data.userDistribution);
-                setPendingApprovalsData(pendingApprovalsRes.data.pendingApprovals);
-                setSystemAlertsData(systemAlertsRes.data.systemAlerts);
-                setHospitalPerformanceData(hospitalPerformanceRes.data.hospitalPerformance);
+                setKpis(kpisRes.data);
+                setUserGrowthData(userGrowthRes.data);
+                setUserDistributionData(userDistributionRes.data);
+                setPendingApprovalsData(pendingApprovalsRes.data.doctors.concat(pendingApprovalsRes.data.shops));
+                setSystemAlertsData(systemAlertsRes.data);
+                setHospitalPerformanceData(hospitalPerformanceRes.data);
             } catch (err) {
-                setError(err);
+                setError(err.response?.data?.message || err.message);
+                toast.error(err.response?.data?.message || err.message);
             } finally {
                 setLoading(false);
             }

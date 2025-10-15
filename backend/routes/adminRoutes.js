@@ -20,6 +20,11 @@ import {
     createSystemAlert,
     updateSystemAlert,
     deleteSystemAlert,
+    getSecurityMetrics,
+    getActiveSessions,
+    revokeUserSession,
+    getAdminNotifications,
+    markNotificationAsRead,
 } from '../controllers/adminController.js';
 import { protect, authorizeRoles } from '../middleware/authMiddleware.js';
 
@@ -52,5 +57,14 @@ router.route('/alerts')
 router.route('/alerts/:id')
     .put(protect, authorizeRoles('Admin'), updateSystemAlert)
     .delete(protect, authorizeRoles('Admin'), deleteSystemAlert);
+
+// NEW: Security Routes
+router.route('/security/metrics').get(protect, authorizeRoles('Admin'), getSecurityMetrics);
+router.route('/security/active-sessions').get(protect, authorizeRoles('Admin'), getActiveSessions);
+router.route('/security/revoke-session/:id').put(protect, authorizeRoles('Admin'), revokeUserSession);
+
+// NEW: Admin Notifications Routes
+router.route('/notifications').get(protect, authorizeRoles('Admin'), getAdminNotifications);
+router.route('/notifications/:id/read').put(protect, authorizeRoles('Admin'), markNotificationAsRead);
 
 export default router;

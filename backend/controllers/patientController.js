@@ -267,20 +267,29 @@ const getPatientDashboardStats = asyncHandler(async (req, res) => {
         throw new Error('Patient profile not found');
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const nowLocal = new Date();
+    const today = new Date(Date.UTC(nowLocal.getFullYear(), nowLocal.getMonth(), nowLocal.getDate()));
 
-    const upcomingAppointmentsCount = await Appointment.countDocuments({
-        patient: patient._id,
-        date: { $gte: today },
-        status: { $in: ['Pending', 'Confirmed', 'Now Serving', 'Up Next', 'Waiting'] }
-    });
+    const currentHour = nowLocal.getHours();
+    const currentMinute = nowLocal.getMinutes();
+    const currentTimeString = `${String(currentHour).padStart(2, '0')}:${String(currentMinute).padStart(2, '0')}`;
 
-    const nextAppointment = await Appointment.findOne({
+    const upcomingAppointmentsQuery = {
         patient: patient._id,
-        date: { $gte: today },
+        $or: [
+            { date: { $gt: today } }, // Appointments on future dates
+            {
+                date: today, // Appointments on today's date
+                time: { $gte: currentTimeString } // And time is current or future
+            }
+        ],
         status: { $in: ['Pending', 'Confirmed', 'Now Serving', 'Up Next', 'Waiting'] }
-    }).sort('date time').populate('doctor', 'user').select('date time tokenNumber doctor');
+    };
+
+    const upcomingAppointmentsCount = await Appointment.countDocuments(upcomingAppointmentsQuery);
+
+    const nextAppointment = await Appointment.findOne(upcomingAppointmentsQuery)
+    .sort('date time').populate('doctor', 'user specialty').populate('hospital', 'name').select('date time tokenNumber doctor hospital');
 
     let nextAppointmentDetails = null;
     if (nextAppointment) {
@@ -292,6 +301,8 @@ const getPatientDashboardStats = asyncHandler(async (req, res) => {
             date: nextAppointment.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
             time: nextAppointment.time,
             doctorName: nextAppointment.doctor.user.name,
+            doctorSpecialty: nextAppointment.doctor.specialty, // Added doctor specialty
+            hospitalName: nextAppointment.hospital.name, // Added hospital name
             tokenNumber: nextAppointment.tokenNumber,
             timeUntil: timeDiffMinutes > 0 ? `+${timeDiffMinutes} min` : '-', // Simplified for display
         };
@@ -371,16 +382,37 @@ const getUpcomingAppointments = asyncHandler(async (req, res) => {
         throw new Error('Patient profile not found');
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const nowLocal = new Date();
+    const today = new Date(Date.UTC(nowLocal.getFullYear(), nowLocal.getMonth(), nowLocal.getDate()));
 
-    const upcomingAppointments = await Appointment.find({
+    const currentHour = nowLocal.getHours();
+    const currentMinute = nowLocal.getMinutes();
+    const currentTimeString = `${String(currentHour).padStart(2, '0')}:${String(currentMinute).padStart(2, '0')}`;
+
+    const upcomingAppointmentsQuery = {
         patient: patient._id,
-        date: { $gte: today },
+        $or: [
+            { date: { $gt: today } }, // Appointments on future dates
+            {
+                date: today, // Appointments on today's date
+                time: { $gte: currentTimeString } // And time is current or future
+            }
+        ],
         status: { $in: ['Pending', 'Confirmed', 'Now Serving', 'Up Next', 'Waiting'] },
-    }).sort('date time').populate('doctor', 'user').select('date time tokenNumber doctor');
+    };
 
-    res.json({ upcomingAppointments });
+    const upcomingAppointments = await Appointment.find(upcomingAppointmentsQuery).sort('date time').populate('doctor', 'user specialty').populate('hospital', 'name').select('date time tokenNumber doctor hospital');
+
+    res.json({ upcomingAppointments: upcomingAppointments.map(app => ({
+        _id: app._id,
+        date: app.date,
+        time: app.time,
+        token: app.tokenNumber, // Change tokenNumber to token
+        status: app.status,
+        doctorName: app.doctor.user.name,
+        doctorSpecialty: app.doctor.specialty,
+        hospitalName: app.hospital.name,
+    })) });
 });
 
 export { getPatients, getPatientProfile, updatePatientProfile, createPatientProfile, deletePatientProfile, getPatientDashboardStats, updateRewardPoints, getUpcomingAppointments };

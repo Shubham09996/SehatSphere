@@ -37,16 +37,16 @@ const AdminAnalyticsPage = () => {
             try {
                 setLoading(true);
                 const [kpisRes, userGrowthRes, revenueStreamsRes, topHospitalsRes] = await Promise.all([
-                    api.get('/admin/analytics/kpis'),
-                    api.get('/admin/analytics/user-growth'),
-                    api.get('/admin/analytics/revenue-streams'),
-                    api.get('/admin/analytics/top-hospitals'),
+                    api.get('/api/admin/analytics/kpis'),
+                    api.get('/api/admin/analytics/user-growth'),
+                    api.get('/api/admin/analytics/revenue-streams'),
+                    api.get('/api/admin/analytics/top-hospitals'),
                 ]);
 
                 setKpisData(kpisRes.data.kpis);
-                setUserGrowthChartData(userGrowthRes.data.userGrowth);
+                setUserGrowthChartData(userGrowthRes.data); // Corrected to directly use the array
                 setRevenueStreamsChartData(revenueStreamsRes.data.revenueStreams);
-                setTopHospitalsData(topHospitalsRes.data.topHospitals);
+                setTopHospitalsData(topHospitalsRes.data);
             } catch (err) {
                 setError(err);
             } finally {
@@ -65,7 +65,7 @@ const AdminAnalyticsPage = () => {
         return <div className="text-center text-red-500">Error loading analytics: {error.message}</div>;
     }
 
-    if (!kpisData || !userGrowthChartData || !revenueStreamsChartData || !topHospitalsData) {
+    if (!kpisData || userGrowthChartData.length === 0 || revenueStreamsChartData.length === 0 || topHospitalsData.length === 0) {
         return <div className="text-center text-muted-foreground">No analytics data found.</div>;
     }
 

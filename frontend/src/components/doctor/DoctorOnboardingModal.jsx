@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Stethoscope, Briefcase, Award, GraduationCap, DollarSign, Calendar, Clock, Heart, Phone, Hospital, User, Brain } from 'lucide-react';
 import api from '../../utils/api';
@@ -23,8 +23,27 @@ const DoctorOnboardingModal = ({ isOpen, onClose, doctorId, userId }) => {
         });
         return initialSchedule;
     });
+    const [hospitals, setHospitals] = useState([]); // New state for hospitals data
+    const [selectedHospital, setSelectedHospital] = useState(''); // New state for selected hospital ID
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+
+    // Fetch hospitals on component mount or when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            const fetchHospitals = async () => {
+                try {
+                    const res = await api.get('/api/hospitals');
+                    setHospitals(res.data);
+                    // Optionally, pre-select a hospital if doctorId is available and doctor has an assigned hospital
+                    // This would require fetching doctor details first
+                } catch (err) {
+                    console.error('Failed to fetch hospitals:', err);
+                }
+            };
+            fetchHospitals();
+        }
+    }, [isOpen]);
 
     const handleScheduleChange = (day, field, value) => {
         setWorkSchedule(prev => ({
@@ -39,6 +58,7 @@ const DoctorOnboardingModal = ({ isOpen, onClose, doctorId, userId }) => {
         setError(null);
 
         const doctorDetails = {
+            hospital: selectedHospital, // Add hospital to the details
             specialty,
             qualifications,
             experience: Number(experience),
@@ -102,6 +122,28 @@ const DoctorOnboardingModal = ({ isOpen, onClose, doctorId, userId }) => {
 
                         <form onSubmit={handleSubmit} className="space-y-5">
                             {error && <p className="text-red-500 text-center text-sm mb-4">{error}</p>}
+
+                            {/* Hospital Selection */}
+                            <div className="relative group">
+                                <select
+                                    id="hospital"
+                                    value={selectedHospital}
+                                    onChange={(e) => setSelectedHospital(e.target.value)}
+                                    className="w-full p-3 pl-10 pr-4 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-hs-gradient-middle dark:bg-muted/30"
+                                    required
+                                >
+                                    <option value="">Select your Hospital</option>
+                                    {hospitals.map(hosp => (
+                                        <option key={hosp._id} value={hosp._id}>{hosp.name}</option>
+                                    ))}
+                                </select>
+                                <label
+                                    htmlFor="hospital"
+                                    className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-hs-gradient-middle transition-colors pointer-events-none"
+                                >
+                                    <Hospital size={20} />
+                                </label>
+                            </div>
 
                             {/* Specialty */}
                             <div className="relative group">

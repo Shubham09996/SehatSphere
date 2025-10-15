@@ -3,8 +3,9 @@ import Appointment from '../models/Appointment.js';
 import Notification from '../models/Notification.js';
 import Patient from '../models/Patient.js';
 import Doctor from '../models/Doctor.js';
-import { sendSms } from '../services/twilioService.js';
+import { sendSms, makeCall } from '../services/twilioService.js';
 import User from '../models/User.js'; // Import User model
+import config from '../config/config.js'; // Import config
 
 // @desc    Get all appointments (Admin/Doctor only)
 // @route   GET /api/appointments
@@ -100,15 +101,15 @@ const createAppointment = asyncHandler(async (req, res) => {
       throw new Error('Doctor is not available for appointments');
   }
 
-  // Check for existing appointments at the same time for the doctor
-  const existingAppointment = await Appointment.findOne({ doctor: doctorId, date, time, status: { $ne: 'Cancelled' } });
+  // Check for existing appointments at the same time for the doctor and hospital
+  const existingAppointment = await Appointment.findOne({ doctor: doctorId, hospital: hospitalId, date, time, status: { $ne: 'Cancelled' } });
   if (existingAppointment) {
     res.status(400);
-    throw new Error('Doctor already has an appointment at this time');
+    throw new Error('Doctor already has an appointment at this time in this hospital');
   }
 
-  // Generate token number (simple sequential for the day)
-  const appointmentsToday = await Appointment.countDocuments({ doctor: doctorId, date: new Date(date), status: { $ne: 'Cancelled' } });
+  // Generate token number (simple sequential for the day, per doctor and hospital)
+  const appointmentsToday = await Appointment.countDocuments({ doctor: doctorId, hospital: hospitalId, date: new Date(date), status: { $ne: 'Cancelled' } });
   const tokenNumber = (appointmentsToday + 1).toString();
 
   const appointment = new Appointment({
@@ -125,18 +126,38 @@ const createAppointment = asyncHandler(async (req, res) => {
   const createdAppointment = await appointment.save();
 
   // Notify doctor and patient (using Twilio for SMS)
-  if (patient.user && patient.user.phoneNumber) {
+  // if (patient.user && patient.user.phoneNumber) {
+  //     const patientUser = await User.findById(patient.user);
+  //     if (patientUser && patientUser.phoneNumber) {
+  //       const msg = `Hello ${patientUser.name}, your appointment with Dr. ${doctor.user.name} on ${new Date(date).toDateString()} at ${time} is pending confirmation. Your token number is ${tokenNumber}.`;
+  //       sendSms(patientUser.phoneNumber, msg);
+  //     }
+  // }
+  // if (doctor.user && doctor.user.phoneNumber) {
+  //     const doctorUser = await User.findById(doctor.user);
+  //     if (doctorUser && doctorUser.phoneNumber) {
+  //       const msg = `Hello Dr. ${doctorUser.name}, a new appointment request from ${patient.user.name} on ${new Date(date).toDateString()} at ${time} is pending. Token: ${tokenNumber}.`;
+  //       sendSms(doctorUser.phoneNumber, msg);
+  //     }
+  // }
+
+  // Schedule Twilio call for patient 10 minutes before appointment
+  const appointmentDateTime = new Date(`${date}T${time}:00`);
+  const tenMinutesBeforeAppointment = new Date(appointmentDateTime.getTime() - 10 * 60 * 1000);
+  const currentTime = new Date();
+
+  const delay = tenMinutesBeforeAppointment.getTime() - currentTime.getTime();
+
+  if (delay > 0 && patient.user) {
       const patientUser = await User.findById(patient.user);
       if (patientUser && patientUser.phoneNumber) {
-        const msg = `Hello ${patientUser.name}, your appointment with Dr. ${doctor.user.name} on ${new Date(date).toDateString()} at ${time} is pending confirmation. Your token number is ${tokenNumber}.`;
-        sendSms(patientUser.phoneNumber, msg);
-      }
-  }
-  if (doctor.user && doctor.user.phoneNumber) {
-      const doctorUser = await User.findById(doctor.user);
-      if (doctorUser && doctorUser.phoneNumber) {
-        const msg = `Hello Dr. ${doctorUser.name}, a new appointment request from ${patient.user.name} on ${new Date(date).toDateString()} at ${time} is pending. Token: ${tokenNumber}.`;
-        sendSms(doctorUser.phoneNumber, msg);
+          const patientPhoneNumber = `+91${patientUser.phoneNumber}`; // Add +91 prefix
+          setTimeout(() => {
+              console.log(`Attempting to make call for patient ${patientUser.name} at ${patientPhoneNumber} for appointment at ${appointmentDateTime}`);
+              makeCall(patientPhoneNumber, config.twilio.recordedCallUrl)
+                  .catch(err => console.error("Error making scheduled call:", err));
+          }, delay);
+          console.log(`Twilio call scheduled for patient ${patientUser.name} at ${patientPhoneNumber} in ${delay / 1000} seconds.`);
       }
   }
 

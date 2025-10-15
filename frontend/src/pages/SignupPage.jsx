@@ -136,6 +136,8 @@ const SignupPage = () => {
     const [newlySignedUpUserId, setNewlySignedUpUserId] = useState(null);
     const [showDoctorOnboardingModal, setShowDoctorOnboardingModal] = useState(false);
     const [newlySignedUpDoctorId, setNewlySignedUpDoctorId] = useState(null);
+    const [hospitals, setHospitals] = useState([]); // New state for hospitals
+    const [selectedHospital, setSelectedHospital] = useState(''); // New state for selected hospital ID
 
     const navigate = useNavigate();
 
@@ -150,6 +152,19 @@ const SignupPage = () => {
             });
         }
     }, [googleClientId]);
+
+    // Fetch hospitals on component mount for the dropdown
+    useEffect(() => {
+        const fetchHospitals = async () => {
+            try {
+                const res = await api.get('/api/hospitals');
+                setHospitals(res.data);
+            } catch (err) {
+                console.error('Failed to fetch hospitals:', err);
+            }
+        };
+        fetchHospitals();
+    }, []); // Empty dependency array means this runs once on mount
 
     const handleCredentialResponse = async (response) => {
         if (response.credential) {
@@ -190,6 +205,12 @@ const SignupPage = () => {
             alert("Passwords do not match!");
             return;
         }
+        // Add validation for hospital selection if role is Doctor
+        if (selectedRole === 'Doctor' && !selectedHospital) {
+            alert("Please select a hospital for the doctor.");
+            return;
+        }
+
         try {
             const formData = new FormData();
             formData.append('fullName', fullName);
@@ -198,7 +219,16 @@ const SignupPage = () => {
             formData.append('password', password);
             formData.append('role', selectedRole);
             if (avatar) {
-                formData.append('profilePicture', avatar); // Change field name to 'profilePicture'
+                formData.append('profilePicture', avatar);
+            }
+            // Add hospital to form data if role is Doctor
+            if (selectedRole === 'Doctor' && selectedHospital) {
+                formData.append('hospital', selectedHospital);
+            }
+
+            // Log FormData contents for debugging
+            for (let [key, value] of formData.entries()) {
+                console.log(`FormData Key: ${key}, Value: ${value}`);
             }
 
             const res = await api.post('/api/users', formData, {
@@ -218,25 +248,12 @@ const SignupPage = () => {
                     setNewlySignedUpUserId(res.data.userId); // Assuming userId is returned by the backend
                     setShowOnboardingModal(true);
                 } else if (userRole === 'doctor' && res.data.specificProfileId) {
-                    // Removed direct navigation for doctors here
                     setNewlySignedUpDoctorId(res.data.specificProfileId);
                     setNewlySignedUpUserId(res.data.userId);
                     setShowDoctorOnboardingModal(true);
-
-                    // The following logic to fetch specialty is now redundant as it will be collected in onboarding
-                    // try {
-                    //     const doctorRes = await api.get(`/api/doctors/${res.data.specificProfileId}`);
-                    //     if (doctorRes.data && doctorRes.data.personalInfo && doctorRes.data.personalInfo.specialty) {
-                    //         localStorage.setItem('userSpecialty', doctorRes.data.personalInfo.specialty);
-                    //     }
-                    // } catch (fetchError) {
-                    //     console.error("Error fetching doctor specialty for signup:", fetchError);
-                    // }
-                    // navigate(`/${userRole}/dashboard`); // Redirect to respective dashboard after signup
                 } else {
                     navigate(`/${userRole}/dashboard`);
                 }
-
             }
         } catch (error) {
             console.error("Normal Signup Failed:", error);
@@ -362,6 +379,30 @@ const SignupPage = () => {
                             value={email} onChange={(e) => setEmail(e.target.value)} />
                         <Mail size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-hs-gradient-middle transition-colors" />
                     </div>
+                    {/* Hospital Selection for Doctor Role */}
+                    {selectedRole === 'Doctor' && (
+                        <div className="relative group">
+                            <select
+                                id="hospital-signup"
+                                value={selectedHospital}
+                                onChange={(e) => setSelectedHospital(e.target.value)}
+                                className="w-full p-3 pl-10 pr-4 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-hs-gradient-middle dark:bg-muted/30"
+                                required
+                            >
+                                <option value="">Select your Hospital</option>
+                                {hospitals.map(hosp => (
+                                    <option key={hosp._id} value={hosp._id}>{hosp.name}</option>
+                                ))}
+                            </select>
+                            <label
+                                htmlFor="hospital-signup"
+                                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-hs-gradient-middle transition-colors pointer-events-none"
+                            >
+                                <Building size={20} />
+                            </label>
+                        </div>
+                    )}
+
                     <div className="relative group">
                         <input onChange={(e) => setPassword(e.target.value)} type={showPassword ? 'text' : 'password'} placeholder="Password" className="w-full p-3 pl-10 pr-10 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-hs-gradient-middle dark:bg-muted/30" />
                         <Lock size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-hs-gradient-middle transition-colors" />

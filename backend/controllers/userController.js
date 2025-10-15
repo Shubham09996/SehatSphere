@@ -137,7 +137,7 @@ const authUser = asyncHandler(async (req, res) => {
 // @route   POST /api/users
 // @access  Public
 const registerUser = asyncHandler(async (req, res) => {
-  const { fullName, email, password, role, phoneNumber } = req.body;
+  const { fullName, email, password, role, phoneNumber, hospital } = req.body;
   const profilePictureFile = req.file; // Get the uploaded file from multer
 
   const userExists = await User.findOne({ email });
@@ -180,6 +180,7 @@ const registerUser = asyncHandler(async (req, res) => {
             medicalRegistrationNumber: `MRN-${Math.floor(1000 + Math.random() * 9000)}`,
             specialty: 'General Medicine',
             qualifications: 'MBBS',
+            hospital: hospital, // Pass the hospital ID here
             // other doctor defaults
         });
         specificProfileId = doctorProfile.medicalRegistrationNumber;
@@ -459,4 +460,44 @@ const deleteUser = asyncHandler(async (req, res) => {
     res.json({ message: 'User removed successfully' });
 });
 
-export { authUser, registerUser, getUserProfile, updateUserProfile, logoutUser, googleAuth, changePassword, updateNotificationPreferences, getUsers, updateUserRole, deleteUser };
+// @desc    Admin update user profile (Admin only)
+// @route   PUT /api/users/:id
+// @access  Private/Admin
+const adminUpdateUser = asyncHandler(async (req, res) => {
+    const userId = req.params.id;
+    const { name, email, phoneNumber, role, isVerified, status } = req.body;
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+    }
+
+    // Prevent admin from updating their own status/role if it would lock them out.
+    if (user._id.toString() === req.user._id.toString() && (status === 'Suspended' || role !== user.role)) {
+        res.status(400);
+        throw new Error('Admin cannot change their own status or role via this route');
+    }
+
+    user.name = name ?? user.name;
+    user.email = email ?? user.email;
+    user.phoneNumber = phoneNumber ?? user.phoneNumber;
+    user.role = role ?? user.role;
+    user.isVerified = isVerified ?? user.isVerified;
+    user.status = status ?? user.status; // e.g., Active, Suspended, Deactivated
+
+    const updatedUser = await user.save();
+
+    res.json({
+        _id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        phoneNumber: updatedUser.phoneNumber,
+        isVerified: updatedUser.isVerified,
+        status: updatedUser.status,
+    });
+});
+
+export { authUser, registerUser, getUserProfile, updateUserProfile, logoutUser, googleAuth, changePassword, updateNotificationPreferences, getUsers, updateUserRole, deleteUser, adminUpdateUser };

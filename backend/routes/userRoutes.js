@@ -12,6 +12,7 @@ import {
   getUsers, // NEW: Import getUsers for Admin
   updateUserRole, // NEW: Import updateUserRole for Admin
   deleteUser, // NEW: Import deleteUser for Admin
+  adminUpdateUser, // NEW: Import adminUpdateUser for Admin
 } from '../controllers/userController.js';
 import { protect, authorizeRoles } from '../middleware/authMiddleware.js';
 import multer from 'multer';
@@ -34,6 +35,6 @@ router.route('/notification-preferences').put(protect, updateNotificationPrefere
 // NEW: Admin User Management Routes
 router.route('/all').get(protect, authorizeRoles('Admin'), getUsers);
 router.route('/:id/role').put(protect, authorizeRoles('Admin'), updateUserRole);
-router.route('/:id').delete(protect, authorizeRoles('Admin'), deleteUser);
+router.route('/:id').put(protect, authorizeRoles('Admin'), adminUpdateUser).delete(protect, authorizeRoles('Admin'), deleteUser);
 
 export default router;

@@ -12,6 +12,7 @@ import {
   updateAppointmentStatus,
   getDoctorHourlyActivity,
   getDoctorAppointmentQueue,
+  getDoctorDailyAvailability, // Import the new controller function
 } from '../controllers/doctorController.js';
 import { protect, authorizeRoles } from '../middleware/authMiddleware.js';
 
@@ -29,6 +30,7 @@ router
   .delete(protect, authorizeRoles('Admin'), deleteDoctorProfile);
 router.route('/schedule/:id').put(protect, authorizeRoles('Doctor', 'Admin'), updateDoctorSchedule);
 router.route('/available-slots/:doctorId').get(getAvailableDoctorSlots);
+router.route('/daily-availability/:doctorId').get(getDoctorDailyAvailability); // New route for daily availability
 router.route('/appointments/:id/status').put(protect, authorizeRoles('Doctor'), updateAppointmentStatus);
 
 export default router;

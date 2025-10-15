@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-const BookingCalendar = ({ onDateSelect, getDayStatus, initialDate }) => {
+const BookingCalendar = ({ onDateSelect, getDayStatus, initialDate, onMonthChange }) => {
     const [currentDate, setCurrentDate] = useState(initialDate || new Date());
     const [selectedDay, setSelectedDay] = useState(initialDate.getDate());
 
-    const daysOfWeek = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    const daysOfWeek = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']; // Changed to unique abbreviations
 
     const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
     const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
@@ -47,6 +47,9 @@ const BookingCalendar = ({ onDateSelect, getDayStatus, initialDate }) => {
         const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + offset, 1);
         setCurrentDate(newDate);
         setSelectedDay(null); // Reset selection on month change
+        if (onMonthChange) {
+            onMonthChange(newDate.getMonth(), newDate.getFullYear());
+        }
     };
 
     return (

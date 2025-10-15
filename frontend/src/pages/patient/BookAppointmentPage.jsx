@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { hospitalData } from '../../data/doctorsData';
+import api from '../../utils/api'; // api.js se import karein
 
 // Import New and Redesigned Step Components
 import BookingStepper from '../../components/patient/booking/BookingStepper';
@@ -16,10 +16,37 @@ const steps = ["Hospital", "Department", "Date & Slot", "Confirm"];
 const BookAppointmentPage = () => {
     const [currentStep, setCurrentStep] = useState(1);
     const [isFollowUp, setIsFollowUp] = useState(false);
+    const [hospitals, setHospitals] = useState([]); // New state for hospitals
+    const [loadingHospitals, setLoadingHospitals] = useState(true);
+    const [errorHospitals, setErrorHospitals] = useState(null);
     const [bookingDetails, setBookingDetails] = useState({
         hospital: null, department: null, doctor: null,
         date: null, time: null, token: null,
     });
+
+    useEffect(() => {
+        const fetchHospitals = async () => {
+            try {
+                setLoadingHospitals(true);
+                const response = await api.get('/api/hospitals');
+                setHospitals(response.data);
+            } catch (err) {
+                setErrorHospitals(err);
+            } finally {
+                setLoadingHospitals(false);
+            }
+        };
+
+        fetchHospitals();
+    }, []);
+
+    if (loadingHospitals) {
+        return <div className="text-center text-foreground">Loading hospitals...</div>;
+    }
+
+    if (errorHospitals) {
+        return <div className="text-center text-red-500">Error loading hospitals: {errorHospitals.message}</div>;
+    }
 
     const variants = {
         enter: { opacity: 0, x: 30 },
@@ -28,21 +55,30 @@ const BookAppointmentPage = () => {
     };
 
     const handleNextStep = (data) => {
-        setBookingDetails(prev => ({ ...prev, ...data }));
-        if (currentStep === 2 && isFollowUp) {
-            setCurrentStep(2.5);
-        } else if (currentStep === 2.5) {
+        setBookingDetails(prev => {
+            const newDetails = { ...prev, ...data };
+            return newDetails;
+        });
+        // Step transition logic refined
+        if (currentStep === 1) { // After selecting hospital, go to department
+            setCurrentStep(2);
+        } else if (currentStep === 2) { // After selecting department, always go to select doctor
+            setCurrentStep(2.5); // Ensure we always go to Step2aSelectDoctor
+        } else if (currentStep === 2.5) { // After selecting doctor, go to date & slot
             setCurrentStep(3);
-        } else {
-             setCurrentStep(prev => prev + 1);
+        } else if (currentStep === 3) { // After selecting date & slot, go to confirmation
+            setCurrentStep(4);
+        } else if (currentStep === 4) { // After confirmation, go to success
+            setCurrentStep(5);
         }
     };
 
     const handlePrevStep = () => {
         if (currentStep === 5) return; // Can't go back from success screen
-        if (currentStep === 3 && isFollowUp) setCurrentStep(2.5);
+        if (currentStep === 4) setCurrentStep(3);
+        else if (currentStep === 3) setCurrentStep(2.5);
         else if (currentStep === 2.5) setCurrentStep(2);
-        else if (currentStep > 1) setCurrentStep(Math.floor(currentStep - 1));
+        else if (currentStep === 2) setCurrentStep(1);
     };
     
     const startOver = () => {
@@ -80,7 +116,7 @@ const BookAppointmentPage = () => {
                         exit="exit"
                         transition={{ duration: 0.3, type: 'tween' }}
                     >
-                        {currentStep === 1 && <Step1SelectHospital onNext={handleNextStep} data={hospitalData} isFollowUp={isFollowUp} setIsFollowUp={setIsFollowUp} />}
+                        {currentStep === 1 && <Step1SelectHospital onNext={handleNextStep} data={hospitals} isFollowUp={isFollowUp} setIsFollowUp={setIsFollowUp} />}
                         {currentStep === 2 && <Step2SelectDepartment onNext={handleNextStep} details={bookingDetails} onBack={handlePrevStep} />}
                         {currentStep === 2.5 && <Step2aSelectDoctor onNext={handleNextStep} details={bookingDetails} onBack={handlePrevStep} />}
                         {currentStep === 3 && <Step3SelectDateAndSlot onNext={handleNextStep} details={bookingDetails} onBack={handlePrevStep} />}

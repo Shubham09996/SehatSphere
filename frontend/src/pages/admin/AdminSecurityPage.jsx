@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Lock, Activity, Users, CheckCircle, XCircle, AlertTriangle, Monitor, Smartphone } from 'lucide-react';
-import { securityData as initialData } from '../../data/securityData';
+// Removed: import { securityData as initialData } from '../../data/securityData';
+import api from '../../utils/api';
+import { toast } from 'react-toastify';
 
 // Reusable Card Component
 const SecurityCard = ({ title, icon, children, className = '' }) => (
@@ -44,14 +46,57 @@ const SecurityScore = ({ score }) => (
 
 // --- Main Security Page ---
 const AdminSecurityPage = () => {
-    const [auditLog, setAuditLog] = useState(initialData.auditLog);
-    const [activeSessions, setActiveSessions] = useState(initialData.activeSessions);
+    const [securityMetrics, setSecurityMetrics] = useState(null);
+    const [auditLog, setAuditLog] = useState([]);
+    const [activeSessions, setActiveSessions] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     const logIcons = { Success: <CheckCircle size={16} className="text-green-500"/>, Failed: <XCircle size={16} className="text-red-500"/>, Info: <AlertTriangle size={16} className="text-yellow-500"/> };
 
-    const revokeSession = (id) => {
-        setActiveSessions(sessions => sessions.filter(s => s.id !== id));
+    const fetchSecurityData = async () => {
+        try {
+            setLoading(true);
+            const [metricsRes, sessionsRes, auditLogRes] = await Promise.all([
+                api.get('/api/admin/security/metrics'),
+                api.get('/api/admin/security/active-sessions'),
+                api.get('/api/admin/recent-log'), // Using existing API for audit log
+            ]);
+            setSecurityMetrics(metricsRes.data);
+            setActiveSessions(sessionsRes.data);
+            setAuditLog(auditLogRes.data);
+        } catch (err) {
+            setError(err.response?.data?.message || err.message);
+            toast.error(err.response?.data?.message || err.message);
+        } finally {
+            setLoading(false);
+        }
     };
+
+    useEffect(() => {
+        fetchSecurityData();
+    }, []);
+
+    const revokeSession = async (id) => {
+        if (window.confirm('Are you sure you want to revoke this session?')) {
+            try {
+                await api.put(`/api/admin/security/revoke-session/${id}`);
+                toast.success('Session revoked successfully!');
+                fetchSecurityData(); // Re-fetch data to update active sessions
+            } catch (err) {
+                setError(err.response?.data?.message || err.message);
+                toast.error(err.response?.data?.message || err.message);
+            }
+        }
+    };
+
+    if (loading) {
+        return <div className="text-center text-foreground p-8">Loading security data...</div>;
+    }
+
+    if (error) {
+        return <div className="text-center text-red-500 p-8">Error: {error}</div>;
+    }
 
     return (
         <div className="space-y-8">
@@ -66,13 +111,13 @@ const AdminSecurityPage = () => {
                 {/* Left Column */}
                 <div className="lg:col-span-1 space-y-8">
                     <SecurityCard title="Security Posture" icon={<Shield size={20}/>}>
-                        <SecurityScore score={initialData.securityScore} />
+                        <SecurityScore score={securityMetrics.securityScore} />
                         <p className="text-center text-sm text-muted-foreground mt-4">Your platform security is rated as <strong className="text-green-500">Excellent</strong>.</p>
                     </SecurityCard>
 
                     <SecurityCard title="Two-Factor Authentication" icon={<Lock size={20}/>}>
                         <div className="bg-muted p-4 rounded-lg text-center">
-                            <p className="font-bold text-3xl bg-gradient-to-r from-hs-gradient-start to-hs-gradient-end text-transparent bg-clip-text">85%</p>
+                            <p className="font-bold text-3xl bg-gradient-to-r from-hs-gradient-start to-hs-gradient-end text-transparent bg-clip-text">{securityMetrics.twoFactorAuth.enabledPercentage}%</p>
                             <p className="text-sm text-muted-foreground mt-1">of Admins & Doctors have 2FA enabled.</p>
                         </div>
                         <button className="mt-4 w-full font-semibold py-2.5 px-4 rounded-lg border border-border hover:bg-muted transition-colors">
@@ -92,13 +137,13 @@ const AdminSecurityPage = () => {
                                     className="flex items-center justify-between text-sm p-2 rounded-md hover:bg-muted"
                                 >
                                     <div className="flex items-center gap-3">
-                                        {logIcons[log.status]}
+                                        {logIcons[log.status || 'Info']}
                                         <div>
-                                            <span className="font-semibold text-foreground mr-2">{log.event}</span>
-                                            <span className="text-muted-foreground text-xs">by {log.user}</span>
+                                            <span className="font-semibold text-foreground mr-2">{log.action}</span>
+                                            <span className="text-muted-foreground text-xs">by {log.user || 'System'}</span>
                                         </div>
                                     </div>
-                                    <span className="text-xs text-muted-foreground flex-shrink-0">{log.timestamp}</span>
+                                    <span className="text-xs text-muted-foreground flex-shrink-0">{new Date(log.timestamp).toLocaleString()}</span>
                                 </motion.div>
                             ))}
                             </AnimatePresence>
@@ -114,7 +159,7 @@ const AdminSecurityPage = () => {
                                     className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-muted p-3 rounded-lg"
                                 >
                                     <div className="flex items-center gap-3">
-                                        {session.device.includes('iPhone') ? <Smartphone size={24} className="text-muted-foreground"/> : <Monitor size={24} className="text-muted-foreground"/>}
+                                        {session.device.includes('iPhone') || session.device.includes('Android') ? <Smartphone size={24} className="text-muted-foreground"/> : <Monitor size={24} className="text-muted-foreground"/>}
                                         <div>
                                             <p className="font-semibold text-foreground text-sm">{session.user}</p>
                                             <p className="text-xs text-muted-foreground">{session.device} • {session.ip} ({session.location})</p>
