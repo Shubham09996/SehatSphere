@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
-    Stethoscope, User, Heart, Shield, Eye, EyeOff, Mail, Lock, Building, ShieldCheck, HeartHandshake, Sparkles, TestTube2, BriefcaseMedical, FileText
+    Stethoscope, User, Heart, Shield, Eye, EyeOff, Mail, Lock, Building, ShieldCheck, HeartHandshake, Sparkles, TestTube2, BriefcaseMedical, FileText, Phone
 } from 'lucide-react';
+import api from '../utils/api'; // Import the configured axios instance
+import { useNavigate } from 'react-router-dom';
 
 // Self-contained Google Icon to remove dependency errors
 const GoogleIcon = () => (
@@ -16,16 +18,16 @@ const GoogleIcon = () => (
 
 // Data for role selection
 const roleData = {
-    patient: { icon: User, label: 'Patient' },
-    doctor: { icon: Stethoscope, label: 'Doctor' },
-    shop: { icon: Building, label: 'Shop' },
-    donor: { icon: Heart, label: 'Donor' },
-    admin: { icon: Shield, label: 'Admin' }
+    Patient: { icon: User, label: 'Patient' },
+    Doctor: { icon: Stethoscope, label: 'Doctor' },
+    Shop: { icon: Building, label: 'Shop' },
+    Donor: { icon: Heart, label: 'Donor' },
+    Admin: { icon: Shield, label: 'Admin' }
 };
 
 // Mock data for the left promotional panel based on role
 const roleInfo = {
-    patient: {
+    Patient: {
         title: 'Access your Health Profile',
         description: 'Book appointments, view prescriptions, and track your health journey.',
         features: [
@@ -34,7 +36,7 @@ const roleInfo = {
             { icon: ShieldCheck, title: 'Secure Health Records', text: 'Your health data is encrypted and secure with us.' }
         ]
     },
-    doctor: {
+    Doctor: {
         title: 'Manage Your Practice',
         description: 'Streamline patient management, consultations, and prescriptions.',
         features: [
@@ -43,7 +45,7 @@ const roleInfo = {
             { icon: User, title: 'Patient Record Access', text: 'Securely access and update patient health records.' }
         ]
     },
-    shop: {
+    Shop: {
         title: 'Pharmacy & Lab Portal',
         description: 'Manage inventory, process orders, and connect with customers.',
         features: [
@@ -52,7 +54,7 @@ const roleInfo = {
             { icon: Sparkles, title: 'Wider Customer Reach', text: 'Connect with a larger network of patients.' }
         ]
     },
-    donor: {
+    Donor: {
         title: 'Become a Lifesaver',
         description: 'Join our donor network to contribute and save lives.',
         features: [
@@ -61,7 +63,7 @@ const roleInfo = {
             { icon: User, title: 'Donor Community', text: 'Be a part of a community making a difference.' }
         ]
     },
-    admin: {
+    Admin: {
         title: 'Administrator Dashboard',
         description: 'Oversee the platform, manage users, and ensure smooth operations.',
         features: [
@@ -117,11 +119,111 @@ const PasswordStrengthMeter = ({ password }) => {
 };
 
 const SignupPage = () => {
+    const [fullName, setFullName] = useState(''); // State for full name input
+    const [phoneNumber, setPhoneNumber] = useState(''); // State for phone number input
+    const [email, setEmail] = useState(''); // State for email input
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [selectedRole, setSelectedRole] = useState('patient'); // State for selected role
+    const [selectedRole, setSelectedRole] = useState('Patient'); // State for selected role
+    const [avatar, setAvatar] = useState(null); // State for selected avatar file
+    const [avatarPreview, setAvatarPreview] = useState(''); // State for avatar preview URL
+
+    const navigate = useNavigate();
+
+    // Google Auth related states and functions
+    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID; // Access Client ID from environment
+
+    useEffect(() => {
+        if (window.google && googleClientId) {
+            window.google.accounts.id.initialize({
+                client_id: googleClientId,
+                callback: handleCredentialResponse,
+            });
+        }
+    }, [googleClientId]);
+
+    const handleCredentialResponse = async (response) => {
+        if (response.credential) {
+            try {
+                const res = await api.post('/users/google-auth', { idToken: response.credential });
+                if (res.data) {
+                    console.log("Google Signup Successful:", res.data);
+                    const userRole = res.data.role.toLowerCase();
+                    navigate(`/${userRole}/dashboard`);
+                }
+            } catch (error) {
+                console.error("Google Signup Failed:", error);
+                alert("Google signup failed. Please try again.");
+            }
+        }
+    };
+
+    const handleGoogleSignupClick = () => {
+        if (window.google) {
+            window.google.accounts.id.prompt(); // Trigger Google One Tap or pop-up
+        }
+    };
+
+    const handleAvatarChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setAvatar(file);
+            setAvatarPreview(URL.createObjectURL(file));
+        } else {
+            setAvatar(null);
+            setAvatarPreview('');
+        }
+    };
+
+    const handleNormalSignup = async (e) => {
+        e.preventDefault();
+        if (password !== confirmPassword) {
+            alert("Passwords do not match!");
+            return;
+        }
+        try {
+            const formData = new FormData();
+            formData.append('fullName', fullName);
+            formData.append('phoneNumber', phoneNumber);
+            formData.append('email', email);
+            formData.append('password', password);
+            formData.append('role', selectedRole);
+            if (avatar) {
+                formData.append('profilePicture', avatar); // Change field name to 'profilePicture'
+            }
+
+            const res = await api.post('/api/users', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+            if (res.data) {
+                console.log("Normal Signup Successful:", res.data);
+                localStorage.setItem('profilePicture', res.data.profilePicture); // Save profile picture to localStorage
+                localStorage.setItem('userName', res.data.name); // Save user name to localStorage
+                localStorage.setItem(`${userRole}Id`, res.data.specificProfileId); // Save specificProfileId to localStorage dynamically
+                const userRole = res.data.role.toLowerCase();
+
+                if (userRole === 'doctor' && res.data.specificProfileId) {
+                    // Fetch doctor's specialty to store in localStorage
+                    try {
+                        const doctorRes = await api.get(`/api/doctors/${res.data.specificProfileId}`);
+                        if (doctorRes.data && doctorRes.data.personalInfo && doctorRes.data.personalInfo.specialty) {
+                            localStorage.setItem('userSpecialty', doctorRes.data.personalInfo.specialty);
+                        }
+                    } catch (fetchError) {
+                        console.error("Error fetching doctor specialty for signup:", fetchError);
+                    }
+                }
+                navigate(`/${userRole}/dashboard`); // Redirect to respective dashboard after signup
+            }
+        } catch (error) {
+            console.error("Normal Signup Failed:", error);
+            alert(error.response?.data?.message || "Signup failed. Please try again.");
+        }
+    };
 
     const currentRoleInfo = roleInfo[selectedRole];
 
@@ -204,12 +306,41 @@ const SignupPage = () => {
                     </div>
 
                     {/* Form Inputs */}
+                    {/* Avatar Upload */}
+                    <div className="flex items-center space-x-4 mb-4">
+                        <div className="w-20 h-20 rounded-full border-2 border-border flex flex-col items-center justify-center bg-background relative overflow-hidden">
+                            {avatarPreview ? (
+                                <img src={avatarPreview} alt="Avatar Preview" className="w-full h-full object-cover" />
+                            ) : (
+                                <>
+                                    <span className="text-sm font-semibold text-muted-foreground">Avatar</span>
+                                    <User size={30} className="text-muted-foreground mt-1" />
+                                </>
+                            )}
+                            {/* Hidden input for file selection */}
+                            <input id="avatar-upload" type="file" className="hidden" accept="image/*" onChange={handleAvatarChange} />
+                        </div>
+                        <div className="flex flex-col justify-center">
+                            <label htmlFor="avatar-upload" className="cursor-pointer bg-muted hover:bg-muted/70 text-foreground text-sm font-semibold py-2 px-4 rounded-lg transition-colors">
+                                Upload new avatar
+                            </label>
+                            <p className="text-xs text-muted-foreground mt-1">Max 2MB. JPG, PNG, GIF.</p>
+                        </div>
+                    </div>
+                    
                     <div className="relative group">
-                        <input type="text" placeholder="Full Name" className="w-full p-3 pl-10 pr-4 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-hs-gradient-middle dark:bg-muted/30" />
+                        <input type="text" placeholder="Full Name" className="w-full p-3 pl-10 pr-4 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-hs-gradient-middle dark:bg-muted/30" 
+                            value={fullName} onChange={(e) => setFullName(e.target.value)} />
                         <User size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-hs-gradient-middle transition-colors" />
                     </div>
+                    <div className="relative group">
+                        <input type="tel" placeholder="Phone Number" className="w-full p-3 pl-10 pr-4 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-hs-gradient-middle dark:bg-muted/30" 
+                            value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
+                        <Phone size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-hs-gradient-middle transition-colors" />
+                    </div>
                      <div className="relative group">
-                        <input type="email" placeholder="your.email@example.com" className="w-full p-3 pl-10 pr-4 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-hs-gradient-middle dark:bg-muted/30" />
+                        <input type="email" placeholder="your.email@example.com" className="w-full p-3 pl-10 pr-4 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-hs-gradient-middle dark:bg-muted/30" 
+                            value={email} onChange={(e) => setEmail(e.target.value)} />
                         <Mail size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-hs-gradient-middle transition-colors" />
                     </div>
                     <div className="relative group">
@@ -240,6 +371,7 @@ const SignupPage = () => {
                         className="w-full bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-primary-foreground py-3 rounded-lg font-semibold text-lg shadow-lg hover:shadow-xl hover:opacity-95 transition-all duration-300"
                         whileHover={{ scale: 1.01 }}
                         whileTap={{ scale: 0.99 }}
+                        onClick={handleNormalSignup}
                     >
                         Create Account
                     </motion.button>
@@ -249,7 +381,12 @@ const SignupPage = () => {
                         <span className="text-muted-foreground text-xs">OR CONTINUE WITH</span>
                         <div className="flex-grow border-t border-border"></div>
                     </div>
-                    <motion.button className="w-full flex items-center justify-center gap-3 py-3 border border-border rounded-lg bg-background hover:bg-muted transition-colors dark:bg-muted/30 dark:hover:bg-muted/50" whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }}>
+                    <motion.button 
+                        className="w-full flex items-center justify-center gap-3 py-3 border border-border rounded-lg bg-background hover:bg-muted transition-colors dark:bg-muted/30 dark:hover:bg-muted/50"
+                        whileHover={{ y: -2 }} 
+                        whileTap={{ scale: 0.98 }}
+                        onClick={handleGoogleSignupClick}
+                    >
                         <GoogleIcon />
                         <span className="font-semibold text-foreground">Sign up with Google</span>
                     </motion.button>

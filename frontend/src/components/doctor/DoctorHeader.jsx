@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Bell, Menu, Sun, Moon, User, Settings, LogOut, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext.jsx';
-import { doctorData } from '../../data/doctorData.js';
+import api from '../../utils/api'; // Import the configured axios instance
 
 // Reusable animated switch toggle for the status
 const SwitchToggle = ({ enabled, setEnabled, labels }) => (
@@ -31,6 +31,10 @@ const DoctorHeader = ({ isSidebarOpen, setIsSidebarOpen }) => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isAvailable, setIsAvailable] = useState(true);
     const dropdownRef = useRef(null);
+    const navigate = useNavigate();
+    const [userProfilePicture, setUserProfilePicture] = useState('');
+    const [userName, setUserName] = useState('Doctor');
+    const [userSpecialty, setUserSpecialty] = useState('');
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -44,6 +48,34 @@ const DoctorHeader = ({ isSidebarOpen, setIsSidebarOpen }) => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, [dropdownRef]);
+
+    // Load user data from localStorage
+    useEffect(() => {
+        const storedProfilePicture = localStorage.getItem('profilePicture');
+        const storedUserName = localStorage.getItem('userName'); // Assuming userName is stored in localStorage
+        const storedUserSpecialty = localStorage.getItem('userSpecialty'); // Assuming userSpecialty is stored in localStorage
+
+        if (storedProfilePicture) {
+            setUserProfilePicture(storedProfilePicture);
+        }
+        if (storedUserName) {
+            setUserName(storedUserName);
+        }
+        if (storedUserSpecialty) {
+            setUserSpecialty(storedUserSpecialty);
+        }
+    }, []);
+
+    const handleLogout = async () => {
+        try {
+            await api.post('/api/users/logout');
+            localStorage.clear(); // Clear all local storage items
+            navigate('/login');
+        } catch (error) {
+            console.error("Logout failed:", error);
+            alert("Logout failed. Please try again.");
+        }
+    };
 
     return (
         <header className="flex items-center justify-between p-4 bg-card border-b border-border sticky top-0 z-40">
@@ -90,10 +122,14 @@ const DoctorHeader = ({ isSidebarOpen, setIsSidebarOpen }) => {
                 {/* Profile Dropdown */}
                 <div className="relative" ref={dropdownRef}>
                     <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="flex items-center gap-2 group">
-                        <img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=80&h=80&fit=crop" alt="Dr. Sharma" className="w-9 h-9 rounded-full group-hover:ring-2 group-hover:ring-primary transition-all"/>
+                        {userProfilePicture ? (
+                            <img src={userProfilePicture} alt={userName} className="w-9 h-9 rounded-full group-hover:ring-2 group-hover:ring-primary transition-all"/>
+                        ) : (
+                            <div className="w-9 h-9 rounded-full bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end flex items-center justify-center text-white font-bold">{userName.charAt(0)}</div>
+                        )}
                         <div className="hidden lg:block text-left">
-                            <p className="font-bold text-sm text-foreground">{doctorData.doctorInfo.name}</p>
-                            <p className="text-xs text-muted-foreground">{doctorData.doctorInfo.specialty}</p>
+                            <p className="font-bold text-sm text-foreground">{userName}</p>
+                            <p className="text-xs text-muted-foreground">{userSpecialty}</p>
                         </div>
                         <ChevronDown size={16} className={`hidden lg:block text-muted-foreground transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}/>
                     </button>
@@ -106,8 +142,8 @@ const DoctorHeader = ({ isSidebarOpen, setIsSidebarOpen }) => {
                             className="absolute right-0 mt-2 w-64 bg-card border border-border rounded-lg shadow-lg z-50"
                         >
                             <div className="p-4 border-b border-border">
-                                <p className="font-bold text-foreground">{doctorData.doctorInfo.name}</p>
-                                <p className="text-sm text-muted-foreground">{doctorData.doctorInfo.specialty}</p>
+                                <p className="font-bold text-foreground">{userName}</p>
+                                <p className="text-sm text-muted-foreground">{userSpecialty}</p>
                             </div>
                             <div className="p-2">
                                 <div className="p-2">
@@ -116,7 +152,7 @@ const DoctorHeader = ({ isSidebarOpen, setIsSidebarOpen }) => {
                                 <Link to="/doctor/profile" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-3 w-full px-3 py-2 text-sm text-foreground hover:bg-muted rounded-md"><User size={16}/> My Profile</Link>
                                 <Link to="/doctor/settings" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-3 w-full px-3 py-2 text-sm text-foreground hover:bg-muted rounded-md"><Settings size={16}/> Settings</Link>
                                 <div className="h-px bg-border my-1"></div>
-                                <button className="flex items-center gap-3 w-full px-3 py-2 text-sm text-red-500 hover:bg-muted rounded-md"><LogOut size={16}/> Logout</button>
+                                <button onClick={handleLogout} className="flex items-center gap-3 w-full px-3 py-2 text-sm text-red-500 hover:bg-muted rounded-md"><LogOut size={16}/> Logout</button>
                             </div>
                         </motion.div>
                     )}

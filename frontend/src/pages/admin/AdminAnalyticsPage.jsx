@@ -1,15 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { IndianRupee, Users, Clock, Star, TrendingUp, DollarSign } from 'lucide-react';
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend } from 'recharts';
-import { deepAnalyticsData as data } from '../../data/deepAnalyticsData';
+import { BarChart, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { Award, UserCheck, DollarSign, Hospital, TrendingUp, TrendingDown } from 'lucide-react';
+import api from '../../utils/api'; // api.js se import karein
 
 // Reusable Components
 const KpiCard = ({ title, value, change, icon, color }) => (
     <div className="bg-card p-5 rounded-xl border border-border/70 shadow-sm">
         <div className="flex items-center gap-3"><div className={`p-2 rounded-lg bg-${color}-500/10 text-${color}-500`}>{icon}</div><p className="text-sm font-semibold text-muted-foreground">{title}</p></div>
         <p className="text-3xl font-bold text-foreground mt-4">{value}</p>
-        <p className={`text-xs font-semibold ${change.startsWith('+') ? 'text-green-500' : 'text-red-500'}`}>{change}</p>
+        <p className={`text-xs font-semibold ${change && change.startsWith('+') ? 'text-green-500' : 'text-red-500'}`}>{change}</p>
     </div>
 );
 
@@ -23,7 +23,51 @@ const ChartCard = ({ title, children }) => (
 
 const AdminAnalyticsPage = () => {
     const [timeRange, setTimeRange] = useState('Last 30 Days');
+    const [kpisData, setKpisData] = useState(null);
+    const [userGrowthChartData, setUserGrowthChartData] = useState([]);
+    const [revenueStreamsChartData, setRevenueStreamsChartData] = useState([]);
+    const [topHospitalsData, setTopHospitalsData] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
     const COLORS = ['hsl(var(--primary))', '#00C49F', '#FFBB28'];
+
+    useEffect(() => {
+        const fetchAdminAnalytics = async () => {
+            try {
+                setLoading(true);
+                const [kpisRes, userGrowthRes, revenueStreamsRes, topHospitalsRes] = await Promise.all([
+                    api.get('/admin/analytics/kpis'),
+                    api.get('/admin/analytics/user-growth'),
+                    api.get('/admin/analytics/revenue-streams'),
+                    api.get('/admin/analytics/top-hospitals'),
+                ]);
+
+                setKpisData(kpisRes.data.kpis);
+                setUserGrowthChartData(userGrowthRes.data.userGrowth);
+                setRevenueStreamsChartData(revenueStreamsRes.data.revenueStreams);
+                setTopHospitalsData(topHospitalsRes.data.topHospitals);
+            } catch (err) {
+                setError(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchAdminAnalytics();
+    }, []);
+
+    if (loading) {
+        return <div className="text-center text-foreground">Loading analytics...</div>;
+    }
+
+    if (error) {
+        return <div className="text-center text-red-500">Error loading analytics: {error.message}</div>;
+    }
+
+    if (!kpisData || !userGrowthChartData || !revenueStreamsChartData || !topHospitalsData) {
+        return <div className="text-center text-muted-foreground">No analytics data found.</div>;
+    }
 
     return (
         <div className="space-y-8">
@@ -40,16 +84,16 @@ const AdminAnalyticsPage = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <KpiCard title="Total Revenue" value={data.kpis.totalRevenue.value} change={data.kpis.totalRevenue.change} icon={<IndianRupee size={20}/>} color="green"/>
-                <KpiCard title="New User Growth" value={data.kpis.newUserGrowth.value} change={data.kpis.newUserGrowth.change} icon={<Users size={20}/>} color="blue"/>
-                <KpiCard title="Avg. Wait Time" value={data.kpis.avgWaitTime.value} change={data.kpis.avgWaitTime.change} icon={<Clock size={20}/>} color="orange"/>
-                <KpiCard title="Platform Rating" value={data.kpis.platformRating.value} change={data.kpis.platformRating.change} icon={<Star size={20}/>} color="yellow"/>
+                <KpiCard title="Total Revenue" value={kpisData.totalRevenue.value} change={kpisData.totalRevenue.change} icon={<DollarSign size={20}/>} color="green"/>
+                <KpiCard title="New User Growth" value={kpisData.newUserGrowth.value} change={kpisData.newUserGrowth.change} icon={<UserCheck size={20}/>} color="blue"/>
+                <KpiCard title="Avg. Wait Time" value={kpisData.avgWaitTime.value} change={kpisData.avgWaitTime.change} icon={<TrendingUp size={20}/>} color="orange"/>
+                <KpiCard title="Platform Rating" value={kpisData.platformRating.value} change={kpisData.platformRating.change} icon={<Award size={20}/>} color="yellow"/>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
                 <div className="lg:col-span-3"><ChartCard title="User Growth Analysis">
                     <ResponsiveContainer>
-                        <AreaChart data={data.userGrowth} margin={{ left: -20, top: 10, right: 10, bottom: 0 }}>
+                        <AreaChart data={userGrowthChartData} margin={{ left: -20, top: 10, right: 10, bottom: 0 }}>
                             <defs><linearGradient id="colorPatients" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4}/><stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/></linearGradient></defs>
                             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                             <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} axisLine={false} tickLine={false} />
@@ -62,7 +106,7 @@ const AdminAnalyticsPage = () => {
                 </ChartCard></div>
                 <div className="lg:col-span-2"><ChartCard title="Revenue Streams">
                      <ResponsiveContainer>
-                        <PieChart><Tooltip/><Pie data={data.revenueStreams} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius="60%" outerRadius="80%" paddingAngle={5}>{data.revenueStreams.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}</Pie><Legend iconSize={10}/></PieChart>
+                        <PieChart><Tooltip/><Pie data={revenueStreamsChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius="60%" outerRadius="80%" paddingAngle={5}>{revenueStreamsChartData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}</Pie><Legend iconSize={10}/></PieChart>
                     </ResponsiveContainer>
                 </ChartCard></div>
             </div>
@@ -75,7 +119,7 @@ const AdminAnalyticsPage = () => {
                             <tr><th className="p-3">Hospital Name</th><th className="p-3">Revenue Contribution</th><th className="p-3">Avg. Rating</th></tr>
                         </thead>
                         <tbody>
-                            {data.topHospitals.map(h => (
+                            {topHospitalsData.map(h => (
                                 <tr key={h.name} className="border-b border-border last:border-b-0">
                                     <td className="p-3 font-semibold text-foreground">{h.name}</td>
                                     <td className="p-3 text-muted-foreground">{h.revenue}</td>

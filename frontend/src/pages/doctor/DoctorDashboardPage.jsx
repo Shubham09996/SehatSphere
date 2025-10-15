@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Users, Clock, FileWarning } from 'lucide-react';
-import { doctorData } from '../../data/doctorData';
-import AppointmentQueue from '../../components/doctor/AppointmentQueue';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { MessageSquare, Stethoscope, Users, Clock, ClipboardList, CalendarCheck, FileText, BellRing, UserPlus, Heart, Zap, Award, FileWarning } from 'lucide-react';
+import PatientQueueCard from '../../components/doctor/PatientQueueCard';
 import NowServingCard from '../../components/doctor/NowServingCard';
+import AppointmentQueue from '../../components/doctor/AppointmentQueue';
 import HourlyActivityChart from '../../components/doctor/HourlyActivityChart';
+import api from '../../utils/api'; // api.js se import karein
+import { Link } from 'react-router-dom';
+// import { doctorData } from '../../data/doctorData'; // Remove this import
 
 const StatCard = ({ icon, title, value, change, colorClass }) => (
     <div className="bg-card p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md transition-all duration-300">
@@ -20,10 +23,44 @@ const StatCard = ({ icon, title, value, change, colorClass }) => (
 );
 
 const DoctorDashboardPage = () => {
-    const { doctorInfo, dashboardStats, hourlyActivity } = doctorData;
-    
-    // State for managing the appointment queue
-    const [queue, setQueue] = useState(doctorData.appointmentQueue);
+    const [doctorInfo, setDoctorInfo] = useState(null);
+    const [dashboardStats, setDashboardStats] = useState(null);
+    const [hourlyActivity, setHourlyActivity] = useState([]);
+    const [queue, setQueue] = useState([]); // State for managing the appointment queue
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchDoctorDashboardData = async () => {
+            try {
+                setLoading(true);
+                const medicalRegistrationNumber = localStorage.getItem('doctorId'); // Retrieve doctorId from localStorage as medicalRegistrationNumber
+                if (!medicalRegistrationNumber) {
+                    setError(new Error('Doctor ID (Medical Registration Number) not found in local storage.'));
+                    setLoading(false);
+                    return;
+                }
+                const [infoRes, statsRes, activityRes, queueRes] = await Promise.all([
+                    api.get(`/api/doctors/${medicalRegistrationNumber}`), 
+                    api.get(`/api/doctors/dashboard-stats`),
+                    api.get(`/api/doctors/hourly-activity/${medicalRegistrationNumber}`),
+                    api.get(`/api/doctors/appointment-queue/${medicalRegistrationNumber}`),
+                ]);
+
+                setDoctorInfo(infoRes.data.personalInfo); // Corrected: Access personalInfo
+                setDashboardStats(statsRes.data.dashboardStats); 
+                setHourlyActivity(activityRes.data); // Corrected: Access data directly from activityRes
+                setQueue(queueRes.data); 
+
+            } catch (err) {
+                setError(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchDoctorDashboardData();
+    }, []);
 
     const handleNextPatient = () => {
         setQueue(prevQueue => {
@@ -50,6 +87,18 @@ const DoctorDashboardPage = () => {
             return newQueue;
         });
     };
+
+    if (loading) {
+        return <div className="text-center text-foreground">Loading doctor dashboard...</div>;
+    }
+
+    if (error) {
+        return <div className="text-center text-red-500">Error loading dashboard: {error.message}</div>;
+    }
+
+    if (!doctorInfo || !dashboardStats || !hourlyActivity || !queue) {
+        return <div className="text-center text-muted-foreground">No doctor dashboard data found.</div>;
+    }
 
     const nowServing = queue.find(p => p.status === 'Now Serving');
     const upNext = queue.find(p => p.status === 'Up Next');

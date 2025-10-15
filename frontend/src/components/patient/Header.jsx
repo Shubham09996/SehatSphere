@@ -9,6 +9,7 @@ const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
+    const [userProfilePicture, setUserProfilePicture] = useState('');
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -22,6 +23,13 @@ const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [dropdownRef]);
+
+    useEffect(() => {
+        const storedProfilePicture = localStorage.getItem('profilePicture');
+        if (storedProfilePicture) {
+            setUserProfilePicture(storedProfilePicture);
+        }
+    }, []);
 
     return (
         <header className="flex items-center justify-between p-4 bg-card border-b border-border sticky top-0 z-40">
@@ -100,7 +108,11 @@ const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
                         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                         className="w-9 h-9 rounded-full bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end flex items-center justify-center text-white font-bold cursor-pointer ring-2 ring-offset-2 ring-offset-card ring-transparent hover:ring-primary transition-all"
                     >
-                        R
+                        {userProfilePicture ? (
+                            <img src={userProfilePicture} alt="Profile" className="w-full h-full rounded-full object-cover" />
+                        ) : (
+                            <span className="text-white font-bold">R</span>
+                        )}
                     </button>
                     
                     {isDropdownOpen && (

@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Edit, User, Heart, Shield, FileText, Calendar, Droplets, Phone, Activity, BarChart2, QrCode, Stethoscope, TestTube2, ShieldAlert } from 'lucide-react';
-import { patientProfileData as data } from '../../data/patientProfileData';
+// import { patientProfileData as data } from '../../data/patientProfileData'; // Remove this import
+import api from '../../utils/api'; // api.js se import karein
 
 // Reusable Card Component - Responsive padding added
 const InfoCard = ({ icon, title, children, className = '' }) => {
@@ -25,6 +26,41 @@ const activityIcons = {
 };
 
 const PatientProfilePage = () => {
+    const [patientProfile, setPatientProfile] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchPatientProfile = async () => {
+            const patientId = localStorage.getItem('patientId'); // Retrieve patientId from localStorage
+            try {
+                setLoading(true);
+                const response = await api.get(`/api/patients/profile/${patientId}`);
+                setPatientProfile(response.data);
+            } catch (err) {
+                setError(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchPatientProfile();
+    }, []);
+
+    if (loading) {
+        return <div className="text-center text-foreground">Loading patient profile...</div>;
+    }
+
+    if (error) {
+        return <div className="text-center text-red-500">Error loading profile: {error.message}</div>;
+    }
+
+    if (!patientProfile) {
+        return <div className="text-center text-muted-foreground">No patient profile data found.</div>;
+    }
+
+    const data = patientProfile; // Use fetched data as 'data'
+
     return (
         <div className="space-y-6 md:space-y-8">
             {/* --- Profile Header Card --- */}
@@ -35,7 +71,11 @@ const PatientProfilePage = () => {
                 transition={{ duration: 0.5 }}
             >
                 <div className="w-full flex flex-col sm:flex-row items-center text-center sm:text-left gap-6">
-                    <img src={data.personalInfo.pfp} alt={data.personalInfo.name} className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-primary/50 flex-shrink-0"/>
+                    {data.personalInfo.pfp ? (
+                        <img src={data.personalInfo.pfp} alt={data.personalInfo.name} className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-primary/50 flex-shrink-0"/>
+                    ) : (
+                        <img src="/uploads/default.jpg" alt={data.personalInfo.name} className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-primary/50 flex-shrink-0"/>
+                    )}
                     <div className="flex-1">
                         {/* Responsive font size */}
                         <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{data.personalInfo.name}</h1>
@@ -122,9 +162,9 @@ const PatientProfilePage = () => {
                      </InfoCard>
 
                      <InfoCard icon={<Phone size={20}/>} title="Emergency Contact">
-                        <p className="font-bold text-lg">{data.personalInfo.emergencyContact.name}</p>
-                        <p className="text-sm text-muted-foreground">{data.personalInfo.emergencyContact.relation}</p>
-                        <a href={`tel:${data.personalInfo.emergencyContact.phone}`} className="mt-4 block w-full text-center font-semibold py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+                        <p className="font-bold text-lg">{data.emergencyContact?.name || 'N/A'}</p>
+                        <p className="text-sm text-muted-foreground">{data.emergencyContact?.relation || 'N/A'}</p>
+                        <a href={`tel:${data.emergencyContact?.phone || '#'}`} className="mt-4 block w-full text-center font-semibold py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
                             Call Now
                         </a>
                      </InfoCard>

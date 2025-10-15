@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Edit, ShoppingCart, IndianRupee, Star, Activity, CheckCircle, Package } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { shopOwnerData as data } from '../../data/shopOwnerData';
-import { shopData } from '../../data/shopData';
+// import { shopOwnerData as data } from '../../data/shopOwnerData'; // Remove this import
+// import { shopData } from '../../data/shopData'; // Remove this import
 import * as LucideIcons from 'lucide-react';
+// Removed: import axios from 'axios'; // Import axios
+import api from '../../utils/api'; // api.js se import karein
 
 const StatCard = ({ icon, title, value }) => (
     <div className="bg-muted p-4 rounded-lg text-center">
@@ -16,6 +18,43 @@ const StatCard = ({ icon, title, value }) => (
 );
 
 const ShopProfilePage = () => {
+    const [shopProfile, setShopProfile] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchShopProfileData = async () => {
+            try {
+                setLoading(true);
+                // Using a dummy shopId for now. This should come from auth context.
+                const shopId = '60d0fe4f5311236168a109cc'; // Replace with actual shop ID from authentication
+                const response = await api.get(`/shops/${shopId}/profile`);
+                const data = response.data.shopProfile;
+                setShopProfile(data);
+            } catch (err) {
+                setError(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchShopProfileData();
+    }, []);
+
+    if (loading) {
+        return <div className="text-center text-foreground">Loading shop profile...</div>;
+    }
+
+    if (error) {
+        return <div className="text-center text-red-500">Error loading profile: {error.message}</div>;
+    }
+
+    if (!shopProfile) {
+        return <div className="text-center text-muted-foreground">No shop profile data found.</div>;
+    }
+
+    const data = shopProfile; // Use fetched data as 'data' to maintain existing JSX structure
+
     return (
         <div className="space-y-8">
             {/* Profile Header */}
@@ -23,11 +62,11 @@ const ShopProfilePage = () => {
                 className="bg-card p-6 rounded-xl border border-border/70 shadow-sm flex flex-col sm:flex-row items-center gap-6"
                 initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
             >
-                <img src={data.personalInfo.pfp} alt={data.personalInfo.name} className="w-24 h-24 rounded-full border-4 border-primary/50"/>
+                <img src={data.owner.pfp || "https://via.placeholder.com/96"} alt={data.owner.name} className="w-24 h-24 rounded-full border-4 border-primary/50"/>
                 <div className="flex-1 text-center sm:text-left">
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">{data.personalInfo.name}</h1>
-                    <p className="font-semibold text-muted-foreground">{data.personalInfo.role}</p>
-                    <p className="text-sm text-muted-foreground mt-1">Member since {new Date(data.personalInfo.memberSince).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}</p>
+                    <h1 className="text-3xl font-bold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">{data.owner.name}</h1>
+                    <p className="font-semibold text-muted-foreground">{data.owner.role}</p>
+                    <p className="text-sm text-muted-foreground mt-1">Member since {new Date(data.owner.memberSince).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}</p>
                 </div>
                 <Link to="/shop/settings" className="flex items-center gap-2 font-semibold py-2 px-4 rounded-lg bg-muted text-foreground hover:bg-border">
                     <Edit size={16}/> Edit Profile
@@ -87,10 +126,10 @@ const ShopProfilePage = () => {
                      <div className="bg-card p-6 rounded-xl border border-border/70 shadow-sm">
                         <h3 className="font-bold text-lg text-foreground mb-4">Your Shop</h3>
                         <div className="flex items-center gap-3">
-                            <img src={shopData.shopInfo.logo} alt={shopData.shopInfo.name} className="w-12 h-12 rounded-lg bg-white p-1"/>
+                            <img src={data.shop.logo || "https://via.placeholder.com/48"} alt={data.shop.name} className="w-12 h-12 rounded-lg bg-white p-1"/>
                             <div>
-                                <p className="font-bold text-foreground">{shopData.shopInfo.name}</p>
-                                {shopData.shopInfo.isPremium && <p className="text-xs font-semibold text-yellow-500">Premium Member</p>}
+                                <p className="font-bold text-foreground">{data.shop.name}</p>
+                                {data.shop.isPremium && <p className="text-xs font-semibold text-yellow-500">Premium Member</p>}
                             </div>
                         </div>
                         <Link to="/shop/settings/profile" className="mt-4 block w-full text-center font-semibold py-2 rounded-lg bg-muted hover:bg-border transition-colors text-sm">

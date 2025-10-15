@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Edit, CheckCircle, Briefcase, Star, Clock, Brain, Users, BarChart2, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { doctorProfileData as data } from '../../data/doctorProfileData';
+// import { doctorProfileData as data } from '../../data/doctorProfileData'; // Remove this import
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
+// Removed: import axios from 'axios'; // Import axios
+import api from '../../utils/api'; // api.js se import karein
 
 const InfoCard = ({ title, icon, children }) => (
     <div className="bg-card p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
@@ -19,12 +21,52 @@ const InfoCard = ({ title, icon, children }) => (
 );
 
 const DoctorProfilePage = () => {
+    const [doctorProfile, setDoctorProfile] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchDoctorProfile = async () => {
+            const medicalRegistrationNumber = localStorage.getItem('doctorId'); // Retrieve doctorId from localStorage as medicalRegistrationNumber
+            if (!medicalRegistrationNumber) {
+                setError(new Error('Doctor ID (Medical Registration Number) not found in local storage.'));
+                setLoading(false);
+                return;
+            }
+            try {
+                setLoading(true);
+                const response = await api.get(`/api/doctors/${medicalRegistrationNumber}`); // Corrected API route
+                setDoctorProfile(response.data); // Corrected: getDoctorById returns the doctor object directly
+            } catch (err) {
+                setError(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchDoctorProfile();
+    }, []); // Removed doctorId from dependency array as it's fetched inside
+
+    if (loading) {
+        return <div className="text-center text-foreground">Loading doctor profile...</div>;
+    }
+
+    if (error) {
+        return <div className="text-center text-red-500">Error loading profile: {error.message}</div>;
+    }
+
+    if (!doctorProfile) {
+        return <div className="text-center text-muted-foreground">No doctor profile data found.</div>;
+    }
+
+    const data = doctorProfile; // Use fetched data as 'data' to maintain existing JSX structure
+
     return (
         <div className="space-y-8">
             {/* Profile Header */}
             <div className="bg-card p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md flex flex-col sm:flex-row items-center gap-6">
                 {/* 2. Profile picture ke border ka color change kiya hai */}
-                <img src={data.personalInfo.pfp} alt={data.personalInfo.name} className="w-28 h-28 rounded-full border-4 border-cyan-400/50"/>
+                <img src={data.personalInfo.pfp || "https://via.placeholder.com/100"} alt={data.personalInfo.name} className="w-28 h-28 rounded-full border-4 border-cyan-400/50"/>
                 <div className="flex-1 text-center sm:text-left">
                     <div className="flex items-center justify-center sm:justify-start gap-2">
                         {/* Doctor ka naam plain rakha hai, as requested */}
@@ -80,7 +122,7 @@ const DoctorProfilePage = () => {
                     <InfoCard title="Expertise" icon={<Brain />}>
                          <div className="flex flex-wrap gap-2">
                             {/* 5. Expertise tags ka color change kiya hai */}
-                            {data.expertise.map(skill => <span key={skill} className="text-xs px-2 py-1 bg-cyan-400/10 text-cyan-600 dark:text-cyan-400 rounded-full font-medium">{skill}</span>)}
+                            {(data.expertise || []).map(skill => <span key={skill} className="text-xs px-2 py-1 bg-cyan-400/10 text-cyan-600 dark:text-cyan-400 rounded-full font-medium">{skill}</span>)}
                         </div>
                     </InfoCard>
                     

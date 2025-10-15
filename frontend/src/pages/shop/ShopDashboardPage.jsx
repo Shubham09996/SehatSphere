@@ -1,10 +1,8 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { ShoppingCart, IndianRupee, PackageMinus, Users, Zap, Star, CheckCircle, TrendingUp, BrainCircuit, DollarSign } from 'lucide-react';
-import { useOutletContext } from 'react-router-dom';
-import { shopData } from '../../data/shopData';
-
-// Import specialized components
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { MessageSquare, ShoppingBag, TrendingUp, Users, Package, Wallet, BellRing } from 'lucide-react';
+import api from '../../utils/api'; // api.js se import karein
+import { Link, useOutletContext } from 'react-router-dom';
 import SalesAnalyticsChart from '../../components/shop/widgets/SalesAnalyticsChart';
 import PremiumInsights from '../../components/shop/widgets/PremiumInsights';
 
@@ -27,12 +25,52 @@ const StatCard = ({ icon, title, value, change, colorClass }) => (
 
 const ShopDashboardPage = () => {
     const { isPremium } = useOutletContext();
-    const { dashboardStats, newOrders } = shopData;
+    const [shopInfo, setShopInfo] = useState(null);
+    const [dashboardStats, setDashboardStats] = useState(null);
+    const [newOrders, setNewOrders] = useState([]);
+    const [salesAnalyticsData, setSalesAnalyticsData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchShopDashboardData = async () => {
+            try {
+                setLoading(true);
+                const [dashboardRes, newOrdersRes, salesAnalyticsRes] = await Promise.all([
+                    api.get(`/shops/${shopId}/dashboard`),
+                    api.get(`/shops/${shopId}/orders/new`),
+                    api.get(`/shops/${shopId}/analytics/sales`),
+                ]);
+
+                setDashboardStats(dashboardRes.data);
+                setNewOrders(newOrdersRes.data.newOrders);
+                setSalesAnalyticsData(salesAnalyticsRes.data.salesAnalytics);
+            } catch (err) {
+                setError(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchShopDashboardData();
+    }, []);
+
+    if (loading) {
+        return <div className="text-center text-foreground">Loading shop dashboard...</div>;
+    }
+
+    if (error) {
+        return <div className="text-center text-red-500">Error loading dashboard: {error.message}</div>;
+    }
+
+    if (!shopInfo || !dashboardStats || !newOrders || !salesAnalyticsData) {
+        return <div className="text-center text-muted-foreground">No shop dashboard data found.</div>;
+    }
 
     return (
         <div className="space-y-8">
             <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">Welcome back, {shopData.shopInfo.name}!</h1>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">Welcome back, {shopInfo.name}!</h1>
                 <p className="text-muted-foreground mt-1">Here is your shop's performance overview for today.</p>
             </div>
 
@@ -52,12 +90,12 @@ const ShopDashboardPage = () => {
                         <h3 className="font-bold text-lg text-foreground mb-4">New Orders for Verification</h3>
                         <div className="space-y-4">
                             {newOrders.map(order => (
-                                <motion.div whileHover={{ scale: 1.01 }} key={order.id} className="flex items-center justify-between gap-4 bg-muted p-3 rounded-lg hover:shadow-md transition-shadow">
+                                <motion.div whileHover={{ scale: 1.01 }} key={order._id} className="flex items-center justify-between gap-4 bg-muted p-3 rounded-lg hover:shadow-md transition-shadow">
                                     <div className="flex items-center gap-3">
-                                        <img src={order.pfp} alt={order.patientName} className="w-9 h-9 rounded-full"/>
+                                        <img src={order.patientPfp || "https://via.placeholder.com/36"} alt={order.patientName} className="w-9 h-9 rounded-full"/>
                                         <div>
                                             <p className="font-semibold text-foreground text-sm">{order.patientName}</p>
-                                            <p className="text-xs text-muted-foreground">{order.id} • {order.items} items</p>
+                                            <p className="text-xs text-muted-foreground">{order._id} • {order.items.length} items</p>
                                         </div>
                                     </div>
                                     <button className="font-semibold py-2 px-3 text-sm rounded-lg bg-primary text-primary-foreground hover:opacity-90">Verify</button>
@@ -67,7 +105,14 @@ const ShopDashboardPage = () => {
                     </div>
 
                     {/* UPDATED: Analytics chart is now below */}
-                    <SalesAnalyticsChart isPremium={isPremium} />
+                    {salesAnalyticsData && (
+                        <SalesAnalyticsChart 
+                            isPremium={isPremium} 
+                            salesData={salesAnalyticsData.salesLast7Days}
+                            totalRevenue={salesAnalyticsData.totalRevenue}
+                            percentageChange={salesAnalyticsData.percentageChange}
+                        />
+                    )}
 
                 </div>
 

@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Building, IndianRupee, UserPlus, Check, X, AlertTriangle } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend } from 'recharts';
-import { adminData } from '../../data/adminData';
+// import { adminData } from '../../data/adminData'; // Remove this import
 import PendingApprovals from '../../components/admin/widgets/PendingApprovals';
 import SystemAlerts from '../../components/admin/widgets/SystemAlerts';
+import api from '../../utils/api'; // api.js se import karein
 
 // --- Reusable Components for this Page ---
 
@@ -40,9 +41,59 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 // --- Main Admin Dashboard Page ---
 const AdminDashboardPage = () => {
-    const { kpis, userGrowth, userDistribution, hospitalPerformance } = adminData;
+    const [kpis, setKpis] = useState(null);
+    const [userGrowthData, setUserGrowthData] = useState([]);
+    const [userDistributionData, setUserDistributionData] = useState([]);
+    const [pendingApprovalsData, setPendingApprovalsData] = useState([]);
+    const [systemAlertsData, setSystemAlertsData] = useState([]);
+    const [hospitalPerformanceData, setHospitalPerformanceData] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
     const COLORS = ['hsl(var(--primary))', '#00C49F', '#FFBB28', '#FF8042'];
     const [activeIndex, setActiveIndex] = useState(0);
+
+    useEffect(() => {
+        const fetchAdminDashboardData = async () => {
+            try {
+                setLoading(true);
+                const [kpisRes, userGrowthRes, userDistributionRes, pendingApprovalsRes, systemAlertsRes, hospitalPerformanceRes] = await Promise.all([
+                    api.get('/admin/dashboard-stats'),
+                    api.get('/admin/user-growth'),
+                    api.get('/admin/user-distribution'),
+                    api.get('/admin/approvals/pending'),
+                    api.get('/admin/alerts'),
+                    api.get('/admin/hospitals/performance'),
+                ]);
+
+                setKpis(kpisRes.data.kpis);
+                setUserGrowthData(userGrowthRes.data.userGrowth);
+                setUserDistributionData(userDistributionRes.data.userDistribution);
+                setPendingApprovalsData(pendingApprovalsRes.data.pendingApprovals);
+                setSystemAlertsData(systemAlertsRes.data.systemAlerts);
+                setHospitalPerformanceData(hospitalPerformanceRes.data.hospitalPerformance);
+            } catch (err) {
+                setError(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchAdminDashboardData();
+    }, []);
+
+    if (loading) {
+        return <div className="text-center text-foreground">Loading admin dashboard...</div>;
+    }
+
+    if (error) {
+        return <div className="text-center text-red-500">Error loading dashboard: {error.message}</div>;
+    }
+
+    // Ensure all data is loaded before rendering, or provide fallback
+    if (!kpis || !userGrowthData || !userDistributionData || !pendingApprovalsData || !systemAlertsData || !hospitalPerformanceData) {
+        return <div className="text-center text-muted-foreground">No admin dashboard data found.</div>;
+    }
 
     return (
         <div className="space-y-8">
@@ -68,7 +119,7 @@ const AdminDashboardPage = () => {
                     <h3 className="font-bold text-lg text-foreground mb-4">User Growth</h3>
                     <div className="h-80 w-full">
                         <ResponsiveContainer>
-                            <AreaChart data={userGrowth} margin={{ left: -20, top: 10, right: 10, bottom: 0 }}>
+                            <AreaChart data={userGrowthData} margin={{ left: -20, top: 10, right: 10, bottom: 0 }}>
                                  <defs><linearGradient id="colorGrowth" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4}/><stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/></linearGradient></defs>
                                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                                  <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} axisLine={false} tickLine={false} />
@@ -84,15 +135,15 @@ const AdminDashboardPage = () => {
                      <div className="h-80 w-full">
                         <ResponsiveContainer>
                             <PieChart>
-                                <Pie data={userDistribution} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius="60%" outerRadius="80%" paddingAngle={5} onMouseEnter={(_, index) => setActiveIndex(index)}>
-                                    {userDistribution.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="focus:outline-none"/>)}
+                                <Pie data={userDistributionData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius="60%" outerRadius="80%" paddingAngle={5} onMouseEnter={(_, index) => setActiveIndex(index)}>
+                                    {userDistributionData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="focus:outline-none"/>)}
                                 </Pie>
                             </PieChart>
                         </ResponsiveContainer>
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                             <div className="text-center">
-                                <p className="text-3xl font-bold">{userDistribution[activeIndex].value.toLocaleString()}</p>
-                                <p className="text-sm text-muted-foreground">{userDistribution[activeIndex].name}</p>
+                                <p className="text-3xl font-bold">{userDistributionData[activeIndex]?.value?.toLocaleString()}</p>
+                                <p className="text-sm text-muted-foreground">{userDistributionData[activeIndex]?.name}</p>
                             </div>
                         </div>
                      </div>
@@ -100,8 +151,8 @@ const AdminDashboardPage = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <PendingApprovals />
-                <SystemAlerts />
+                <PendingApprovals pendingApprovals={pendingApprovalsData} />
+                <SystemAlerts systemAlerts={systemAlertsData} />
             </div>
 
              {/* Hospital Performance Leaderboard */}
@@ -118,7 +169,7 @@ const AdminDashboardPage = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {adminData.hospitalPerformance.map(h => (
+                            {hospitalPerformanceData.map(h => (
                                 <tr key={h.name} className="border-b border-border last:border-b-0">
                                     <td className="p-3 font-semibold text-foreground">{h.name}</td>
                                     <td className="p-3"><span className={`px-2 py-1 text-xs rounded-full ${h.patientLoad === 'High' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>{h.patientLoad}</span></td>

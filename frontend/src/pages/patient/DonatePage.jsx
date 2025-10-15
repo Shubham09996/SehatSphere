@@ -1,26 +1,64 @@
-import React, { useState } from 'react';
-import { Droplet, MapPin, FlaskConical, User as UserIcon, Heart } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import api from '../../utils/api'; // api.js se import karein
+import { Heart, Search, MapPin, Calendar, Users, Droplets, FlaskConical, Stethoscope, Award, ClipboardList, BookOpen, Clock } from 'lucide-react';
+// Removed: import axios from 'axios'; // For API calls
 
 const DonatePage = () => {
     const [showConfirmation, setShowConfirmation] = useState(false);
+    const [donationCenters, setDonationCenters] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    const mockBloodDonationCenters = [
-        { id: 1, name: 'Red Cross Donation Center - Downtown', address: '123 Main St, Cityville', distance: '2.5 km', contact: '555-1234' },
-        { id: 2, name: 'Community Blood Bank - North', address: '456 Oak Ave, Townsville', distance: '5.1 km', contact: '555-5678' },
-        { id: 3, name: 'HealthSphere Hospital - South', address: '789 Pine Ln, Villagetown', distance: '8.0 km', contact: '555-9012' },
-    ];
+    // Dummy patient data for demonstration. In a real app, this would come from authenticated user context.
+    const currentPatientId = '65239a24687d603a11cf8743'; // Replace with actual patient ID from context/store
+    const patientBloodGroup = 'A+'; // Replace with actual patient blood group from context/store
 
-    const handleScheduleDonation = () => {
-        // In a real application, this would trigger an API call or navigation to a scheduling form.
-        setShowConfirmation(true);
-        setTimeout(() => setShowConfirmation(false), 5000); // Hide confirmation after 5 seconds
+    useEffect(() => {
+        const fetchDonationCenters = async () => {
+            try {
+                const { data } = await api.get('/api/donationcenters');
+                setDonationCenters(data.camps);
+            } catch (err) {
+                setError(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchDonationCenters();
+    }, []);
+
+    const handleScheduleDonation = async (centerId, centerName) => {
+        try {
+            // In a real application, this would trigger an API call or navigation to a scheduling form.
+            // For now, let's simulate a successful API call.
+            const scheduleData = {
+                patient: currentPatientId,
+                donationCenterId: centerId,
+                scheduledDate: new Date().toISOString().split('T')[0], // Today's date for demo
+                scheduledTime: '10:00', // Fixed time for demo
+                notes: `Blood donation scheduled at ${centerName}.`,
+                bloodGroup: patientBloodGroup,
+            };
+            
+            // Make API call to backend to create a donation request
+            await api.post('/donations', scheduleData);
+
+            setShowConfirmation(true);
+            setTimeout(() => setShowConfirmation(false), 5000); // Hide confirmation after 5 seconds
+        } catch (err) {
+            setError(err.response?.data?.message || err.message);
+        }
     };
+
+    if (loading) return <p className="text-center">Loading donation centers...</p>;
+    if (error) return <p className="text-center text-red-500">Error: {error}</p>;
 
     return (
         <div className="text-foreground min-h-screen">
             {/* FIX: Correctly aligned the heading and applied gradient only to the text */}
             <h1 className="text-3xl font-bold mb-6 flex items-center gap-3">
-                <Droplet size={32} className="text-hs-gradient-start" />
+                <Droplets size={32} className="text-hs-gradient-start" />
                 <span className="bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">
                     Blood Donation
                 </span>
@@ -34,7 +72,7 @@ const DonatePage = () => {
                 </p>
                 <ul className="list-disc list-inside space-y-2 text-muted-foreground">
                     <li className="flex items-center gap-2"><FlaskConical size={18} className="text-hs-gradient-middle" /> Helps accident victims, surgical patients, and those battling illnesses.</li>
-                    <li className="flex items-center gap-2"><UserIcon size={18} className="text-hs-gradient-middle" /> Contributes to community health and well-being.</li>
+                    <li className="flex items-center gap-2"><Users size={18} className="text-hs-gradient-middle" /> Contributes to community health and well-being.</li>
                     <li className="flex items-center gap-2"><Heart size={18} className="text-hs-gradient-middle" /> A selfless act that shows compassion and support.</li>
                 </ul>
             </div>
@@ -42,15 +80,15 @@ const DonatePage = () => {
             <div className="bg-card p-6 rounded-lg shadow-lg mb-8 border border-border">
                 <h2 className="text-2xl font-semibold mb-4">Find a Donation Center</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {mockBloodDonationCenters.map(center => (
-                        <div key={center.id} className="border border-border p-4 rounded-lg flex flex-col justify-between">
+                    {donationCenters.map(center => (
+                        <div key={center._id} className="border border-border p-4 rounded-lg flex flex-col justify-between">
                             <div>
                                 <h3 className="text-xl font-semibold mb-2">{center.name}</h3>
                                 <p className="text-muted-foreground flex items-center gap-1 mb-1"><MapPin size={16} /> {center.address}</p>
-                                <p className="text-muted-foreground flex items-center gap-1">{center.distance} away</p>
+                                <p className="text-muted-foreground flex items-center gap-1">{center.location} </p>
                             </div>
                             <button 
-                                onClick={handleScheduleDonation}
+                                onClick={() => handleScheduleDonation(center._id, center.name)}
                                 className="mt-4 px-4 py-2 bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-primary-foreground rounded-md hover:opacity-90 transition-opacity self-start"
                             >
                                 Schedule Donation
@@ -60,7 +98,7 @@ const DonatePage = () => {
                 </div>
                 {showConfirmation && (
                     <p className="text-center mt-6 text-green-500 dark:text-green-400 font-semibold">
-                        Thank you for your interest! A representative will contact you shortly to schedule your donation.
+                        Thank you for your interest! Your donation request has been sent. A representative will contact you shortly to schedule your donation.
                     </p>
                 )}
             </div>

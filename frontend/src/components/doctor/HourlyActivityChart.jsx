@@ -3,7 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import { motion } from 'framer-motion';
 
 // Custom Tooltip for the chart - Slightly refined look
-const CustomTooltip = ({ active, payload, label }) => {
+const CustomTooltip = ({ active, payload, label, fbbbt}) => {
     if (active && payload && payload.length) {
         return (
             <motion.div 

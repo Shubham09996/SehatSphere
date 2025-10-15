@@ -33,34 +33,38 @@ const StatCard = ({ icon: Icon, title, value, detail, link, progress, colorClass
     </div>
 );
 
-const DashboardStats = () => {
+const DashboardStats = ({ stats }) => {
+    if (!stats) {
+        return <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-foreground">Loading stats...</div>;
+    }
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatCard 
                 icon={Ticket} 
                 title="Current Token" 
-                value="Next: Oct 7, 10:30 AM" 
-                detail="+18 min"
+                value={stats.currentToken} 
+                detail={stats.currentTokenDetail}
                 link="We'll notify you 10 mins before"
-                progress={40}
+                progress={stats.currentTokenProgress}
                 colorClass="bg-blue-500"
             />
             <StatCard 
                 icon={Calendar} 
                 title="Appointments" 
-                value="2" 
+                value={stats.appointmentsCount} 
                 link="View all →"
             />
             <StatCard 
                 icon={FileText} 
                 title="Prescriptions" 
-                value="2" 
+                value={stats.prescriptionsCount} 
                 link="View prescriptions →"
             />
             <StatCard 
                 icon={Award} 
                 title="Reward Points" 
-                value="245" 
+                value={stats.rewardPoints} 
                 link="Redeem rewards →"
             />
         </div>

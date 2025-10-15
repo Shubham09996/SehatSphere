@@ -1,7 +1,7 @@
 import React from 'react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { motion } from 'framer-motion';
-import { shopData } from '../../../data/shopData';
+// import { shopData } from '../../../data/shopData'; // Remove this import
 import LockedFeatureCard from './LockedFeatureCard';
 import { TrendingUp } from 'lucide-react';
 
@@ -18,11 +18,11 @@ const CustomTooltip = ({ active, payload, label }) => {
     return null;
 };
 
-const SalesAnalyticsChart = ({ isPremium }) => {
-    const { salesLast7Days } = shopData;
+const SalesAnalyticsChart = ({ isPremium, salesData, totalRevenue, percentageChange }) => {
+    // const { salesLast7Days } = shopData; // Remove this line
 
-    const totalRevenue = salesLast7Days.reduce((sum, day) => sum + day.sales, 0);
-    const percentageChange = "+7.2%";
+    // const totalRevenue = salesLast7Days.reduce((sum, day) => sum + day.sales, 0); // Remove this line
+    // const percentageChange = "+7.2%"; // Remove this line
 
     if (!isPremium) {
         return (
@@ -54,7 +54,7 @@ const SalesAnalyticsChart = ({ isPremium }) => {
                 transition={{ duration: 0.5 }}
             >
                 <ResponsiveContainer>
-                    <AreaChart data={salesLast7Days} margin={{ left: -20, top: 10, right: 10, bottom: 0 }}>
+                    <AreaChart data={salesData} margin={{ left: -20, top: 10, right: 10, bottom: 0 }}>
                         <defs>
                             <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
                                 {/* UPDATED: Wrapped color variables in hsl() for theme compatibility */}

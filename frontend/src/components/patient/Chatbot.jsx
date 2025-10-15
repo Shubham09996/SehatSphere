@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, X } from 'lucide-react';
 import ChatWindow from './ChatWindow';
 import { useNavigate } from 'react-router-dom';
+import api from '../../utils/api'; // Import the configured axios instance
 
 const Chatbot = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -23,35 +24,26 @@ const Chatbot = () => {
         }
     }, [isOpen, messages.length]);
 
-    const getBotResponse = (userMessage) => {
-        const lowerCaseMessage = userMessage.toLowerCase();
-        
-        if (lowerCaseMessage.includes('appointment')) {
-            return {
-                text: 'You can book an appointment by clicking the button below or navigating to the appointments section.',
-                action: () => navigate('/patient/appointments') // Navigate to the page
-            };
-        }
-        if (lowerCaseMessage.includes('medicine') || lowerCaseMessage.includes('find')) {
-            return {
-                text: 'I can help you find medicines. Please go to our Medicine Finder page.',
-                action: () => navigate('/patient/medicine-finder')
-            };
-        }
-        if (lowerCaseMessage.includes('record') || lowerCaseMessage.includes('report')) {
-            return {
-                text: 'You can view all your health records on the Health Records page.',
-                action: () => navigate('/patient/health-records')
-            };
-        }
-        if (lowerCaseMessage.includes('hello') || lowerCaseMessage.includes('hi')) {
-            return { text: 'Hello there! How can I assist you?' };
-        }
+    const getBotResponse = async (userMessage) => {
+        try {
+            const response = await api.post('/api/gemini/chat', { message: userMessage });
+            const data = response.data; // Axios automatically parses JSON
 
-        return { 
-            text: "I'm sorry, I don't understand that. You can try asking about appointments, medicines, or your records.",
-            suggestions: ['Book an Appointment', 'Find a Medicine', 'View My Records']
-        };
+            // Basic keyword-based actions for navigation, can be enhanced with NLU from Gemini if needed
+            if (userMessage.toLowerCase().includes('appointment')) {
+                return { text: data.response, action: () => navigate('/patient/appointments') };
+            }
+            if (userMessage.toLowerCase().includes('medicine') || userMessage.toLowerCase().includes('find')) {
+                return { text: data.response, action: () => navigate('/patient/medicine-finder') };
+            }
+            if (userMessage.toLowerCase().includes('record') || userMessage.toLowerCase().includes('report')) {
+                return { text: data.response, action: () => navigate('/patient/health-records') };
+            }
+            return { text: data.response };
+        } catch (error) {
+            console.error('Error fetching chatbot response:', error);
+            return { text: 'Sorry, I am having trouble connecting right now. Please try again later.' };
+        }
     };
 
     const handleSendMessage = (text) => {
@@ -59,8 +51,8 @@ const Chatbot = () => {
         setMessages(prev => [...prev, userMessage]);
 
         // Simulate bot thinking and responding
-        setTimeout(() => {
-            const botResponse = getBotResponse(text);
+        setTimeout(async () => { // Made this async to await getBotResponse
+            const botResponse = await getBotResponse(text);
             const newBotMessage = {
                 id: Date.now() + 1,
                 sender: 'bot',
