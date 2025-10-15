@@ -35,7 +35,7 @@ const DoctorProfilePage = () => {
             }
             try {
                 setLoading(true);
-                const response = await api.get(`/api/doctors/${medicalRegistrationNumber}`); // Corrected API route
+                const response = await api.get(`/api/doctors/profile/${medicalRegistrationNumber}`); // Corrected API route
                 setDoctorProfile(response.data); // Corrected: getDoctorById returns the doctor object directly
             } catch (err) {
                 setError(err);
@@ -74,8 +74,9 @@ const DoctorProfilePage = () => {
                         {data.personalInfo.isVerified && <CheckCircle className="text-green-500" />}
                     </div>
                     {/* 3. Specialty text par gradient lagaya hai */}
-                    <p className="font-semibold bg-gradient-to-r from-hs-gradient-start to-hs-gradient-end text-transparent bg-clip-text">{data.personalInfo.specialty}</p>
-                    <p className="text-sm text-muted-foreground mt-1">{data.personalInfo.qualifications} • {data.personalInfo.experience} years experience</p>
+                    <p className="font-semibold bg-gradient-to-r from-hs-gradient-start to-hs-gradient-end text-transparent bg-clip-text">{data.specialty}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{data.qualifications} • {data.experience} years experience</p>
+                    <p className="text-sm text-muted-foreground">Reg. No: <span className="font-semibold text-foreground">{data.medicalRegistrationNumber}</span></p>
                 </div>
                 <Link to="/doctor/settings/profile" className="flex items-center gap-2 font-semibold py-2 px-4 rounded-lg bg-muted text-foreground hover:bg-border">
                     <Edit size={16}/> Edit Profile
@@ -87,7 +88,7 @@ const DoctorProfilePage = () => {
                 {/* Left Column */}
                 <div className="lg:col-span-2 space-y-8">
                     <InfoCard title="About Me" icon={<User />}>
-                        <p className="text-muted-foreground leading-relaxed">{data.personalInfo.bio}</p>
+                        <p className="text-muted-foreground leading-relaxed">{data.bio}</p>
                     </InfoCard>
 
                     <InfoCard title="Performance" icon={<BarChart2 />}>
@@ -128,10 +129,12 @@ const DoctorProfilePage = () => {
                     
                     <InfoCard title="Work Schedule" icon={<Clock />}>
                         <div className="space-y-2 text-sm">
-                            {Object.entries(data.workSchedule).map(([day, time]) => (
+                            {Object.entries(data.workSchedule || {}).map(([day, schedule]) => (
                                 <div key={day} className="flex justify-between">
                                     <span className="font-semibold text-foreground">{day}</span>
-                                    <span className={time === 'Off' ? 'text-red-500 font-semibold' : 'text-muted-foreground'}>{time}</span>
+                                    <span className={!schedule.enabled ? 'text-red-500 font-semibold' : 'text-muted-foreground'}>
+                                        {!schedule.enabled ? 'Off' : `${schedule.from} - ${schedule.to}`}
+                                    </span>
                                 </div>
                             ))}
                         </div>

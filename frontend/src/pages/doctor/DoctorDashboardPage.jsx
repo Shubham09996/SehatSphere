@@ -41,8 +41,8 @@ const DoctorDashboardPage = () => {
                     return;
                 }
                 const [infoRes, statsRes, activityRes, queueRes] = await Promise.all([
-                    api.get(`/api/doctors/${medicalRegistrationNumber}`), 
-                    api.get(`/api/doctors/dashboard-stats`),
+                    api.get(`/api/doctors/profile/${medicalRegistrationNumber}`), 
+                    api.get(`/api/doctors/dashboard-stats/${medicalRegistrationNumber}`),
                     api.get(`/api/doctors/hourly-activity/${medicalRegistrationNumber}`),
                     api.get(`/api/doctors/appointment-queue/${medicalRegistrationNumber}`),
                 ]);

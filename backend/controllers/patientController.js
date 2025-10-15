@@ -63,8 +63,8 @@ const getPatientProfile = asyncHandler(async (req, res) => {
     const healthRecords = await HealthRecord.find({ patient: patient._id }).sort({ date: -1 });
 
     const latestVitals = healthRecords.filter(record => record.recordType === 'Vital');
-    const allergies = healthRecords.filter(record => record.recordType === 'Allergy').map(record => record.title);
-    const chronicConditions = healthRecords.filter(record => record.recordType === 'Other' && record.title.includes('Chronic')).map(record => record.title); // Assuming 'Other' type for chronic conditions with specific title
+    // const allergies = healthRecords.filter(record => record.recordType === 'Allergy').map(record => record.title);
+    // const chronicConditions = healthRecords.filter(record => record.recordType === 'Other' && record.title.includes('Chronic')).map(record => record.title); // Assuming 'Other' type for chronic conditions with specific title
 
     // For now, let's pick dummy vitals or the latest if available
     const bloodPressure = latestVitals.find(v => v.title === 'Blood Pressure') || { details: { value: '120/80', status: 'Normal' } };
@@ -134,8 +134,8 @@ const getPatientProfile = asyncHandler(async (req, res) => {
           bmi: { value: bmi.details.value, status: bmi.details.status },
       },
       criticalInfo: {
-          allergies: allergies,
-          chronicConditions: chronicConditions,
+          allergies: patient.allergies, // Use allergies from Patient model
+          chronicConditions: patient.chronicConditions, // Use chronicConditions from Patient model
       },
       // other patient specific details if needed separately
       gender: patient.gender,
@@ -188,7 +188,17 @@ const createPatientProfile = asyncHandler(async (req, res) => {
 const updatePatientProfile = asyncHandler(async (req, res) => {
   const { dob, gender, bloodGroup, emergencyContact, allergies, chronicConditions, recentVitals, isPremium, name, profilePicture } = req.body;
 
-  const patient = await Patient.findById(req.params.id).populate('user');
+  const idOrPatientId = req.params.idOrPatientId;
+  let patient;
+
+  if (idOrPatientId && idOrPatientId.startsWith('PID-')) {
+      patient = await Patient.findOne({ patientId: idOrPatientId }).populate('user');
+  } else if (idOrPatientId) {
+      patient = await Patient.findById(idOrPatientId).populate('user');
+  } else {
+      res.status(400);
+      throw new Error('Patient ID not provided');
+  }
 
   if (patient) {
     // Ensure only the patient themselves or an admin can update

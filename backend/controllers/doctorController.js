@@ -17,7 +17,17 @@ const getDoctors = asyncHandler(async (req, res) => {
 // @route   GET /api/doctors/:id
 // @access  Public
 const getDoctorById = asyncHandler(async (req, res) => {
-  const doctor = await Doctor.findOne({ medicalRegistrationNumber: req.params.id }).populate('user', 'name email profilePicture phoneNumber');
+  const identifier = req.params.medicalRegistrationNumber || req.params.id;
+  let doctor;
+
+  if (req.params.medicalRegistrationNumber) {
+    doctor = await Doctor.findOne({ medicalRegistrationNumber: identifier }).populate('user', 'name email profilePicture phoneNumber');
+  } else if (req.params.id) {
+    doctor = await Doctor.findById(identifier).populate('user', 'name email profilePicture phoneNumber');
+  } else {
+    res.status(400);
+    throw new Error('Doctor ID or Medical Registration Number not provided');
+  }
 
   if (doctor) {
     const reviews = await Review.find({ reviewedEntity: doctor._id, onModel: 'Doctor' }).populate('user', 'name');
@@ -139,9 +149,19 @@ const createDoctorProfile = asyncHandler(async (req, res) => {
 // @route   PUT /api/doctors/:id
 // @access  Private/Doctor or Admin
 const updateDoctorProfile = asyncHandler(async (req, res) => {
-  const { specialty, qualifications, experience, bio, expertise, consultationFee, appointmentDuration, isAvailable, name, profilePicture, medicalRegistrationNumber } = req.body;
+  const { specialty, qualifications, experience, bio, expertise, consultationFee, appointmentDuration, isAvailable, name, profilePicture, workSchedule } = req.body;
 
-  const doctor = await Doctor.findById(req.params.id).populate('user');
+  const identifier = req.params.medicalRegistrationNumber || req.params.id;
+  let doctor;
+
+  if (req.params.medicalRegistrationNumber) {
+      doctor = await Doctor.findOne({ medicalRegistrationNumber: identifier }).populate('user');
+  } else if (req.params.id) {
+      doctor = await Doctor.findById(identifier).populate('user');
+  } else {
+      res.status(400);
+      throw new Error('Doctor ID or Medical Registration Number not provided');
+  }
 
   if (doctor) {
     // Ensure only the doctor themselves or an admin can update
@@ -163,13 +183,19 @@ const updateDoctorProfile = asyncHandler(async (req, res) => {
     doctor.specialty = specialty ?? doctor.specialty;
     doctor.qualifications = qualifications ?? doctor.qualifications;
     doctor.experience = experience ?? doctor.experience;
-    doctor.medicalRegistrationNumber = medicalRegistrationNumber ?? doctor.medicalRegistrationNumber; // Added medicalRegistrationNumber
+    doctor.medicalRegistrationNumber = identifier ?? doctor.medicalRegistrationNumber; // Added medicalRegistrationNumber
     doctor.bio = bio ?? doctor.bio;
     doctor.expertise = expertise ?? doctor.expertise;
     doctor.consultationFee = consultationFee ?? doctor.consultationFee;
     doctor.appointmentDuration = appointmentDuration ?? doctor.appointmentDuration;
     if (isAvailable !== undefined) {
         doctor.isAvailable = isAvailable;
+    }
+    if (workSchedule !== undefined) {
+        // Merge or replace the existing work schedule
+        // If `workSchedule` is a complete object, replace it
+        // If you want to merge, you'd need more complex logic here
+        doctor.workSchedule = workSchedule;
     }
 
     const updatedDoctor = await doctor.save();
@@ -284,8 +310,9 @@ const getAvailableDoctorSlots = asyncHandler(async (req, res) => {
 });
 
 const getDoctorDashboardStats = asyncHandler(async (req, res) => {
-    console.log("getDoctorDashboardStats - req.user._id:", req.user._id); // Debug log
-    const doctor = await Doctor.findOne({ user: req.user._id });
+    const medicalRegistrationNumber = req.params.medicalRegistrationNumber;
+    console.log("getDoctorDashboardStats - medicalRegistrationNumber:", medicalRegistrationNumber); // Debug log
+    const doctor = await Doctor.findOne({ medicalRegistrationNumber: medicalRegistrationNumber });
     console.log("getDoctorDashboardStats - doctor found:", doctor); // Debug log
     if (!doctor) {
         res.status(404);

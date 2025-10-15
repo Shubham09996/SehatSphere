@@ -5,6 +5,8 @@ import {
 } from 'lucide-react';
 import api from '../utils/api'; // Import the configured axios instance
 import { useNavigate } from 'react-router-dom';
+import PatientOnboardingModal from '../components/patient/PatientOnboardingModal';
+import DoctorOnboardingModal from '../components/doctor/DoctorOnboardingModal';
 
 // Self-contained Google Icon to remove dependency errors
 const GoogleIcon = () => (
@@ -129,6 +131,11 @@ const SignupPage = () => {
     const [selectedRole, setSelectedRole] = useState('Patient'); // State for selected role
     const [avatar, setAvatar] = useState(null); // State for selected avatar file
     const [avatarPreview, setAvatarPreview] = useState(''); // State for avatar preview URL
+    const [showOnboardingModal, setShowOnboardingModal] = useState(false);
+    const [newlySignedUpPatientId, setNewlySignedUpPatientId] = useState(null);
+    const [newlySignedUpUserId, setNewlySignedUpUserId] = useState(null);
+    const [showDoctorOnboardingModal, setShowDoctorOnboardingModal] = useState(false);
+    const [newlySignedUpDoctorId, setNewlySignedUpDoctorId] = useState(null);
 
     const navigate = useNavigate();
 
@@ -203,21 +210,33 @@ const SignupPage = () => {
                 console.log("Normal Signup Successful:", res.data);
                 localStorage.setItem('profilePicture', res.data.profilePicture); // Save profile picture to localStorage
                 localStorage.setItem('userName', res.data.name); // Save user name to localStorage
-                localStorage.setItem(`${userRole}Id`, res.data.specificProfileId); // Save specificProfileId to localStorage dynamically
                 const userRole = res.data.role.toLowerCase();
+                localStorage.setItem(`${userRole}Id`, res.data.specificProfileId); // Save specificProfileId to localStorage dynamically
 
-                if (userRole === 'doctor' && res.data.specificProfileId) {
-                    // Fetch doctor's specialty to store in localStorage
-                    try {
-                        const doctorRes = await api.get(`/api/doctors/${res.data.specificProfileId}`);
-                        if (doctorRes.data && doctorRes.data.personalInfo && doctorRes.data.personalInfo.specialty) {
-                            localStorage.setItem('userSpecialty', doctorRes.data.personalInfo.specialty);
-                        }
-                    } catch (fetchError) {
-                        console.error("Error fetching doctor specialty for signup:", fetchError);
-                    }
+                if (userRole === 'patient') {
+                    setNewlySignedUpPatientId(res.data.specificProfileId);
+                    setNewlySignedUpUserId(res.data.userId); // Assuming userId is returned by the backend
+                    setShowOnboardingModal(true);
+                } else if (userRole === 'doctor' && res.data.specificProfileId) {
+                    // Removed direct navigation for doctors here
+                    setNewlySignedUpDoctorId(res.data.specificProfileId);
+                    setNewlySignedUpUserId(res.data.userId);
+                    setShowDoctorOnboardingModal(true);
+
+                    // The following logic to fetch specialty is now redundant as it will be collected in onboarding
+                    // try {
+                    //     const doctorRes = await api.get(`/api/doctors/${res.data.specificProfileId}`);
+                    //     if (doctorRes.data && doctorRes.data.personalInfo && doctorRes.data.personalInfo.specialty) {
+                    //         localStorage.setItem('userSpecialty', doctorRes.data.personalInfo.specialty);
+                    //     }
+                    // } catch (fetchError) {
+                    //     console.error("Error fetching doctor specialty for signup:", fetchError);
+                    // }
+                    // navigate(`/${userRole}/dashboard`); // Redirect to respective dashboard after signup
+                } else {
+                    navigate(`/${userRole}/dashboard`);
                 }
-                navigate(`/${userRole}/dashboard`); // Redirect to respective dashboard after signup
+
             }
         } catch (error) {
             console.error("Normal Signup Failed:", error);
@@ -397,8 +416,22 @@ const SignupPage = () => {
                             Sign In
                         </a>
                     </p>
+
                 </motion.div>
             </div>
+            <PatientOnboardingModal
+                isOpen={showOnboardingModal}
+                onClose={() => setShowOnboardingModal(false)}
+                patientId={newlySignedUpPatientId}
+                userId={newlySignedUpUserId}
+            />
+
+            <DoctorOnboardingModal
+                isOpen={showDoctorOnboardingModal}
+                onClose={() => setShowDoctorOnboardingModal(false)}
+                doctorId={newlySignedUpDoctorId}
+                userId={newlySignedUpUserId}
+            />
         </motion.div>
     );
 };

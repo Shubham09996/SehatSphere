@@ -81,6 +81,8 @@ const PatientProfilePage = () => {
                         <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{data.personalInfo.name}</h1>
                         <p className="font-mono text-sm text-primary bg-primary/10 px-2 py-1 rounded-md inline-block my-2">{data.personalInfo.patientId}</p>
                         <p className="text-muted-foreground">{data.personalInfo.age} years old • Blood Group: <span className="font-semibold text-red-500">{data.personalInfo.bloodGroup}</span></p>
+                        <p className="text-muted-foreground">Gender: <span className="font-semibold text-foreground">{data.gender || 'N/A'}</span></p>
+
                     </div>
                     <div className="flex-shrink-0 flex flex-col items-center gap-2">
                         <div className="bg-white p-2 rounded-lg border border-border">
@@ -162,9 +164,9 @@ const PatientProfilePage = () => {
                      </InfoCard>
 
                      <InfoCard icon={<Phone size={20}/>} title="Emergency Contact">
-                        <p className="font-bold text-lg">{data.emergencyContact?.name || 'N/A'}</p>
-                        <p className="text-sm text-muted-foreground">{data.emergencyContact?.relation || 'N/A'}</p>
-                        <a href={`tel:${data.emergencyContact?.phone || '#'}`} className="mt-4 block w-full text-center font-semibold py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+                        <p className="font-bold text-lg">{data.personalInfo.emergencyContact?.name || 'N/A'}</p>
+                        <p className="text-sm text-muted-foreground">{data.personalInfo.emergencyContact?.relation || 'N/A'}</p>
+                        <a href={`tel:${data.personalInfo.emergencyContact?.phone || '#'}`} className="mt-4 block w-full text-center font-semibold py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
                             Call Now
                         </a>
                      </InfoCard>
