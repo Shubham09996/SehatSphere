@@ -106,6 +106,15 @@ const LoginPage = () => {
                 localStorage.setItem('userName', res.data.name);
                 localStorage.setItem('userRole', res.data.role);
 
+                // Prepare user data for AuthContext
+                const userData = {
+                    ...res.data,
+                    specificProfileId: res.data.specificProfileId
+                };
+                
+                // Call login from AuthContext
+                login(userData);
+
                 const userRole = res.data.role.toLowerCase();
                 if (res.data.isNewUser && userRole === 'patient') {
                     navigate(`/patient-onboarding/${res.data._id}`);
@@ -113,8 +122,6 @@ const LoginPage = () => {
                     navigate(`/${userRole}/dashboard`);
                 }
                 toast.success('Login successful!');
-                // Dispatch custom event to notify Header component of localStorage update
-                window.dispatchEvent(new Event('localStorageUpdated'));
             }
         } catch (err) {
             console.error("Normal Login Failed:", err);

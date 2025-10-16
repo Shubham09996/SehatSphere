@@ -11,8 +11,17 @@ const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
     const { user, logout } = useAuth(); // Get user and logout from AuthContext
-    const userProfilePicture = user?.profilePicture || '/placeholders/default_avatar.jpg'; // Use user's profile picture
-    const userName = user?.name || user?.firstName || ''; // Get user's name from AuthContext
+    
+    // Debug: Log user data to console
+    console.log('Header - User data:', user);
+    console.log('Header - User profilePicture:', user?.profilePicture);
+    console.log('Header - User name:', user?.name);
+    
+    // Get user profile picture - try multiple possible fields and localStorage fallback
+    const userProfilePicture = user?.profilePicture || user?.avatar || user?.profileImage || localStorage.getItem('profilePicture') || null;
+    
+    // Get user name - try multiple possible fields
+    const userName = user?.name || user?.firstName || user?.fullName || user?.username || 'User';
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -101,13 +110,25 @@ const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
                 <div className="relative" ref={dropdownRef}>
                     <button 
                         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                        className="w-9 h-9 rounded-full bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end flex items-center justify-center text-white font-bold cursor-pointer ring-2 ring-offset-2 ring-offset-card ring-transparent hover:ring-primary transition-all"
+                        className="w-9 h-9 rounded-full bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end flex items-center justify-center text-white font-bold cursor-pointer ring-2 ring-offset-2 ring-offset-card ring-transparent hover:ring-primary transition-all overflow-hidden"
                     >
                         {userProfilePicture ? (
-                            <img src={userProfilePicture} alt="Profile" className="w-full h-full rounded-full object-cover" />
-                        ) : (
-                            <span className="text-white font-bold">{userName ? userName.charAt(0).toUpperCase() : 'H'}</span>
-                        )}
+                            <img 
+                                src={userProfilePicture} 
+                                alt="Profile" 
+                                className="w-full h-full rounded-full object-cover"
+                                onError={(e) => {
+                                    console.log('Avatar image failed to load, showing initials instead');
+                                    e.target.style.display = 'none';
+                                }}
+                            />
+                        ) : null}
+                        <span 
+                            className="text-white font-bold w-full h-full flex items-center justify-center"
+                            style={{ display: userProfilePicture ? 'none' : 'flex' }}
+                        >
+                            {userName ? userName.charAt(0).toUpperCase() : 'U'}
+                        </span>
                     </button>
                     
                     {isDropdownOpen && (

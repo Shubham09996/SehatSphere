@@ -30,7 +30,7 @@ const AdminHeader = ({ isSidebarOpen, setIsSidebarOpen }) => {
     const handleLogout = async () => {
         try {
             await api.post('/api/users/logout'); // Assuming a logout endpoint
-            localStorage.removeItem('userInfo'); // Clear user info from local storage
+            localStorage.clear(); // Clear ALL localStorage data
             navigate('/login'); // Redirect to login page
         } catch (error) {
             console.error('Logout failed:', error);

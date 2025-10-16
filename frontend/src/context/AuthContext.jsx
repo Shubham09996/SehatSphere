@@ -56,7 +56,8 @@ export const AuthProvider = ({ children }) => {
         } catch (error) {
             console.error('Logout API failed:', error);
         } finally {
-            localStorage.removeItem('userInfo');
+            // Clear ALL localStorage data
+            localStorage.clear();
             setUser(null);
         }
     };
