@@ -154,25 +154,23 @@ function App() {
           </Route>
         </Route>
 
-        <Route element={<PrivateRoute allowedRoles={['Shop']} />}>
-          <Route path="/shop" element={<ShopDashboardLayout />}>
-            <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<ShopDashboardPage />} />
-            <Route path="orders" element={<ShopOrdersPage />} />
-            <Route path="inventory" element={<ShopInventoryPage />} />
-            <Route path="billing" element={<ShopBillingPage />} />
-            <Route path="analytics" element={<ShopAnalyticsPage />} />
-            <Route path="notifications" element={<ShopNotificationsPage />} />
-            <Route path="profile" element={<ShopProfilePage />} />
+        <Route path="/shop" element={<ShopDashboardLayout />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<ShopDashboardPage />} />
+          <Route path="orders" element={<ShopOrdersPage />} />
+          <Route path="inventory" element={<ShopInventoryPage />} />
+          <Route path="billing" element={<ShopBillingPage />} />
+          <Route path="analytics" element={<ShopAnalyticsPage />} />
+          <Route path="notifications" element={<ShopNotificationsPage />} />
+          <Route path="profile" element={<ShopProfilePage />} />
 
 
-            <Route path="settings" element={<ShopSettingsPage />}>
-              <Route index element={<Navigate to="profile" replace />} />
-              <Route path="profile" element={<ShopProfileSettings />} />
-              <Route path="billing" element={<PlanAndBilling />} />
-              <Route path="staff" element={<StaffManagement />} />
-              <Route path="integrations" element={<Integrations />} />
-            </Route>
+          <Route path="settings" element={<ShopSettingsPage />}>
+            <Route index element={<Navigate to="profile" replace />} />
+            <Route path="profile" element={<ShopProfileSettings />} />
+            <Route path="billing" element={<PlanAndBilling />} />
+            <Route path="staff" element={<StaffManagement />} />
+            <Route path="integrations" element={<Integrations />} />
           </Route>
         </Route>
 

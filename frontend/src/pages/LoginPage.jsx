@@ -299,8 +299,6 @@ const LoginPage = () => {
                         <GoogleIcon />
                         <span className="font-semibold text-foreground">Login with Google</span>
                     </motion.button>
-
-                    {/* Dummy Login Buttons for Patient and Doctor */}
                     
                     <p className="text-center text-muted-foreground text-xs sm:text-sm">
                         Don't have an account? 
