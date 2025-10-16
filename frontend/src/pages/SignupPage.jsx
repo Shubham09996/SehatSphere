@@ -7,6 +7,7 @@ import api from '../utils/api'; // Import the configured axios instance
 import { useNavigate } from 'react-router-dom';
 import PatientOnboardingModal from '../components/patient/PatientOnboardingModal';
 import DoctorOnboardingModal from '../components/doctor/DoctorOnboardingModal';
+import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext'; // Import useAuth hook
 
 // Self-contained Google Icon to remove dependency errors
@@ -119,7 +120,7 @@ const SignupPage = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [selectedRole, setSelectedRole] = useState('Patient'); // State for selected role
+    const [selectedRole, setSelectedRole] = useState('Patient'); // Default role
     const [avatar, setAvatar] = useState(null); // State for selected avatar file
     const [avatarPreview, setAvatarPreview] = useState(''); // State for avatar preview URL
     const [showOnboardingModal, setShowOnboardingModal] = useState(false);
@@ -134,18 +135,6 @@ const SignupPage = () => {
     const navigate = useNavigate();
     const { login } = useAuth(); // Use the login function from AuthContext
 
-    // Google Auth related states and functions
-    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID; // Access Client ID from environment
-
-    useEffect(() => {
-        if (window.google && googleClientId) {
-            window.google.accounts.id.initialize({
-                client_id: googleClientId,
-                callback: handleCredentialResponse,
-            });
-        }
-    }, [googleClientId]);
-
     // Fetch hospitals on component mount for the dropdown
     useEffect(() => {
         const fetchHospitals = async () => {
@@ -158,6 +147,16 @@ const SignupPage = () => {
         };
         fetchHospitals();
     }, []); // Empty dependency array means this runs once on mount
+
+    useEffect(() => {
+        // Check for JWT in localStorage for authentication status
+        if (localStorage.getItem('jwt')) {
+            const userRole = localStorage.getItem('userRole');
+            if (userRole) {
+                navigate(`/${userRole.toLowerCase()}/dashboard`);
+            }
+        }
+    }, [navigate]);
 
     const handleCredentialResponse = async (response) => {
         if (response.credential) {
@@ -177,9 +176,7 @@ const SignupPage = () => {
     };
 
     const handleGoogleSignupClick = () => {
-        if (window.google) {
-            window.google.accounts.id.prompt(); // Trigger Google One Tap or pop-up
-        }
+        window.location.href = 'http://localhost:5000/api/users/auth/google'; // Directly navigate to backend Google OAuth
     };
 
     const handleAvatarChange = (e) => {
@@ -193,15 +190,16 @@ const SignupPage = () => {
         }
     };
 
-    const handleNormalSignup = async (e) => {
+    const submitHandler = async (e) => { // Renamed from handleNormalSignup for consistency
         e.preventDefault();
+
         if (password !== confirmPassword) {
-            alert("Passwords do not match!");
+            toast.error('Passwords do not match!'); // Using toast for consistency
             return;
         }
-        // Add validation for hospital selection if role is Doctor
+
         if (selectedRole === 'Doctor' && !selectedHospital) {
-            alert("Please select a hospital for the doctor.");
+            toast.error('Please select a hospital for the doctor.'); // Using toast for consistency
             return;
         }
         setLoading(true); // Set loading to true
@@ -215,14 +213,8 @@ const SignupPage = () => {
             if (avatar) {
                 formData.append('profilePicture', avatar);
             }
-            // Add hospital to form data if role is Doctor
             if (selectedRole === 'Doctor' && selectedHospital) {
                 formData.append('hospital', selectedHospital);
-            }
-
-            // Log FormData contents for debugging
-            for (let [key, value] of formData.entries()) {
-                console.log(`FormData Key: ${key}, Value: ${value}`);
             }
 
             const res = await api.post('/api/users', formData, {
@@ -230,8 +222,13 @@ const SignupPage = () => {
                     'Content-Type': 'multipart/form-data',
                 },
             });
+
             if (res.data) {
                 console.log("Normal Signup Successful:", res.data);
+                localStorage.setItem('profilePicture', res.data.profilePicture);
+                localStorage.setItem('userName', res.data.name);
+                localStorage.setItem('userRole', res.data.role);
+                
                 const userRole = res.data.role.toLowerCase();
                 
                 // Prepare data for login context
@@ -242,21 +239,29 @@ const SignupPage = () => {
                 };
                 login(userDataForLogin); // Use login from AuthContext
 
+                localStorage.setItem(`${userRole}Id`, res.data.specificProfileId);
+
+                // Check for isNewUser (which would only be relevant for Google OAuth, but let's keep it for future-proofing)
+                // For normal signup, we assume a new user is created and direct to onboarding or dashboard.
                 if (userRole === 'patient') {
-                    setNewlySignedUpPatientId(res.data.specificProfileId);
-                    setNewlySignedUpUserId(res.data.userId); // Assuming userId is returned by the backend
+                    setNewlySignedUpPatientId(res.data.specificProfileId); // Use specificProfileId for patient
+                    setNewlySignedUpUserId(res.data._id); // Use the newly created user's _id
                     setShowOnboardingModal(true);
-                } else if (userRole === 'doctor' && res.data.specificProfileId) {
-                    setNewlySignedUpDoctorId(res.data.specificProfileId);
-                    setNewlySignedUpUserId(res.data.userId);
+                } else if (userRole === 'doctor') {
+                    setNewlySignedUpDoctorId(res.data.specificProfileId); // Use specificProfileId for doctor
+                    setNewlySignedUpUserId(res.data._id); // Use the newly created user's _id
                     setShowDoctorOnboardingModal(true);
                 } else {
+                    // For other roles, just navigate to their dashboard
                     navigate(`/${userRole}/dashboard`);
                 }
+
+                toast.success('Registration successful!');
+                window.dispatchEvent(new Event('localStorageUpdated'));
             }
-        } catch (error) {
-            console.error("Normal Signup Failed:", error);
-            alert(error.response?.data?.message || "Signup failed. Please try again.");
+        } catch (err) {
+            console.error("Normal Signup Failed:", err);
+            toast.error(err.response?.data?.message || err.message || "Registration failed. Please try again.");
         } finally {
             setLoading(false); // Set loading to false in finally block
         }
@@ -432,7 +437,7 @@ const SignupPage = () => {
                         className="w-full bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-primary-foreground py-3 rounded-lg font-semibold text-lg shadow-lg hover:shadow-xl hover:opacity-95 transition-all duration-300"
                         whileHover={{ scale: 1.01 }}
                         whileTap={{ scale: 0.99 }}
-                        onClick={handleNormalSignup}
+                        onClick={submitHandler} // Changed to submitHandler
                         disabled={loading} // Disable button when loading
                     >
                         {loading ? 'Creating Account...' : 'Create Account'} {/* Change button text/add spinner */}

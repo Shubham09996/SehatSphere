@@ -12,6 +12,7 @@ const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
     const navigate = useNavigate();
     const { user, logout } = useAuth(); // Get user and logout from AuthContext
     const userProfilePicture = user?.profilePicture || '/placeholders/default_avatar.jpg'; // Use user's profile picture
+    const userName = user?.name || user?.firstName || ''; // Get user's name from AuthContext
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -25,7 +26,6 @@ const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [dropdownRef]);
-
     return (
         <header className="flex items-center justify-between p-4 bg-card border-b border-border sticky top-0 z-40">
             <div className="flex items-center space-x-4">
@@ -106,7 +106,7 @@ const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
                         {userProfilePicture ? (
                             <img src={userProfilePicture} alt="Profile" className="w-full h-full rounded-full object-cover" />
                         ) : (
-                            <span className="text-white font-bold">R</span>
+                            <span className="text-white font-bold">{userName ? userName.charAt(0).toUpperCase() : 'H'}</span>
                         )}
                     </button>
                     

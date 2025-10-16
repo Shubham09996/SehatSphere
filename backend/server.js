@@ -5,9 +5,9 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors'; // Import cors
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 import userRoutes from './routes/userRoutes.js';
+import { patientRoutes } from './routes/patientRoutes.js'; // Import patientRoutes as named export
 import hospitalRoutes from './routes/hospitalRoutes.js';
 import doctorRoutes from './routes/doctorRoutes.js';
-import patientRoutes from './routes/patientRoutes.js';
 import shopRoutes from './routes/shopRoutes.js';
 import appointmentRoutes from './routes/appointmentRoutes.js';
 import medicineRoutes from './routes/medicineRoutes.js';
@@ -22,6 +22,9 @@ import donationCenterRoutes from './routes/donationCenterRoutes.js';
 import donationRoutes from './routes/donationRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import geminiRoutes from './routes/geminiRoutes.js';
+import config from './config/config.js'; // Import config
+import passport from './config/passport.js'; // Import passport config
+import session from 'express-session'; // Import express-session
 
 
 dotenv.config();
@@ -29,6 +32,17 @@ dotenv.config();
 connectDB();
 
 const app = express();
+
+// Session middleware (required for passport)
+app.use(session({
+    secret: config.jwtSecret, // Use JWT secret for session secret
+    resave: false,
+    saveUninitialized: false,
+}));
+
+// Passport middleware
+app.use(passport.initialize());
+app.use(passport.session());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -39,10 +53,11 @@ app.get('/', (req, res) => {
   res.send('API is running...');
 });
 
-app.use('/api/users', userRoutes);
+app.use('/api/users', userRoutes); // Re-enable userRoutes
+app.use('/api/patients', patientRoutes); // Re-enable patientRoutes
+console.log('server.js: Using patientRoutes'); // Debug log
 app.use('/api/hospitals', hospitalRoutes);
 app.use('/api/doctors', doctorRoutes);
-app.use('/api/patients', patientRoutes);
 app.use('/api/shops', shopRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/medicines', medicineRoutes);

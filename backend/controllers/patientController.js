@@ -35,14 +35,21 @@ const getPatients = asyncHandler(async (req, res) => {
 // @access  Private/Patient or Admin
 const getPatientProfile = asyncHandler(async (req, res) => {
   let patient;
-  const idOrPatientId = req.params.idOrPatientId; // Get the ID from the route parameter
+  const idOrPatientId = req.params.idOrPatientId || req.params.userId; // Get the ID from route parameters
 
   if (idOrPatientId && idOrPatientId.startsWith('PID-')) {
     // If it starts with 'PID-', assume it's a patientId string
     patient = await Patient.findOne({ patientId: idOrPatientId }).populate('user', 'name email profilePicture phoneNumber isVerified');
   } else if (idOrPatientId) {
-    // Otherwise, assume it's a MongoDB ObjectId
-    patient = await Patient.findById(idOrPatientId).populate('user', 'name email profilePicture phoneNumber isVerified');
+    // Check if it's a valid MongoDB ObjectId (for _id) or a userId
+    if (idOrPatientId.match(/^[0-9a-fA-F]{24}$/)) {
+      // Try to find by _id
+      patient = await Patient.findById(idOrPatientId).populate('user', 'name email profilePicture phoneNumber isVerified');
+    }
+    // If not found by _id, or if it's not a valid ObjectId, try to find by user ID
+    if (!patient) {
+      patient = await Patient.findOne({ user: idOrPatientId }).populate('user', 'name email profilePicture phoneNumber isVerified');
+    }
   } else {
     // Fallback to finding patient by logged in user's ID if no specific ID is provided in route
     patient = await Patient.findOne({ user: req.user._id }).populate('user', 'name email profilePicture phoneNumber isVerified');
@@ -50,9 +57,14 @@ const getPatientProfile = asyncHandler(async (req, res) => {
 
   if (patient) {
     // Allow patient to view their own profile, or admin/doctor to view any patient profile
-    if (req.user.role !== 'Admin' && req.user.role !== 'Doctor' && patient.user._id.toString() !== req.user._id.toString()) {
-        res.status(403);
-        throw new Error('Not authorized to view this patient profile');
+    // Also, if fetching by userId, ensure authorization
+    if (
+      req.user.role !== 'Admin' &&
+      req.user.role !== 'Doctor' &&
+      patient.user._id.toString() !== req.user._id.toString()
+    ) {
+      res.status(403);
+      throw new Error('Not authorized to view this patient profile');
     }
 
     // Calculate Age
@@ -160,13 +172,13 @@ const createPatientProfile = asyncHandler(async (req, res) => {
       res.status(400);
       throw new Error('User not found or not a Patient role');
     }
-  
+
     const patientExists = await Patient.findOne({ user: userId });
     if (patientExists) {
       res.status(400);
       throw new Error('Patient profile already exists for this user');
     }
-  
+
     const patient = new Patient({
       user: userId,
       patientId: `PID-${Math.floor(100000 + Math.random() * 900000)}`,
@@ -179,7 +191,7 @@ const createPatientProfile = asyncHandler(async (req, res) => {
       recentVitals,
       isPremium,
     });
-  
+
     const createdPatient = await patient.save();
     res.status(201).json(createdPatient);
 });
@@ -307,7 +319,7 @@ const getPatientDashboardStats = asyncHandler(async (req, res) => {
         const appointmentDateTime = new Date(`${nextAppointment.date.toISOString().split('T')[0]}T${nextAppointment.time}:00`);
         const now = new Date();
         const timeDiffMinutes = Math.round((appointmentDateTime.getTime() - now.getTime()) / (1000 * 60));
-        
+
         nextAppointmentDetails = {
             date: nextAppointment.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
             time: nextAppointment.time,

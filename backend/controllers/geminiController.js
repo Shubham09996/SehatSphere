@@ -5,14 +5,15 @@ import { getChatbotResponse } from '../services/geminiService.js';
 // @route   POST /api/gemini/chat
 // @access  Private
 const getGeminiResponse = asyncHandler(async (req, res) => {
-    const { message } = req.body;
+    const { message, language } = req.body;
 
     if (!message) {
         res.status(400);
         throw new Error('Message is required');
     }
 
-    const geminiResponse = await getChatbotResponse(message);
+    const userName = req.user ? req.user.name : null; // Assuming user info is attached by auth middleware
+    const geminiResponse = await getChatbotResponse(message, userName, language);
 
     res.json({ response: geminiResponse });
 });

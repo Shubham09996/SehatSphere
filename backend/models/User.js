@@ -42,6 +42,8 @@ const userSchema = mongoose.Schema(
         type: Number,
         default: 0,
     },
+    resetPasswordToken: String,
+    resetPasswordExpire: Date,
     notificationPreferences: {
         type: new mongoose.Schema({
             email: { type: Boolean, default: true },
