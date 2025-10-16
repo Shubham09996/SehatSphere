@@ -18,7 +18,7 @@ const Step2SelectDepartment = ({ onNext, details, onBack }) => {
                     <motion.div key={dept || index} onClick={() => onNext({ department: { id: dept, name: dept, icon: 'Stethoscope' } })}
                         className="flex flex-col items-center justify-center p-6 border border-border rounded-lg cursor-pointer hover:bg-muted text-center"
                         whileHover={{ scale: 1.05, transition: { duration: 0.2 } }}>
-                        {renderIcon('Stethoscope')} // Since dept is a string, we use a default icon
+                        {renderIcon('Stethoscope')}
                         <h3 className="font-semibold text-foreground">{dept}</h3>
                     </motion.div>
                 ))}

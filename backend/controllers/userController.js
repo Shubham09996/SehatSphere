@@ -5,86 +5,14 @@ import Patient from '../models/Patient.js';
 import Doctor from '../models/Doctor.js';
 import Shop from '../models/Shop.js';
 import uploadToCloudinary from '../utils/cloudinary.js';
-import { OAuth2Client } from 'google-auth-library'; // Import OAuth2Client
-import config from '../config/config.js'; // Import config
+import sendEmail from '../utils/sendEmail.js'; // NEW: Import sendEmail utility
+import crypto from 'crypto'; // NEW: Import crypto for token generation
+// Removed OAuth2Client import as it's no longer used for client-side Google Auth
+// Removed config import for googleAuth as it's no longer directly used here
 
-const client = new OAuth2Client(config.googleAuth.clientId);
+// Removed client initialization for OAuth2Client as it's no longer used
 
-// @desc    Auth user with Google & get token
-// @route   POST /api/users/google-auth
-// @access  Public
-const googleAuth = asyncHandler(async (req, res) => {
-    const { idToken } = req.body; // Google ID Token from frontend
-
-    try {
-        const ticket = await client.verifyIdToken({
-            idToken,
-            audience: config.googleAuth.clientId,
-        });
-        const payload = ticket.getPayload();
-        const { name, email, picture } = payload;
-
-        let user = await User.findOne({ email });
-
-        if (user) {
-            // User exists, log them in
-            // Update name or profile picture if it's changed in Google profile
-            user.name = name;
-            user.profilePicture = picture || user.profilePicture;
-            await user.save();
-        } else {
-            // User does not exist, register a new one
-            // For Google sign-up, password is not directly set. Handle this carefully.
-            // A common practice is to set a random unguessable password or use `isGoogleAuth: true` flag
-            const randomPassword = Math.random().toString(36).slice(-8); // Generate a random password
-            user = await User.create({
-                name,
-                email,
-                password: randomPassword, // Set a temporary/random password
-                profilePicture: picture || '/uploads/default.jpg',
-                role: 'Patient', // Default role for new Google users
-                isVerified: true, // Google authenticated users are usually verified
-            });
-
-            if (user) {
-                // Create a patient profile for new Google users by default
-                await Patient.create({
-                    user: user._id,
-                    patientId: `PID-${Math.floor(100000 + Math.random() * 900000)}`,
-                    // other patient defaults
-                });
-            }
-        }
-
-        if (user) {
-            const token = generateToken(user._id);
-            res.cookie('jwt', token, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV !== 'development',
-                sameSite: 'strict',
-                maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-            });
-
-            res.status(200).json({
-                _id: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                profilePicture: user.profilePicture,
-                phoneNumber: user.phoneNumber,
-                isVerified: user.isVerified,
-                status: user.status,
-            });
-        } else {
-            res.status(400);
-            throw new Error('Invalid user data from Google');
-        }
-    } catch (error) {
-        console.error('Google Auth Error:', error);
-        res.status(401);
-        throw new Error('Google authentication failed');
-    }
-});
+// Removed googleAuth controller as it's no longer used for client-side Google Auth
 
 // @desc    Auth user & get token
 // @route   POST /api/users/auth
@@ -500,4 +428,85 @@ const adminUpdateUser = asyncHandler(async (req, res) => {
     });
 });
 
-export { authUser, registerUser, getUserProfile, updateUserProfile, logoutUser, googleAuth, changePassword, updateNotificationPreferences, getUsers, updateUserRole, deleteUser, adminUpdateUser };
+// @desc    Request password reset
+// @route   POST /api/users/forgot-password
+// @access  Public
+const forgotPassword = asyncHandler(async (req, res) => {
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found with that email address');
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(20).toString('hex');
+    user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+    await user.save();
+
+    // Create reset URL (should point to frontend for user interaction)
+    const resetURL = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+
+    const message = `
+        <h1>You have requested a password reset</h1>
+        <p>Please go to this link to reset your password:</p>
+        <a href="${resetURL}" clicktracking=off>${resetURL}</a>
+        <p>This token is valid for 10 minutes.</p>
+    `;
+
+    try {
+        await sendEmail({
+            email: user.email,
+            subject: 'Password Reset Token',
+            message,
+        });
+
+        res.status(200).json({
+            success: true,
+            message: `Email sent to ${user.email}`,
+        });
+    } catch (error) {
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpire = undefined;
+        await user.save();
+
+        console.error(error);
+        res.status(500);
+        throw new Error('Email could not be sent');
+    }
+});
+
+// @desc    Reset password
+// @route   PUT /api/users/reset-password/:token
+// @access  Public
+const resetPassword = asyncHandler(async (req, res) => {
+    const resetPasswordToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+
+    const user = await User.findOne({
+        resetPasswordToken,
+        resetPasswordExpire: { $gt: Date.now() },
+    });
+
+    if (!user) {
+        res.status(400);
+        throw new Error('Invalid token or token has expired');
+    }
+
+    if (!req.body.password || req.body.password.length < 6) {
+        res.status(400);
+        throw new Error('New password must be at least 6 characters long');
+    }
+
+    user.password = req.body.password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save();
+
+    res.status(200).json({ success: true, message: 'Password reset successfully' });
+});
+
+export { authUser, registerUser, getUserProfile, updateUserProfile, logoutUser, changePassword, updateNotificationPreferences, getUsers, updateUserRole, deleteUser, adminUpdateUser, forgotPassword, resetPassword };

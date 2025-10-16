@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 // Reusable Chat Bubble
 const ChatBubble = ({ message }) => {
     const isBot = message.sender === 'bot';
+    const ts = message.createdAt ? new Date(message.createdAt) : null;
+    const timeLabel = ts ? ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
     return (
         <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -13,6 +15,7 @@ const ChatBubble = ({ message }) => {
         >
             <div className={`max-w-xs px-4 py-2 rounded-2xl ${isBot ? 'bg-muted rounded-bl-none' : 'bg-primary text-primary-foreground rounded-br-none'}`}>
                 <p className="text-sm">{message.text}</p>
+                <div className={`mt-1 text-[10px] ${isBot ? 'text-muted-foreground' : 'text-primary-foreground/80'} text-right`}>{timeLabel}</div>
                  {message.suggestions && (
                     <div className="mt-3 flex flex-wrap gap-2">
                         {message.suggestions.map((s, i) => (
@@ -32,7 +35,7 @@ const ChatBubble = ({ message }) => {
 };
 
 // Main Chat Window
-const ChatWindow = ({ onClose, messages, onSendMessage }) => {
+const ChatWindow = ({ onClose, messages, onSendMessage, isTypingExternal }) => {
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const messagesEndRef = useRef(null);
@@ -44,13 +47,17 @@ const ChatWindow = ({ onClose, messages, onSendMessage }) => {
     useEffect(scrollToBottom, [messages, isTyping]);
 
     useEffect(() => {
-        // If the last message was from the user, show typing indicator
+        if (typeof isTypingExternal === 'boolean') {
+            setIsTyping(isTypingExternal);
+            return;
+        }
+        // Fallback behaviour if external control not provided
         if (messages.length > 0 && messages[messages.length - 1].sender === 'user') {
             setIsTyping(true);
-            const timer = setTimeout(() => setIsTyping(false), 1400); // Should be slightly less than bot response time
+            const timer = setTimeout(() => setIsTyping(false), 1400);
             return () => clearTimeout(timer);
         }
-    }, [messages]);
+    }, [messages, isTypingExternal]);
 
     const handleSend = () => {
         if (input.trim()) {

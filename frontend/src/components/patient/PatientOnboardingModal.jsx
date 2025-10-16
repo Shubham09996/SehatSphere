@@ -3,8 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Droplets, Heart, Phone, ShieldAlert, User } from 'lucide-react';
 import api from '../../utils/api';
 import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react'; // Import useEffect
 
-const PatientOnboardingModal = ({ isOpen, onClose, patientId, userId }) => {
+const PatientOnboardingModal = ({ isOpen, onClose, patientId: propPatientId, userId }) => {
     const navigate = useNavigate();
     const [dob, setDob] = useState('');
     const [gender, setGender] = useState('');
@@ -16,11 +17,37 @@ const PatientOnboardingModal = ({ isOpen, onClose, patientId, userId }) => {
     const [chronicConditions, setChronicConditions] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [currentPatientId, setCurrentPatientId] = useState(propPatientId); // Use internal state for patientId
+
+    useEffect(() => {
+        const fetchPatientId = async () => {
+            if (!userId) {
+                setError('User ID is missing. Cannot fetch patient details.');
+                return;
+            }
+            if (userId && !currentPatientId) {
+                try {
+                    const res = await api.get(`/api/patients/user/${userId}`);
+                    setCurrentPatientId(res.data.personalInfo.patientId); // Correctly access nested patientId
+                } catch (err) {
+                    console.error('Error fetching patient ID by userId:', err);
+                    setError(err.response?.data?.message || 'Failed to load patient ID.');
+                }
+            }
+        };
+        fetchPatientId();
+    }, [userId, currentPatientId]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
+
+        if (!currentPatientId) {
+            setError('Patient ID is not available. Please try again.');
+            setLoading(false);
+            return;
+        }
 
         const patientDetails = {
             dob,
@@ -36,8 +63,14 @@ const PatientOnboardingModal = ({ isOpen, onClose, patientId, userId }) => {
         };
 
         try {
-            await api.put(`/api/patients/profile/${patientId}`, patientDetails);
+            await api.put(`/api/patients/profile/${currentPatientId}`, patientDetails); // Use currentPatientId
             console.log('Patient details updated successfully');
+
+            // Persist patientId to localStorage after successful update
+            localStorage.setItem('patientId', currentPatientId);
+            localStorage.setItem('userRole', 'Patient'); // Assuming role is Patient for this modal
+            window.dispatchEvent(new Event('localStorageUpdated'));
+
             onClose();
             navigate('/patient/dashboard'); // Redirect to dashboard after updating details
         } catch (err) {

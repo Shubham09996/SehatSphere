@@ -10,6 +10,7 @@ const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
     const [userProfilePicture, setUserProfilePicture] = useState('');
+    const [userName, setUserName] = useState(''); // State for user's name
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -26,9 +27,24 @@ const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
 
     useEffect(() => {
         const storedProfilePicture = localStorage.getItem('profilePicture');
+        const storedUserName = localStorage.getItem('userName'); // Fetch user name
+        
         if (storedProfilePicture) {
             setUserProfilePicture(storedProfilePicture);
         }
+        if (storedUserName) {
+            setUserName(storedUserName);
+        }
+
+        // Listen for custom event to re-fetch from localStorage if needed
+        const handleLocalStorageUpdate = () => {
+            setUserProfilePicture(localStorage.getItem('profilePicture'));
+            setUserName(localStorage.getItem('userName'));
+        };
+        window.addEventListener('localStorageUpdated', handleLocalStorageUpdate);
+        return () => {
+            window.removeEventListener('localStorageUpdated', handleLocalStorageUpdate);
+        };
     }, []);
 
     return (
@@ -111,7 +127,7 @@ const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
                         {userProfilePicture ? (
                             <img src={userProfilePicture} alt="Profile" className="w-full h-full rounded-full object-cover" />
                         ) : (
-                            <span className="text-white font-bold">R</span>
+                            <span className="text-white font-bold">{userName ? userName.charAt(0).toUpperCase() : 'H'}</span>
                         )}
                     </button>
                     

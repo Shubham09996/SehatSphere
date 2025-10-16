@@ -4,6 +4,12 @@ import {
     Stethoscope, Pill, Bot, User, Briefcase, Heart, Shield, Eye, EyeOff, Mail, Lock, Ambulance, Building, CheckCircle, Hospital, Syringe, ClipboardList 
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+// Removed Redux imports as slices/usersApiSlice and slices/authSlice are not found
+// import { useDispatch, useSelector } from 'react-redux';
+// import { useLoginMutation } from '../slices/usersApiSlice';
+// import { setCredentials } from '../slices/authSlice';
+import { toast } from 'react-toastify';
+// import Loader from '../components/Loader'; // Removed as it was for Redux isLoading state
 import api from '../utils/api'; // Import the configured axios instance
 
 // Self-contained Google Icon to remove dependency errors (copied from SignupPage.jsx)
@@ -78,86 +84,52 @@ const LoginPage = () => {
     const selectedRoleData = roleData[role];
     const navigate = useNavigate();
 
-    // Google Auth related states and functions
-    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID; // Access Client ID from environment
+    // Removed Redux-related state and hooks
+    // const dispatch = useDispatch();
+    // const [login, { isLoading }] = useLoginMutation();
+    // const { userInfo } = useSelector((state) => state.auth);
 
     useEffect(() => {
-        if (window.google && googleClientId) {
-            window.google.accounts.id.initialize({
-                client_id: googleClientId,
-                callback: handleCredentialResponse,
-            });
-        }
-    }, [googleClientId]);
-
-    const handleCredentialResponse = async (response) => {
-        if (response.credential) {
-            try {
-                const res = await api.post('/users/google-auth', { idToken: response.credential });
-                if (res.data) {
-                    console.log("Google Login Successful:", res.data);
-                    localStorage.setItem('profilePicture', res.data.profilePicture);
-                    localStorage.setItem('userName', res.data.name); // Save user name to localStorage
-                    const userRole = res.data.role.toLowerCase();
-                    if (userRole === 'doctor' && res.data.specificProfileId) {
-                        // Fetch doctor's specialty to store in localStorage
-                        try {
-                            const doctorRes = await api.get(`/api/doctors/${res.data.specificProfileId}`);
-                            if (doctorRes.data && doctorRes.data.personalInfo && doctorRes.data.personalInfo.specialty) {
-                                localStorage.setItem('userSpecialty', doctorRes.data.personalInfo.specialty);
-                            }
-                        } catch (fetchError) {
-                            console.error("Error fetching doctor specialty for Google login:", fetchError);
-                        }
-                    }
-                    navigate(`/${userRole}/dashboard`);
-                }
-            } catch (error) {
-                console.error("Google Login Failed:", error);
-                alert("Google login failed. Please try again.");
+        // Revert userInfo check to use localStorage token for authentication status
+        if (localStorage.getItem('jwt')) { // Check for JWT in localStorage
+            const userRole = localStorage.getItem('userRole'); // Assuming userRole is stored
+            if (userRole) {
+                navigate(`/${userRole.toLowerCase()}/dashboard`);
+            } else {
+                navigate('/'); // Default to home if role not found
             }
         }
-    };
+    }, [navigate]);
 
-    const handleGoogleLoginClick = () => {
-        if (window.google) {
-            window.google.accounts.id.prompt(); // Trigger Google One Tap or pop-up
-        }
-    };
-
-    const handleNormalLogin = async (e) => {
+    const submitHandler = async (e) => {
         e.preventDefault();
         try {
             const res = await api.post('/api/users/auth', { email, password });
             if (res.data) {
                 console.log("Normal Login Successful:", res.data);
+                localStorage.setItem('jwt', res.data.token); // Assuming token is returned for normal login
                 localStorage.setItem('profilePicture', res.data.profilePicture);
-                localStorage.setItem('userName', res.data.name); // Save user name to localStorage
-                const userRole = res.data.role.toLowerCase();
-                if (res.data.specificProfileId) {
-                  localStorage.setItem(`${userRole}Id`, res.data.specificProfileId);
+                localStorage.setItem('userName', res.data.name);
+                localStorage.setItem('userRole', res.data.role);
 
-                  if (userRole === 'doctor') {
-                    // Fetch doctor's specialty to store in localStorage
-                    try {
-                        const doctorRes = await api.get(`/api/doctors/${res.data.specificProfileId}`);
-                        if (doctorRes.data && doctorRes.data.personalInfo && doctorRes.data.personalInfo.specialty) {
-                            localStorage.setItem('userSpecialty', doctorRes.data.personalInfo.specialty);
-                        }
-                    } catch (fetchError) {
-                        console.error("Error fetching doctor specialty for normal login:", fetchError);
-                    }
-                  }
+                const userRole = res.data.role.toLowerCase();
+                if (res.data.isNewUser && userRole === 'patient') {
+                    navigate(`/patient-onboarding/${res.data._id}`);
+                } else {
+                    navigate(`/${userRole}/dashboard`);
                 }
-              else {
-                 console.warn(`specificProfileId not found in login response for role: ${userRole}`);
-              }
-                navigate(`/${userRole}/dashboard`); // Navigate to the dashboard
+                toast.success('Login successful!');
+                // Dispatch custom event to notify Header component of localStorage update
+                window.dispatchEvent(new Event('localStorageUpdated'));
             }
-        } catch (error) {
-            console.error("Normal Login Failed:", error);
-            alert(error.response?.data?.message || "Login failed. Please check your credentials.");
+        } catch (err) {
+            console.error("Normal Login Failed:", err);
+            toast.error(err.response?.data?.message || err.message || "Login failed. Please check your credentials.");
         }
+    };
+
+    const handleGoogleLoginClick = () => {
+        window.location.href = 'http://localhost:5000/api/users/auth/google'; // Directly navigate to backend Google OAuth
     };
 
     const containerVariants = {
@@ -253,7 +225,7 @@ const LoginPage = () => {
                     </div>
                     
                     {/* Form Inputs */}
-                    <form onSubmit={handleNormalLogin} className="space-y-5">
+                    <form onSubmit={submitHandler} className="space-y-5">
                         <div className="relative group">
                             <label htmlFor="email" className="sr-only">Email</label>
                             <input
@@ -294,9 +266,9 @@ const LoginPage = () => {
                                 <input type="checkbox" className="form-checkbox rounded text-hs-gradient-middle focus:ring-hs-gradient-middle border-border" />
                                 <span>Remember me</span>
                             </label>
-                            <a href="#" className="font-medium bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text hover:underline">
+                            <Link to="/forgot-password" className="font-medium bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text hover:underline">
                                 Forgot password?
-                            </a>
+                            </Link>
                         </div>
 
                         <motion.button

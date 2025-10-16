@@ -15,6 +15,9 @@ import AboutPage from './pages/AboutPage.jsx';
 import HomePage from './pages/HomePage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import SignupPage from './pages/SignupPage.jsx';
+import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx'; // NEW: Import ForgotPasswordPage
+import ResetPasswordPage from './pages/ResetPasswordPage.jsx'; // NEW: Import ResetPasswordPage
+import PatientOnboardingPage from './pages/patient/PatientOnboardingPage.jsx'; // Import new onboarding page
 
 // Patient Pages (all of them)
 import PatientDashboardPage from './pages/patient/PatientDashboardPage.jsx';
@@ -94,6 +97,9 @@ function App() {
           <Route path="/about" element={<AboutPage />} /> 
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} /> {/* NEW: Forgot password route */}
+          <Route path="/reset-password/:token" element={<ResetPasswordPage />} /> {/* NEW: Reset password route */}
+          <Route path="/patient-onboarding/:userId" element={<PatientOnboardingPage />} /> {/* New onboarding route */}
         </Route>
 
         {/* --- PATIENT DASHBOARD ROUTES --- */}
