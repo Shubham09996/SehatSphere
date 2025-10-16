@@ -47,7 +47,7 @@ app.use(passport.session());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(cors({ origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000', 'https://vibe-clash.vercel.app'], credentials: true })); // Enable CORS for frontend
+app.use(cors({ origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000', 'https://vibe-clash-3iyt.vercel.app'], credentials: true })); // Enable CORS for frontend
 
 app.get('/', (req, res) => {
   res.send('API is running...');
