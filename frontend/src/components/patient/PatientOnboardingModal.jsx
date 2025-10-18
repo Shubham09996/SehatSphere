@@ -20,23 +20,11 @@ const PatientOnboardingModal = ({ isOpen, onClose, patientId: propPatientId, use
     const [currentPatientId, setCurrentPatientId] = useState(propPatientId); // Use internal state for patientId
 
     useEffect(() => {
-        const fetchPatientId = async () => {
-            if (!userId) {
-                setError('User ID is missing. Cannot fetch patient details.');
-                return;
-            }
-            if (userId && !currentPatientId) {
-                try {
-                    const res = await api.get(`/api/patients/user/${userId}`);
-                    setCurrentPatientId(res.data.personalInfo.patientId); // Correctly access nested patientId
-                } catch (err) {
-                    console.error('Error fetching patient ID by userId:', err);
-                    setError(err.response?.data?.message || 'Failed to load patient ID.');
-                }
-            }
-        };
-        fetchPatientId();
-    }, [userId, currentPatientId]);
+        // Ensure currentPatientId is updated if propPatientId changes
+        if (propPatientId) {
+            setCurrentPatientId(propPatientId);
+        }
+    }, [propPatientId]); // Depend on propPatientId
 
     const handleSubmit = async (e) => {
         e.preventDefault();
