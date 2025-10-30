@@ -144,13 +144,22 @@ const AppointmentsPage = () => {
                     <h1 className="text-2xl sm:text-3xl md:text-3xl font-bold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">My Appointments</h1>
                     <p className="text-muted-foreground mt-1">View and manage your appointments.</p>
                 </div>
-                <Link 
-                    to="/patient/book-appointment"
-                    className="bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-white font-bold py-2 px-4 rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
-                >
-                    <CalendarPlus size={18} />
-                    Book New Appointment
-                </Link>
+                <div className="flex flex-col sm:flex-row gap-2">
+                    <Link 
+                        to="/patient/book-appointment"
+                        className="bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-white font-bold py-2 px-4 rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                    >
+                        <CalendarPlus size={18} />
+                        Book Doctor Appointment
+                    </Link>
+                    <Link 
+                        to="/patient/book-test-appointment" // NEW ROUTE for test appointments
+                        className="bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-white font-bold py-2 px-4 rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                    >
+                        <CalendarPlus size={18} />
+                        Book Test Appointment
+                    </Link>
+                </div>
             </div>
 
             {/* Tabs */}

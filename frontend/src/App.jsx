@@ -21,6 +21,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx';
 import ResetPasswordPage from './pages/ResetPasswordPage.jsx';
 import PatientOnboardingPage from './pages/patient/PatientOnboardingPage.jsx';
 import PrivateRoute from './components/PrivateRoute.jsx';
+import BookTestAppointmentPage from './pages/patient/BookTestAppointmentPage.jsx'; // NEW: Import BookTestAppointmentPage
 
 // Patient Pages
 import PatientDashboardPage from './pages/patient/PatientDashboardPage.jsx';
@@ -180,6 +181,7 @@ function App() {
               <Route path="security" element={<SecuritySettings />} />
               <Route path="notifications" element={<NotificationSettings />} />
             </Route>
+            <Route path="book-test-appointment" element={<BookTestAppointmentPage />} /> {/* NEW: Book Test Appointment page nested */} 
           </Route>
           <Route path="patient-onboarding/:userId" element={<PatientOnboardingPage />} />
         </Route>
