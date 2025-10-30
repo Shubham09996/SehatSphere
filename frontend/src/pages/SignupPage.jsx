@@ -25,7 +25,7 @@ const roleData = {
     Patient: { icon: User, label: 'Patient' },
     Doctor: { icon: Stethoscope, label: 'Doctor' },
     Shop: { icon: Building, label: 'Shop' },
-    Admin: { icon: Shield, label: 'Admin' }
+    Hospital: { icon: BriefcaseMedical, label: 'Hospital' }, // NEW: Hospital role
 };
 
 // Mock data for the left promotional panel based on role
@@ -55,6 +55,15 @@ const roleInfo = {
             { icon: TestTube2, title: 'Prescription Verification', text: 'Verify digital prescriptions instantly and securely.' },
             { icon: Building, title: 'Inventory Management', text: 'Track your stock and manage orders seamlessly.' },
             { icon: Sparkles, title: 'Wider Customer Reach', text: 'Connect with a larger network of patients.' }
+        ]
+    },
+    Hospital: { // NEW: Hospital role info
+        title: 'Hospital Management System',
+        description: 'Manage operations, staff, and patient care with ease.',
+        features: [
+            { icon: BriefcaseMedical, title: 'Integrated Patient Care', text: 'Streamline patient journeys from admission to discharge.' },
+            { icon: Stethoscope, title: 'Staff & Doctor Roster', text: 'Efficiently manage medical staff and their schedules.' },
+            { icon: Building, title: 'Resource Optimization', text: 'Optimize hospital resources, beds, and equipment.' }
         ]
     },
     Admin: {
@@ -203,6 +212,34 @@ const SignupPage = () => {
             return;
         }
         setLoading(true); // Set loading to true
+
+        if (selectedRole === 'Hospital') {
+            // Bypass backend for Hospital role for now
+            console.log("Hospital Signup (Frontend only) Successful:", { fullName, email, selectedRole });
+            const dummyToken = 'dummy_jwt_for_hospital'; // A dummy JWT token
+            const dummyProfilePicture = 'https://res.cloudinary.com/diqraojkd/image/upload/v1709477028/HealthSphere/Users/avatar-placeholder.png';
+            const dummyUserId = 'hospital_123'; // A dummy user ID
+
+            localStorage.setItem('profilePicture', dummyProfilePicture);
+            localStorage.setItem('userName', fullName);
+            localStorage.setItem('userRole', selectedRole);
+            localStorage.setItem('jwt', dummyToken); 
+
+            const userDataForLogin = {
+                _id: dummyUserId,
+                name: fullName,
+                email: email,
+                role: selectedRole,
+                profilePicture: dummyProfilePicture,
+                token: dummyToken,
+            };
+            login(userDataForLogin);
+            toast.success('Hospital Registration successful! (Frontend only)');
+            navigate(`/${selectedRole.toLowerCase()}/dashboard`);
+            setLoading(false);
+            return; // Stop further execution
+        }
+
         try {
             const formData = new FormData();
             formData.append('fullName', fullName);
@@ -228,6 +265,7 @@ const SignupPage = () => {
                 localStorage.setItem('profilePicture', res.data.profilePicture);
                 localStorage.setItem('userName', res.data.name);
                 localStorage.setItem('userRole', res.data.role);
+                localStorage.setItem('jwt', res.data.token); // Store JWT token
                 
                 const userRole = res.data.role.toLowerCase();
                 
@@ -249,6 +287,8 @@ const SignupPage = () => {
                     setNewlySignedUpDoctorId(res.data.specificProfileId); // Use specificProfileId for doctor
                     setNewlySignedUpUserId(res.data._id); // Use the newly created user's _id
                     setShowDoctorOnboardingModal(true);
+                } else if (userRole === 'hospital') { // NEW: Hospital redirection
+                    navigate(`/${userRole}/dashboard`);
                 } else {
                     // For other roles, just navigate to their dashboard
                     navigate(`/${userRole}/dashboard`);

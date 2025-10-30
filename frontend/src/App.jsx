@@ -7,6 +7,7 @@ import PatientDashboardLayout from './components/patient/PatientDashboardLayout.
 import DoctorDashboardLayout from './components/doctor/DoctorDashboardLayout.jsx';
 import ShopDashboardLayout from './components/shop/ShopDashboardLayout.jsx';
 import AdminDashboardLayout from './components/admin/AdminDashboardLayout.jsx'; 
+import HospitalDashboardLayout from './components/hospital/HospitalDashboardLayout.jsx'; // NEW: Import HospitalDashboardLayout
 
 // Public Pages
 import FeaturesPage from './pages/FeaturesPage.jsx';
@@ -76,6 +77,14 @@ import AdminProfilePage from './pages/admin/AdminProfilePage.jsx';
 import AddHospitalPage from './pages/admin/hospitals/AddHospitalPage.jsx'; // Import AddHospitalPage
 import AddUserPage from './pages/admin/users/AddUserPage.jsx'; // Import AddUserPage
 import AdminProfileSettings from './components/admin/settings/AdminProfileSettings.jsx'; // Import AdminProfileSettings
+import HospitalDashboardPage from './pages/hospital/HospitalDashboardPage.jsx'; // NEW: Import HospitalDashboardPage
+import HospitalTotalPatientsPage from './pages/hospital/HospitalTotalPatientsPage.jsx'; // NEW: Total Patients Page
+import HospitalStaffManagementPage from './pages/hospital/HospitalStaffManagementPage.jsx'; // NEW: Staff Management Page
+import HospitalOperationsManagementPage from './pages/hospital/HospitalOperationsManagementPage.jsx'; // NEW: Operations Management Page
+import HospitalAnalyticsFraudPage from './pages/hospital/HospitalAnalyticsFraudPage.jsx'; // NEW: Analytics & Fraud Page
+import HospitalPharmacyPartnersPage from './pages/hospital/HospitalPharmacyPartnersPage.jsx'; // NEW: Pharmacy Partners Page
+import HospitalNotificationsPage from './pages/hospital/HospitalNotificationsPage.jsx'; // NEW: Notifications Page
+import HospitalProfilePage from './pages/hospital/HospitalProfilePage.jsx'; // NEW: Profile Page
 
 // Placeholder for other pages
 const Placeholder = ({ title }) => (
@@ -188,6 +197,21 @@ function App() {
             <Route path="notifications" element={<AdminNotificationsPage />} />
             <Route path="profile" element={<AdminProfilePage />} />
             <Route path="profile/settings" element={<AdminProfileSettings />} /> {/* New route for admin profile settings */}
+          </Route>
+        </Route>
+
+        {/* --- NEW: HOSPITAL DASHBOARD ROUTES --- */}
+        <Route element={<PrivateRoute allowedRoles={['Hospital']} />}> {/* Assuming 'Hospital' is the role name */}
+          <Route path="/hospital" element={<HospitalDashboardLayout />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<HospitalDashboardPage />} />
+            <Route path="patients" element={<HospitalTotalPatientsPage />} /> {/* NEW: Total Patients Route */}
+            <Route path="staff-management" element={<HospitalStaffManagementPage />} /> {/* NEW: Staff Management Route */}
+            <Route path="operations" element={<HospitalOperationsManagementPage />} /> {/* NEW: Operations Management Route */}
+            <Route path="pharmacy-partners" element={<HospitalPharmacyPartnersPage />} /> {/* NEW: Pharmacy Partners Route */}
+            <Route path="analytics-fraud" element={<HospitalAnalyticsFraudPage />} /> {/* NEW: Analytics & Fraud Route */}
+            <Route path="notifications" element={<HospitalNotificationsPage />} /> {/* NEW: Notifications Route */}
+            <Route path="profile" element={<HospitalProfilePage />} /> {/* NEW: Profile Route */}
           </Route>
         </Route>
 
