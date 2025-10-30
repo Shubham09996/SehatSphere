@@ -1,0 +1,47 @@
+export const adminNotificationsData = [
+    {
+        id: 1,
+        category: 'Security',
+        icon: 'ShieldAlert',
+        title: 'Multiple Failed Logins',
+        message: 'Failed login attempts detected for user "Dr. Sharma" from IP 103.22.201.15.',
+        timestamp: new Date(), // Just now
+        isRead: false,
+        severity: 'High',
+        link: '/admin/security',
+    },
+    {
+        id: 2,
+        category: 'Registration',
+        icon: 'UserPlus',
+        title: 'New Doctor Approval Pending',
+        message: 'Dr. Vikram Singh has registered and is awaiting verification.',
+        timestamp: new Date(new Date().getTime() - 30 * 60 * 1000),
+        isRead: false,
+        severity: 'Medium',
+        link: '/admin/users',
+        actions: [ { label: 'Quick Approve' }, { label: 'Reject' } ]
+    },
+    {
+        id: 3,
+        category: 'System',
+        icon: 'Database',
+        title: 'Database CPU Usage High',
+        message: 'The primary database CPU has reached 90% utilization.',
+        timestamp: new Date(new Date().getTime() - 2 * 60 * 60 * 1000),
+        isRead: true,
+        severity: 'Medium',
+        link: '#',
+    },
+    {
+        id: 4,
+        category: 'System',
+        icon: 'BarChart2',
+        title: 'Weekly Report Generated',
+        message: 'The platform performance report for the last week is now available.',
+        timestamp: new Date(new Date().getTime() - 24 * 60 * 60 * 1000),
+        isRead: true,
+        severity: 'Low',
+        link: '/admin/analytics',
+    },
+];

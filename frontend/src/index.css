@@ -1,0 +1,43 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* Using the 'Inter' font which is a very close match to the screenshot */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+@layer base {
+  :root {
+    /* CLONED Light Theme Colors from your new screenshot */
+    --background: 0 0% 100%;                  /* White */
+    --foreground: 222.2 47.4% 11.2%;          /* Near Black */
+    --card: 0 0% 100%;                        /* White */
+    --card-foreground: 222.2 47.4% 11.2%;     /* Near Black */
+    --primary: 204 100% 48%;                  /* Screenshot's Blue */
+    --primary-foreground: 0 0% 100%;          /* White */
+    --border: 214.3 31.8% 91.4%;              /* Light Gray */
+    --muted: 210 40% 98%;                     /* Lighter Gray for backgrounds */
+    --muted-foreground: 215.4 16.3% 56.9%;    /* Lighter text for subtitles */
+  }
+
+  /* You can define dark mode colors here if you have a dark screenshot */
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --primary: 204 100% 48%;
+    --primary-foreground: 0 0% 100%;
+    --border: 217.2 32.6% 17.5%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
