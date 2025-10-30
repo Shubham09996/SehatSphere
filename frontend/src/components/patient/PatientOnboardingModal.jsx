@@ -4,9 +4,11 @@ import { X, Calendar, Droplets, Heart, Phone, ShieldAlert, User } from 'lucide-r
 import api from '../../utils/api';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react'; // Import useEffect
+import { useAuth } from '../../context/AuthContext'; // NEW: Import useAuth
 
-const PatientOnboardingModal = ({ isOpen, onClose, patientId: propPatientId, userId }) => {
+const PatientOnboardingModal = ({ isOpen, onClose, userId, patientId }) => {
     const navigate = useNavigate();
+    const { user, login } = useAuth(); // NEW: Get user and login from AuthContext
     const [dob, setDob] = useState('');
     const [gender, setGender] = useState('');
     const [bloodGroup, setBloodGroup] = useState('');
@@ -17,21 +19,19 @@ const PatientOnboardingModal = ({ isOpen, onClose, patientId: propPatientId, use
     const [chronicConditions, setChronicConditions] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [currentPatientId, setCurrentPatientId] = useState(propPatientId); // Use internal state for patientId
+    // Removed redundant patientId state and local storage fetching
 
     useEffect(() => {
-        // Ensure currentPatientId is updated if propPatientId changes
-        if (propPatientId) {
-            setCurrentPatientId(propPatientId);
-        }
-    }, [propPatientId]); // Depend on propPatientId
+        // This useEffect is no longer needed for patientId fetching since it's passed as a prop
+        // However, it could be used for other side effects if necessary
+    }, [user]); // Depend on user for other user-related effects
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
 
-        if (!currentPatientId) {
+        if (!patientId) {
             setError('Patient ID is not available. Please try again.');
             setLoading(false);
             return;
@@ -51,11 +51,15 @@ const PatientOnboardingModal = ({ isOpen, onClose, patientId: propPatientId, use
         };
 
         try {
-            await api.put(`/api/patients/profile/${currentPatientId}`, patientDetails); // Use currentPatientId
+            await api.put(`/api/patients/profile/${patientId}`, patientDetails); // Use patientId prop
             console.log('Patient details updated successfully');
 
-            // Persist patientId to localStorage after successful update
-            localStorage.setItem('patientId', currentPatientId);
+            // NEW: Update user context and mark isNewUser as false
+            if (user && user.isNewUser) {
+                const updatedUser = { ...user, isNewUser: false };
+                login(updatedUser); // Update user in AuthContext and localStorage
+            }
+
             localStorage.setItem('userRole', 'Patient'); // Assuming role is Patient for this modal
             window.dispatchEvent(new Event('localStorageUpdated'));
 

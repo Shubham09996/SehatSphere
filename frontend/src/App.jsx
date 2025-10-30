@@ -1,6 +1,6 @@
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-
+import React, { useEffect, useRef } from 'react';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
 // Layouts
 import PublicLayout from './components/patient/PublicLayout.jsx';
 import PatientDashboardLayout from './components/patient/PatientDashboardLayout.jsx';
@@ -96,6 +96,65 @@ const Placeholder = ({ title }) => (
 
 
 function App() {
+  const { setAuthDataFromRedirect, user, loading } = useAuth(); // NEW: Get user and loading here
+  const location = useLocation();
+  const navigate = useNavigate();
+  const processedRedirectRef = useRef(false);
+  // const initialRedirectDoneRef = useRef(false); // REMOVED: Ref to track if initial redirect is done
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search); // Use location.search from react-router
+    const token = params.get('token');
+    const userInfo = params.get('userInfo');
+
+    // If token and userInfo are present and not yet processed
+    if (token && userInfo && !processedRedirectRef.current) {
+      const parsedUserInfo = JSON.parse(userInfo);
+      setAuthDataFromRedirect(token, userInfo);
+      processedRedirectRef.current = true; // Mark as processed
+
+      // Determine redirect path based on user role and isNewUser flag
+      let redirectPath;
+      if (parsedUserInfo.isNewUser && parsedUserInfo.role.toLowerCase() === 'patient') {
+        redirectPath = `/patient-onboarding/${parsedUserInfo._id}`;
+      } else {
+        redirectPath = `/${parsedUserInfo.role.toLowerCase()}/dashboard`;
+      }
+
+      // Clear URL parameters using window.history.replaceState
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete('token');
+      cleanUrl.searchParams.delete('userInfo');
+      window.history.replaceState({}, document.title, cleanUrl.toString());
+
+      // Immediately redirect after setting auth data
+      navigate(redirectPath, { replace: true });
+    }
+
+  }, [location.search, setAuthDataFromRedirect, navigate]); // Added navigate to dependencies
+
+  // Effect to handle redirection for authenticated users on public routes, or unauthenticated users
+  useEffect(() => {
+    if (!loading && user) {
+      const isPublicRoute = ['/', '/features', '/roles', '/about', '/login', '/signup', '/forgot-password', '/reset-password'].some(route => location.pathname === route || location.pathname.startsWith(route + '/'));
+
+      // If an authenticated user is on a public route, redirect them to their dashboard
+      if (isPublicRoute) {
+        let targetRedirectPath;
+        if (user.isNewUser && user.role.toLowerCase() === 'patient') {
+          targetRedirectPath = `/patient-onboarding/${user._id}`;
+        } else {
+          targetRedirectPath = `/${user.role.toLowerCase()}/dashboard`;
+        }
+        if (location.pathname !== targetRedirectPath) {
+          navigate(targetRedirectPath, { replace: true });
+        }
+      }
+    } else if (!loading && !user && !location.pathname.startsWith('/login') && !location.pathname.startsWith('/signup') && !location.pathname.startsWith('/forgot-password') && !location.pathname.startsWith('/reset-password')) {
+      // If not loading, no user, and not on login/signup/reset/forgot page, redirect to login
+      navigate('/login', { replace: true });
+    }
+  }, [user, loading, navigate, location.pathname]);
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
       <Routes>

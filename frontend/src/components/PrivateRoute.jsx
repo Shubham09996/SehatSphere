@@ -13,9 +13,9 @@ const PrivateRoute = ({ allowedRoles }) => {
         return <Navigate to="/login" replace />;
     }
 
-    if (allowedRoles && !allowedRoles.includes(user.role)) {
-        // Redirect to an unauthorized page or dashboard if role is not allowed
-        return <Navigate to={`/${user.role.toLowerCase()}/dashboard`} replace />;
+    if (allowedRoles && (!user.role || !allowedRoles.includes(user.role))) {
+        // Redirect to an unauthorized page or dashboard if role is not allowed or user.role is undefined
+        return <Navigate to="/login" replace />;
     }
 
     return <Outlet />;

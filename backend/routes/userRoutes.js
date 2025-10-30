@@ -32,7 +32,7 @@ router.get('/auth/google', passport.authenticate('google', { scope: ['profile', 
 router.get(
     '/auth/google/callback',
     passport.authenticate('google', { failureRedirect: 'http://localhost:5173/login?error=google_failed' }),
-    (req, res) => {
+    async (req, res) => {
         // Successful authentication, generate JWT and set cookie
         const token = generateToken(req.user._id);
         res.cookie('jwt', token, {
@@ -43,11 +43,33 @@ router.get(
         });
 
         // Redirect to frontend dashboard or onboarding page
-        const redirectPath = req.user.isNewUser && req.user.role.toLowerCase() === 'patient'
-            ? `/patient-onboarding/${req.user._id}`
-            : `/${req.user.role.toLowerCase()}/dashboard`;
+        let redirectPath;
+        if (req.user.isNewUser && req.user.role.toLowerCase() === 'patient') {
+            redirectPath = `/patient-onboarding/${req.user._id}`;
+        } else if (req.user.isNewUser) {
+            // If new user but not patient, redirect to the root of their role's dashboard
+            redirectPath = `/${req.user.role.toLowerCase()}/dashboard`;
+        } 
+        else {
+            redirectPath = `/${req.user.role.toLowerCase()}/dashboard`;
+        }
 
-        res.redirect(`http://localhost:5173${redirectPath}`); // Removed query params here, frontend will fetch
+        // Create a user object with necessary fields, including specificProfileId
+        const userToSend = {
+            _id: req.user._id,
+            name: req.user.name,
+            email: req.user.email,
+            role: req.user.role,
+            profilePicture: req.user.profilePicture,
+            phoneNumber: req.user.phoneNumber,
+            isVerified: req.user.isVerified,
+            status: req.user.status,
+            specificProfileId: req.user.specificProfileId, // Ensure specificProfileId is included
+            isNewUser: req.user.isNewUser, // Ensure isNewUser is included
+        };
+
+        const encodedUserInfo = encodeURIComponent(JSON.stringify(userToSend));
+        res.redirect(`http://localhost:5173${redirectPath}?token=${token}&userInfo=${encodedUserInfo}`);
     }
 );
 

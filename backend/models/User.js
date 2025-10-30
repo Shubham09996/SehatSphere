@@ -53,6 +53,18 @@ const userSchema = mongoose.Schema(
         default: {},
     },
     // Common fields for all users, specific details will be in their respective models
+    googleId: { // NEW: Add googleId for linking Google accounts
+        type: String,
+        unique: true, // Should be unique
+        sparse: true, // Allows null values, so users without googleId can still exist
+    },
+    isNewUser: { // NEW: Add isNewUser flag
+        type: Boolean,
+        default: false,
+    },
+    specificProfileId: { // NEW: Add specificProfileId to store patientId, doctorId, shopId
+        type: String,
+    },
   },
   {
     timestamps: true,

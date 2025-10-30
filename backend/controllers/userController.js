@@ -55,6 +55,7 @@ const authUser = asyncHandler(async (req, res) => {
       status: user.status,
       specificProfileId: specificProfileId, // Include the role-specific ID
       token: token, // NEW: Include token in the response
+      isNewUser: false, // Explicitly set to false for existing users
     });
   } else {
     res.status(401);
@@ -144,6 +145,7 @@ const registerUser = asyncHandler(async (req, res) => {
       status: user.status,
       specificProfileId: specificProfileId, // Include the role-specific ID
       token: token, // NEW: Include token in the response
+      isNewUser: true, // Mark as new user for registration
     });
   } else {
     res.status(400);
