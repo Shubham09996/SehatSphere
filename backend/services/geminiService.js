@@ -1,70 +1,76 @@
-import config from "../config/config.js";
+import config from '../config/config.js';
+import fetch from 'node-fetch';
+import fs from 'fs';
 
-// Prefer direct REST as per your working example
+const GEMINI_API_KEY = config.googleGemini.apiKey || process.env.GEMINI_API_KEY;
+
+// List of preferred Gemini models to try (in fallback order)
 const PRIMARY_MODELS = [
   'models/gemini-2.5-flash',
   'models/gemini-1.5-flash-latest',
   'models/gemini-1.0-pro-latest',
-  'models/gemini-pro',
 ];
 
-const getChatbotResponse = async (prompt, userName, language) => {
-  const apiKey = config.googleGemini.apiKey || process.env.GEMINI_API_KEY;
-  if (!apiKey) return "I'm having trouble connecting to the assistant right now. Please try again later.";
+/**
+ * Get AI response from Gemini API for chatbot interactions.
+ * @param {string} prompt - User input or message.
+ * @param {string} userName - Patient or user name.
+ * @param {string} language - Language preference ('en' or 'hi').
+ * @param {string} uploadedFilePath - Optional file path for a medical report.
+ * @returns {Promise<string>} AI-generated response.
+ */
+export const getChatbotResponse = async (prompt, userName, language, uploadedFilePath) => {
+  if (!GEMINI_API_KEY) {
+    return "Assistant connection issue. Please try again later.";
+  }
 
-  // Quick local intents: date/time without hitting external API
-  try {
-    const q = String(prompt || '').toLowerCase();
-    if (/(current|what's|whats|tell|kya|abhi).*(time|samay|waqt)/.test(q) || /(time|samay|waqt)\??$/.test(q)) {
-      const now = new Date();
-      const time = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-      const date = now.toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
-      return `Abhi ka time ${time} hai • ${date}`;
-    }
-    if (/(current|aaj|today|date|tarikh)/.test(q) && /(date|tarikh|din|day)/.test(q)) {
-      const now = new Date();
-      const date = now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-      return `Aaj ki date: ${date}`;
-    }
-  } catch (_) {}
+  const patientName = userName || 'User';
+  const isHindi = (language || '').toLowerCase() === 'hi';
 
-  const patientName = userName || process.env.DEFAULT_PATIENT_NAME || '';
-  const preferHindi = (language || '').toLowerCase() === 'hi';
-  const tone = preferHindi
-    ? `Tum HealthSphere ke liye ek bahut hi friendly aur madadgar patient assistant ho. Patient se hamesha unke naam (${patientName || 'user'}) se baat karo, unhe apnaपन महसूस कराओ. Baaten hamesha halki, pyari aur sanukool rakho. Tumhara kaam HealthSphere ke features jaise appointments book karna, medicines dhundhna, health records dekhna, bill check karna aur donation options ke baare mein guide karna hai. Kabhi bhi medical diagnosis mat do; agar zarurat ho toh patient ko doctor se consult karne ki salah do.`
-    : `You are a very friendly and helpful patient assistant for HealthSphere. Always address the patient by their name (${patientName || 'user'}) to make them feel comfortable and welcomed. Keep your responses warm, concise, and helpful. Your role is to guide patients on HealthSphere's features such as booking appointments, finding medicines, viewing health records, checking billing, and understanding donation options. Never provide medical diagnoses; if necessary, advise the patient to consult a doctor.`;
+  // Define tone and context for the assistant
+  const tone = isHindi
+    ? `You are HealthSphere’s friendly and helpful patient assistant.
+       Talk to the patient by their name (${patientName}) and clearly answer all health-related queries.
+       End each response with: "Main 100% sahi nahi ho sakta, kripya doctor se consult kare."`
+    : `You are HealthSphere’s friendly and helpful patient assistant.
+       Always address the patient by their name (${patientName}) and clearly answer all health-related queries.
+       End each response with: "I'm not 100% accurate, please consult a doctor for confirmation."`;
+
+  // Include file note if a report was uploaded
+  let reportNote = '';
+  if (uploadedFilePath && fs.existsSync(uploadedFilePath)) {
+    reportNote = `\nA medical report has been uploaded at: ${uploadedFilePath}.
+      Analyze its contents and answer any related questions from the user.`;
+  }
+
+  // Final input for Gemini
+  const finalPrompt = `${tone}\nUser: ${prompt || ''}${reportNote}`;
 
   const body = {
-    contents: [
-      { role: 'user', parts: [{ text: tone + "\nUser: " + String(prompt || '') }] },
-    ],
+    contents: [{ role: 'user', parts: [{ text: finalPrompt }] }],
   };
 
-  // Try candidate models on v1beta (as per your snippet), then v1
-  for (const name of PRIMARY_MODELS) {
+  // Try all models and API versions in sequence
+  for (const model of PRIMARY_MODELS) {
     for (const version of ['v1beta', 'v1']) {
       try {
-        const url = `https://generativelanguage.googleapis.com/${version}/${name}:generateContent?key=${apiKey}`;
-        const res = await fetch(url, {
+        const url = `https://generativelanguage.googleapis.com/${version}/${model}:generateContent?key=${GEMINI_API_KEY}`;
+        const response = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         });
-        const data = await res.json();
+
+        const data = await response.json();
         const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim?.();
+
         if (text) return text;
-        if (data?.error) {
-          // Continue to next model/version if 404/unsupported
-          if (String(data.error.message||'').includes('not found') || data.error.code === 404) continue;
-        }
-      } catch (err) {
-        // try next
+      } catch (error) {
+        console.error(`Gemini model error [${model}]:`, error.message);
         continue;
       }
     }
   }
 
-  return "Sorry, I couldn't process that right now. Please try again later.";
+  return "Sorry, I'm unable to respond right now. Please try again later.";
 };
-
-export { getChatbotResponse };

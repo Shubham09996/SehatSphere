@@ -1,10 +1,21 @@
 import express from 'express';
-const router = express.Router();
-import {
-    getGeminiResponse,
-} from '../controllers/geminiController.js';
+import multer from 'multer';
+import { getGeminiResponse } from '../controllers/geminiController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
-router.post('/chat', protect, getGeminiResponse);
+const router = express.Router();
+
+// File upload (PDF or Image)
+const upload = multer({
+  dest: 'uploads/',
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB
+  fileFilter: (req, file, cb) => {
+    const allowed = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error('Invalid file type. Only PDF or image allowed.'));
+  },
+});
+
+router.post('/chat', protect, upload.single('file'), getGeminiResponse);
 
 export default router;
