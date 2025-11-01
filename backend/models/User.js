@@ -19,7 +19,7 @@ const userSchema = mongoose.Schema(
     role: {
       type: String,
       required: true,
-      enum: ['Patient', 'Doctor', 'Shop', 'Admin', 'Donor'],
+      enum: ['Patient', 'Doctor', 'Shop', 'Admin', 'Donor', 'Hospital'],
       default: 'Patient',
     },
     profilePicture: {

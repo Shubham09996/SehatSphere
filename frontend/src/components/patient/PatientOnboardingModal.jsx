@@ -56,7 +56,7 @@ const PatientOnboardingModal = ({ isOpen, onClose, userId, patientId }) => {
 
             // NEW: Update user context and mark isNewUser as false
             if (user && user.isNewUser) {
-                const updatedUser = { ...user, isNewUser: false };
+                const updatedUser = { ...user, isNewUser: false, token: localStorage.getItem('jwt') }; // Include existing token
                 login(updatedUser); // Update user in AuthContext and localStorage
             }
 

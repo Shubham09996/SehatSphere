@@ -1,30 +1,56 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { BriefcaseMedical, Users } from 'lucide-react';
+import { toast } from 'react-toastify';
+import api from '../../utils/api';
 
-const HospitalStaffManagementPage = ({ dashboardData }) => {
-    const doctors = dashboardData?.doctors || [
-        { name: 'Dr. John Doe', specialty: 'Cardiology', status: 'Available' },
-        { name: 'Dr. Jane Smith', specialty: 'Pediatrics', status: 'Unavailable' },
-        { name: 'Dr. Bob Johnson', specialty: 'Orthopedics', status: 'Available' },
-    ];
+const HospitalStaffManagementPage = () => {
+    const [doctors, setDoctors] = useState([]);
+    const [aiAssignment, setAiAssignment] = useState({});
+    const [jobPostings, setJobPostings] = useState([]);
+    const [roles, setRoles] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    const aiAssignment = dashboardData?.aiAssignment || {
-        status: 'Active',
-        lastRun: '2023-07-24 10:30 AM',
-    };
+    useEffect(() => {
+        const fetchStaffData = async () => {
+            try {
+                setLoading(true);
+                const [doctorsRes, aiAssignmentRes, jobPostingsRes, rolesRes] = await Promise.all([
+                    api.get('/api/hospitals/doctors'),
+                    api.get('/api/hospitals/ai-assignment'),
+                    api.get('/api/hospitals/job-postings'),
+                    api.get('/api/hospitals/roles'),
+                ]);
 
-    const jobPostings = dashboardData?.jobPostings || [
-        { title: 'Cardiologist', applicants: 5 },
-        { title: 'Pediatric Nurse', applicants: 12 },
-        { title: 'Lab Technician', applicants: 8 },
-    ];
+                setDoctors(doctorsRes.data);
+                setAiAssignment(aiAssignmentRes.data);
+                setJobPostings(jobPostingsRes.data);
+                setRoles(rolesRes.data);
 
-    const roles = dashboardData?.roles || [
-        { name: 'Doctor', permissions: ['view_patients', 'manage_appointments'] },
-        { name: 'Receptionist', permissions: ['schedule_appointments', 'register_patients'] },
-        { name: 'Admin Staff', permissions: ['manage_staff', 'view_analytics'] },
-    ];
+                toast.success('Staff management data loaded successfully!');
+            } catch (err) {
+                setError(err.response?.data?.message || err.message);
+                toast.error(err.response?.data?.message || err.message);
+                setDoctors([]);
+                setAiAssignment({});
+                setJobPostings([]);
+                setRoles([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStaffData();
+    }, []);
+
+    if (loading) {
+        return <div className="text-center text-foreground p-8">Loading staff management data...</div>;
+    }
+
+    if (error) {
+        return <div className="text-center text-red-500 p-8">Error: {error}</div>;
+    }
 
     return (
         <motion.div
@@ -53,7 +79,7 @@ const HospitalStaffManagementPage = ({ dashboardData }) => {
                             </thead>
                             <tbody>
                                 {doctors.map((doctor, index) => (
-                                    <tr key={index} className="border-b border-border/70 last:border-b-0">
+                                    <tr key={doctor._id} className="border-b border-border/70 last:border-b-0">
                                         <td className="p-2 font-semibold text-foreground">{doctor.name}</td>
                                         <td className="p-2 text-muted-foreground text-sm">{doctor.specialty}</td>
                                         <td className="p-2">
@@ -88,7 +114,7 @@ const HospitalStaffManagementPage = ({ dashboardData }) => {
                     <div className="h-60 flex items-center justify-center text-muted-foreground">
                         <ul className="space-y-3 w-full">
                             {jobPostings.map((job, index) => (
-                                <li key={index} className="flex items-center justify-between bg-muted/20 p-3 rounded-md">
+                                <li key={job.title} className="flex items-center justify-between bg-muted/20 p-3 rounded-md">
                                     <span className="font-medium text-foreground">{job.title}</span>
                                     <span className="text-sm text-muted-foreground">{job.applicants} Applicants</span>
                                     {/* Job Posting button par gradient */}
@@ -103,7 +129,7 @@ const HospitalStaffManagementPage = ({ dashboardData }) => {
                     <div className="h-60 flex items-center justify-center text-muted-foreground">
                         <div className="w-full space-y-4">
                             {roles.map((role, index) => (
-                                <div key={index} className="flex items-center justify-between p-3 bg-muted/20 rounded-md">
+                                <div key={role.name} className="flex items-center justify-between p-3 bg-muted/20 rounded-md">
                                     <span className="font-medium text-foreground">{role.name}</span>
                                     {/* Role-Based Access button par gradient */}
                                     <button className="px-3 py-1 bg-gradient-to-r from-hs-gradient-start to-hs-gradient-end text-white rounded-md text-xs hover:opacity-90">Manage Permissions</button>

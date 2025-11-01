@@ -45,106 +45,69 @@ const HospitalDashboardPage = () => {
     const [dashboardData, setDashboardData] = useState(null);
 
     useEffect(() => {
-        setLoading(true);
-        setDashboardData({
-            kpis: {
-                onlineDoctors: { value: 5, change: '+2%' },
-                waitingPatients: { value: 15, change: '-5%' },
-                totalAppointments: { value: 120, change: '+10%' },
-                todayEarnings: { value: 50000, change: '+8%' },
-            },
-            operationalInsights: {
-                doctorsOnline: 5,
-                patientsWaiting: 15,
-                totalAppointmentsToday: 120,
-                upcomingAppointments: 45,
-                tokenDistributionStatus: 'Normal',
-            },
-            financialInsights: {
-                todayRevenue: 50000,
-                platformSubscriptionModel: 'Premium',
-                totalRevenue: 1500000,
-            },
-            appointmentStatusData: [
-                { name: 'Scheduled', value: 400 },
-                { name: 'Completed', value: 300 },
-                { name: 'Cancelled', value: 200 },
-                { name: 'Pending', value: 100 },
-            ],
-            monthlyRevenueData: [
-                { month: 'Jan', Revenue: 400000 },
-                { month: 'Feb', Revenue: 300000 },
-                { month: 'Mar', Revenue: 450000 },
-                { month: 'Apr', Revenue: 380000 },
-                { month: 'May', Revenue: 500000 },
-                { month: 'Jun', Revenue: 420000 },
-                { month: 'Jul', Revenue: 550000 },
-            ],
-            patientFeedbackData: [
-                { month: 'Jan', wait_time: 15 },
-                { month: 'Feb', wait_time: 12 },
-                { month: 'Mar', wait_time: 10 },
-                { month: 'Apr', wait_time: 11 },
-                { month: 'May', wait_time: 13 },
-                { month: 'Jun', wait_time: 14 },
-                { month: 'Jul', wait_time: 16 },
-            ],
-            fraudIncidentsData: [
-                { type: 'Unauthorized Access', date: '2023-07-20', details: 'Attempted login from a suspicious IP' },
-                { type: 'Suspicious Activity', date: '2023-07-21', details: 'Multiple failed login attempts from a single IP' },
-                { type: 'Data Breach', date: '2023-07-22', details: 'Suspicious data export request' },
-            ],
-            stockLevelsData: [
-                { item: 'Paracetamol', stock: 100 },
-                { item: 'Ibuprofen', stock: 50 },
-                { item: 'Aspirin', stock: 200 },
-                { item: 'Vitamin C', stock: 75 },
-            ],
-            doctors: [
-                { name: 'Dr. John Doe', specialty: 'Cardiology', status: 'Available' },
-                { name: 'Dr. Jane Smith', specialty: 'Pediatrics', status: 'Unavailable' },
-                { name: 'Dr. Bob Johnson', specialty: 'Orthopedics', status: 'Available' },
-            ],
-            aiAssignment: {
-                status: 'Active',
-                lastRun: '2023-07-24 10:30 AM',
-            },
-            jobPostings: [
-                { title: 'Cardiologist', applicants: 5 },
-                { title: 'Pediatric Nurse', applicants: 12 },
-                { title: 'Lab Technician', applicants: 8 },
-            ],
-            roles: [
-                { name: 'Doctor', permissions: ['view_patients', 'manage_appointments'] },
-                { name: 'Receptionist', permissions: ['schedule_appointments', 'register_patients'] },
-                { name: 'Admin Staff', permissions: ['manage_staff', 'view_analytics'] },
-            ],
-            tokenSystem: {
-                status: 'Active',
-            },
-            labTests: [
-                { name: 'Complete Blood Count', price: 500 },
-                { name: 'Urine Analysis', price: 200 },
-                { name: 'Thyroid Panel', price: 800 },
-            ],
-            bloodBank: {
-                APositive: 100,
-                BPositive: 80,
-                OPositive: 120,
-                ANegative: 30,
-            },
-            insuranceIntegrations: [
-                { name: 'HealthSecure', status: 'Active' },
-                { name: 'MediCare', status: 'Inactive' },
-            ],
-            patients: [
-                { id: 1, name: 'Patient A', status: 'Waiting' },
-                { id: 2, name: 'Patient B', status: 'Checked In' },
-                { id: 3, name: 'Patient C', status: 'Discharged' },
-            ],
-        });
-        setLoading(false);
-        toast.success('Hospital dashboard data loaded from dummy data!');
+        const fetchDashboardData = async () => {
+            try {
+                setLoading(true);
+                const { data } = await api.get('/api/hospitals/dashboard-summary');
+                setDashboardData(data);
+                toast.success('Hospital dashboard data loaded successfully!');
+            } catch (err) {
+                setError(err.response?.data?.message || err.message);
+                toast.error(err.response?.data?.message || err.message);
+                // Optionally set dummy data if API fails to prevent empty dashboard
+                setDashboardData({
+                    kpis: {
+                        onlineDoctors: { value: 0, change: '+0%' },
+                        waitingPatients: { value: 0, change: '+0%' },
+                        totalAppointments: { value: 0, change: '+0%' },
+                        todayEarnings: { value: 0, change: '+0%' },
+                    },
+                    operationalInsights: {
+                        doctorsOnline: 0,
+                        patientsWaiting: 0,
+                        totalAppointmentsToday: 0,
+                        upcomingAppointments: 0,
+                        tokenDistributionStatus: 'Normal',
+                    },
+                    financialInsights: {
+                        todayRevenue: 0,
+                        platformSubscriptionModel: 'Premium',
+                        totalRevenue: 0,
+                    },
+                    appointmentStatusData: [
+                        { name: 'Scheduled', value: 0 },
+                        { name: 'Completed', value: 0 },
+                        { name: 'Cancelled', value: 0 },
+                        { name: 'Pending', value: 0 },
+                    ],
+                    monthlyRevenueData: [
+                        { month: 'Jan', Revenue: 0 },
+                        { month: 'Feb', Revenue: 0 },
+                        { month: 'Mar', Revenue: 0 },
+                        { month: 'Apr', Revenue: 0 },
+                        { month: 'May', Revenue: 0 },
+                        { month: 'Jun', Revenue: 0 },
+                        { month: 'Jul', Revenue: 0 },
+                    ],
+                    patientFeedbackData: [],
+                    fraudIncidentsData: [],
+                    stockLevelsData: [],
+                    doctors: [],
+                    aiAssignment: {},
+                    jobPostings: [],
+                    roles: [],
+                    tokenSystem: {},
+                    labTests: [],
+                    bloodBank: {},
+                    insuranceIntegrations: [],
+                    patients: [],
+                });
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchDashboardData();
     }, []);
 
     if (loading) {

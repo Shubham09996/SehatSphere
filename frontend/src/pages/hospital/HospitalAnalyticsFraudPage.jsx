@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { TrendingUp, AlertTriangle, Package } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { toast } from 'react-toastify';
+import api from '../../utils/api';
 
 // Custom Tooltip for Charts
 const CustomTooltip = ({ active, payload, label }) => {
@@ -21,29 +23,49 @@ const CustomTooltip = ({ active, payload, label }) => {
     return null;
 };
 
-const HospitalAnalyticsFraudPage = ({ dashboardData }) => {
-    const patientFeedbackData = dashboardData?.patientFeedbackData || [
-        { month: 'Jan', wait_time: 15 },
-        { month: 'Feb', wait_time: 12 },
-        { month: 'Mar', wait_time: 10 },
-        { month: 'Apr', wait_time: 11 },
-        { month: 'May', wait_time: 13 },
-        { month: 'Jun', wait_time: 14 },
-        { month: 'Jul', wait_time: 16 },
-    ];
+const HospitalAnalyticsFraudPage = () => {
+    const [patientFeedbackData, setPatientFeedbackData] = useState([]);
+    const [fraudIncidentsData, setFraudIncidentsData] = useState([]);
+    const [stockLevelsData, setStockLevelsData] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    const fraudIncidentsData = dashboardData?.fraudIncidentsData || [
-        { type: 'Unauthorized Access', date: '2023-07-20', details: 'Attempted login from a suspicious IP' },
-        { type: 'Suspicious Activity', date: '2023-07-21', details: 'Multiple failed login attempts from a single IP' },
-        { type: 'Data Breach', date: '2023-07-22', details: 'Suspicious data export request' },
-    ];
+    useEffect(() => {
+        const fetchAnalyticsData = async () => {
+            try {
+                setLoading(true);
+                const [patientFeedbackRes, fraudIncidentsRes, stockLevelsRes] = await Promise.all([
+                    api.get('/api/hospitals/patient-feedback'),
+                    api.get('/api/hospitals/fraud-incidents'),
+                    api.get('/api/hospitals/stock-levels'),
+                ]);
 
-    const stockLevelsData = dashboardData?.stockLevelsData || [
-        { item: 'Paracetamol', stock: 100 },
-        { item: 'Ibuprofen', stock: 50 },
-        { item: 'Aspirin', stock: 200 },
-        { item: 'Vitamin C', stock: 75 },
-    ];
+                setPatientFeedbackData(patientFeedbackRes.data);
+                setFraudIncidentsData(fraudIncidentsRes.data);
+                setStockLevelsData(stockLevelsRes.data);
+
+                toast.success('Analytics and fraud data loaded successfully!');
+            } catch (err) {
+                setError(err.response?.data?.message || err.message);
+                toast.error(err.response?.data?.message || err.message);
+                setPatientFeedbackData([]);
+                setFraudIncidentsData([]);
+                setStockLevelsData([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchAnalyticsData();
+    }, []);
+
+    if (loading) {
+        return <div className="text-center text-foreground p-8">Loading analytics and fraud data...</div>;
+    }
+
+    if (error) {
+        return <div className="text-center text-red-500 p-8">Error: {error}</div>;
+    }
 
     return (
         <motion.div
@@ -81,8 +103,8 @@ const HospitalAnalyticsFraudPage = ({ dashboardData }) => {
                     <h3 className="font-bold text-lg text-foreground mb-4">Fraud Detection</h3>
                     <div className="h-60 flex items-center justify-center text-muted-foreground">
                         <ul className="space-y-3 w-full">
-                            {fraudIncidentsData.map((incident, index) => (
-                                <li key={index} className="flex items-center justify-between bg-muted/20 p-3 rounded-md">
+                            {fraudIncidentsData.map((incident) => (
+                                <li key={incident.type + incident.date} className="flex items-center justify-between bg-muted/20 p-3 rounded-md">
                                     <span className="font-medium text-foreground">{incident.type}</span>
                                     <span className="text-sm text-muted-foreground">{incident.date}</span>
                                     <button className="px-3 py-1 bg-gradient-to-r from-hs-gradient-start to-hs-gradient-end text-white rounded-md text-xs hover:opacity-90">Review</button>

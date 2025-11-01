@@ -3,6 +3,8 @@ import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import User from '../models/User.js';
 import config from './config.js';
 import Patient from '../models/Patient.js'; // Import Patient model
+import Doctor from '../models/Doctor.js'; // Import Doctor model
+import Shop from '../models/Shop.js'; // Import Shop model
 
 // Configure Google Strategy
 passport.use(
@@ -20,12 +22,17 @@ passport.use(
 
             try {
                 let user = await User.findOne({ googleId: googleId });
+                let isNewUserFlag = false; // Flag to track if the user is truly new
 
                 if (user) {
                     // User found by googleId, log them in
                     user.isNewUser = false; // Explicitly set to false for existing users
+                    // Populate specificProfileId for existing users
+                    if (user.role === 'Patient') {
+                        const patientProfile = await Patient.findOne({ user: user._id });
+                        if (patientProfile) user.specificProfileId = patientProfile.patientId;
+                    } // Add similar logic for Doctor, Shop, Hospital if needed
                     await user.save(); // Save the updated user
-                    user = await User.findById(user._id); // Re-fetch user to ensure specificProfileId is populated
                     done(null, user);
                 } else {
                     // No user with this googleId, check by email
@@ -36,11 +43,16 @@ passport.use(
                         user.googleId = googleId;
                         user.profilePicture = profilePicture || user.profilePicture; // Update profile picture if available
                         user.isNewUser = false; // Explicitly set to false for existing users
+                        // Populate specificProfileId for existing users linked by email
+                        if (user.role === 'Patient') {
+                            const patientProfile = await Patient.findOne({ user: user._id });
+                            if (patientProfile) user.specificProfileId = patientProfile.patientId;
+                        } // Add similar logic for Doctor, Shop, Hospital if needed
                         await user.save();
-                        user = await User.findById(user._id); // Re-fetch user to ensure specificProfileId is populated
                         done(null, user);
                     } else {
                         // No user found by googleId or email, create a new one
+                        isNewUserFlag = true;
                         const newUser = {
                             googleId: googleId,
                             name: name,
@@ -51,23 +63,41 @@ passport.use(
                             isNewUser: true, // Mark as new user
                         };
                         user = await User.create(newUser);
-                        user.isNewUser = true; // Mark as new user
 
-                        // Create a patient profile for new Google users by default
-                        if (user) {
+                        // Create a specific profile based on the role
+                        if (user.role === 'Patient') {
+                            const newPatientId = `PID-${Date.now()}`;
                             const patientProfile = await Patient.create({
                                 user: user._id,
-                                name: name, // Add the user's name to the patient profile
-                                patientId: `PID-${Math.floor(100000 + Math.random() * 900000)}`,
-                                // other patient defaults if any
+                                name: name, // Use Google profile name
+                                patientId: newPatientId,
                             });
-                            // Link the patient profile to the user
-                            user.patient = patientProfile._id; // NEW: Link patient profile
-                            user.specificProfileId = patientProfile.patientId; // Assign specificProfileId
-                            await user.save(); // Save the updated user with patient reference and specificProfileId
-                            user = await User.findById(user._id); // Re-fetch user to ensure specificProfileId is populated in the returned user object
+                            user.specificProfileId = patientProfile.patientId;
+                            user.patient = patientProfile._id;
+                        } else if (user.role === 'Doctor') {
+                            // Placeholder for doctor creation, assuming defaults for now
+                            const doctorProfile = await Doctor.create({
+                                user: user._id,
+                                name: name,
+                                medicalRegistrationNumber: `MRN-${Date.now()}`,
+                                hospital: null, // This would need to be handled during onboarding or separately
+                            });
+                            user.specificProfileId = doctorProfile._id;
+                        } else if (user.role === 'Shop') {
+                            // Placeholder for shop creation
+                            const shopProfile = await Shop.create({
+                                user: user._id,
+                                name: name,
+                                address: 'To be updated',
+                            });
+                            user.specificProfileId = shopProfile._id;
+                        } else if (user.role === 'Hospital') {
+                            // Hospital profile will be created during onboarding
+                            user.specificProfileId = null;
                         }
-                        done(null, user);
+
+                        await user.save(); // Save the updated user with specificProfileId and patient reference
+                        done(null, user); // Pass the user object with specificProfileId
                     }
                 }
             } catch (err) {

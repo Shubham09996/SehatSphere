@@ -91,6 +91,7 @@ import HospitalAnalyticsFraudPage from './pages/hospital/HospitalAnalyticsFraudP
 import HospitalPharmacyPartnersPage from './pages/hospital/HospitalPharmacyPartnersPage.jsx';
 import HospitalNotificationsPage from './pages/hospital/HospitalNotificationsPage.jsx';
 import HospitalProfilePage from './pages/hospital/HospitalProfilePage.jsx';
+import HospitalOnboardingPage from './pages/hospital/HospitalOnboardingPage.jsx'; // NEW: Import HospitalOnboardingPage
 
 
 function App() {
@@ -124,6 +125,8 @@ function App() {
       let redirectPath;
       if (user.isNewUser && user.role?.toLowerCase() === 'patient') {
         redirectPath = `/patient-onboarding/${user._id}`;
+      } else if (user.isNewUser && user.role?.toLowerCase() === 'hospital') { // NEW: Redirect new Hospital users to onboarding
+        redirectPath = `/hospital/onboarding/${user._id}`;
       } else {
         redirectPath = `/${user.role?.toLowerCase()}/dashboard`;
       }
@@ -260,6 +263,7 @@ function App() {
             <Route path="analytics-fraud" element={<HospitalAnalyticsFraudPage />} />
             <Route path="notifications" element={<HospitalNotificationsPage />} />
             <Route path="profile" element={<HospitalProfilePage />} />
+            <Route path="onboarding/:userId" element={<HospitalOnboardingPage />} /> {/* NEW: Hospital Onboarding Page nested under /hospital */}
           </Route>
         </Route>
       </Routes>

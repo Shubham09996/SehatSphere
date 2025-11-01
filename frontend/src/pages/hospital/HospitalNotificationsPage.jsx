@@ -1,16 +1,41 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bell, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
-
-const notificationsData = [
-    { id: 1, type: 'New Appointment', message: 'Dr. Sharma has a new appointment scheduled for tomorrow.', time: '2 hours ago' },
-    { id: 2, type: 'Critical Alert', message: 'Emergency patient admitted in ER.', time: '4 hours ago' },
-    { id: 3, type: 'System Update', message: 'Dashboard analytics updated successfully.', time: '1 day ago' },
-    { id: 4, type: 'Staff Leave', message: 'Dr. Khan will be on leave next week.', time: '2 days ago' },
-    { id: 5, type: 'Low Stock', message: 'Paracetamol stock is running low.', time: '3 days ago' },
-];
+import { toast } from 'react-toastify';
+import api from '../../utils/api';
 
 const HospitalNotificationsPage = () => {
+    const [notificationsData, setNotificationsData] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchNotifications = async () => {
+            try {
+                setLoading(true);
+                const { data } = await api.get('/api/hospitals/notifications');
+                setNotificationsData(data);
+                toast.success('Notifications loaded successfully!');
+            } catch (err) {
+                setError(err.response?.data?.message || err.message);
+                toast.error(err.response?.data?.message || err.message);
+                setNotificationsData([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchNotifications();
+    }, []);
+
+    if (loading) {
+        return <div className="text-center text-foreground p-8">Loading notifications...</div>;
+    }
+
+    if (error) {
+        return <div className="text-center text-red-500 p-8">Error: {error}</div>;
+    }
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}

@@ -55,6 +55,16 @@ const roleData = {
             { icon: CheckCircle, title: "Inventory Sync", desc: "Keep your stock updated with our smart inventory system." }
         ]
     },
+    hospital: {
+        icon: Hospital,
+        welcome: "Hospital Management",
+        subtext: "Manage operations, staff, and patient care with ease.",
+        features: [
+            { icon: ClipboardList, title: "Integrated Patient Care", desc: "Streamline patient journeys from admission to discharge." },
+            { icon: Syringe, title: "Staff & Doctor Roster", desc: "Efficiently manage medical staff and their schedules." },
+            { icon: Ambulance, title: "Resource Optimization", desc: "Optimize hospital resources, beds, and equipment." }
+        ]
+    },
     admin: {
         icon: Shield,
         welcome: "Administrator Control",

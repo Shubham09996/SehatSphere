@@ -152,6 +152,7 @@ const HospitalManagementPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [editingHospital, setEditingHospital] = useState(null);
     const [deletingHospital, setDeletingHospital] = useState(null);
+    const [filterStatus, setFilterStatus] = useState('All'); // NEW: State for status filter
 
     const fetchHospitals = async () => {
         try {
@@ -166,16 +167,31 @@ const HospitalManagementPage = () => {
         }
     };
 
+    const handleUpdateStatus = async (hospitalId, newStatus) => {
+        try {
+            setLoading(true);
+            const response = await api.put(`/api/hospitals/${hospitalId}/status`, { status: newStatus });
+            toast.success(`Hospital status updated to ${newStatus}`);
+            setHospitals(prev => prev.map(h => (h._id === hospitalId ? response.data.hospital : h)));
+        } catch (err) {
+            console.error('Failed to update hospital status:', err);
+            toast.error(err.response?.data?.message || 'Failed to update hospital status.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
         fetchHospitals();
     }, []);
 
     const filteredHospitals = useMemo(() => {
         return hospitals.filter(h =>
-            h.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            h.location.toLowerCase().includes(searchTerm.toLowerCase())
+            (filterStatus === 'All' || h.status === filterStatus) &&
+            (h.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            h.location.toLowerCase().includes(searchTerm.toLowerCase()))
         );
-    }, [hospitals, searchTerm]);
+    }, [hospitals, searchTerm, filterStatus]);
 
     const handleUpdateHospital = (updatedHospital) => {
         setHospitals(prev => prev.map(h => (h._id === updatedHospital._id ? updatedHospital : h)));
@@ -205,6 +221,24 @@ const HospitalManagementPage = () => {
                 {/* Removed Add Hospital Button as it's now a separate route */}
             </div>
 
+            {/* Status Filter Buttons */}
+            <div className="flex flex-wrap gap-3 mt-4">
+                {['All', 'Pending', 'Active', 'Suspended', 'Rejected'].map(status => (
+                    <motion.button
+                        key={status}
+                        onClick={() => setFilterStatus(status)}
+                        className={`px-4 py-2 rounded-full border text-sm font-medium transition-colors
+                            ${filterStatus === status
+                                ? 'bg-primary text-primary-foreground border-primary'
+                                : 'bg-card text-muted-foreground border-border hover:bg-muted'
+                            }`}
+                        whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                    >
+                        {status}
+                    </motion.button>
+                ))}
+            </div>
+
             <div className="relative max-w-sm">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
                 <input type="text" placeholder="Search by name or location..." onChange={e => setSearchTerm(e.target.value)} className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-2 text-sm"/>
@@ -223,6 +257,7 @@ const HospitalManagementPage = () => {
                             hospital={hospital} 
                             onEdit={() => setEditingHospital(hospital)} 
                             onDelete={() => setDeletingHospital(hospital)} 
+                            onUpdateStatus={handleUpdateStatus} // NEW: Pass status update handler
                         />
                     ))
                 ) : (

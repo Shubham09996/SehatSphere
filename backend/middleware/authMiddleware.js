@@ -6,21 +6,25 @@ const protect = async (req, res, next) => {
   let token;
 
   // Check for token in Authorization header (Bearer token)
-  console.log('Incoming Authorization header:', req.headers.authorization); // NEW: Log Authorization header
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
   }
 
   // If no token in header, try getting it from cookie
-  if (!token && req.cookies.jwt) {
+  if (!token && req.cookies && req.cookies.jwt) {
     token = req.cookies.jwt;
   }
-
-  console.log('Incoming cookies in protect middleware:', req.cookies); // Keep this for now, helpful for debugging
 
   if (!token) {
     res.status(401).json({ message: 'Not authorized, no token' });
     return; // Stop execution if no token
+  }
+
+  // Check if JWT_SECRET is properly configured
+  if (config.jwtSecret === 'your_jwt_secret') {
+    console.error('ERROR: JWT_SECRET is not configured. Please set JWT_SECRET in your .env file in the backend directory.');
+    res.status(500).json({ message: 'Server configuration error: JWT Secret not set.' });
+    return;
   }
 
   try {

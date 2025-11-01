@@ -64,7 +64,8 @@ export const AuthProvider = ({ children }) => {
 
     const login = (userData) => {
         localStorage.setItem('userInfo', JSON.stringify(userData));
-        localStorage.setItem('jwt', userData.token); // NEW: Store JWT in localStorage here
+        localStorage.setItem('jwt', userData.token); // Store JWT in localStorage here
+        console.log("AuthContext: JWT stored in localStorage:", localStorage.getItem('jwt')); // NEW LOG
         setUser(userData);
         // Ensure specificProfileId is always stored in localStorage regardless of role
         if (userData.specificProfileId) {

@@ -1,6 +1,62 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
+import api from '../../utils/api';
 
 const HospitalPharmacyPartnersPage = () => {
+    const [pharmacyPartners, setPharmacyPartners] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [newPartner, setNewPartner] = useState({
+        pharmacyName: '',
+        contactPerson: '',
+        contactNumber: '',
+        address: '',
+    });
+
+    useEffect(() => {
+        const fetchPharmacyPartners = async () => {
+            try {
+                setLoading(true);
+                const { data } = await api.get('/api/hospitals/pharmacy-partners');
+                setPharmacyPartners(data);
+                toast.success('Pharmacy partners loaded successfully!');
+            } catch (err) {
+                setError(err.response?.data?.message || err.message);
+                toast.error(err.response?.data?.message || err.message);
+                setPharmacyPartners([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchPharmacyPartners();
+    }, []);
+
+    const handleInputChange = (e) => {
+        const { id, value } = e.target;
+        setNewPartner((prev) => ({ ...prev, [id]: value }));
+    };
+
+    const handleAddPartner = async (e) => {
+        e.preventDefault();
+        try {
+            const { data } = await api.post('/api/hospitals/pharmacy-partners', newPartner);
+            setPharmacyPartners((prev) => [...prev, { ...newPartner, id: prev.length + 1 }]); // Add with a temporary ID
+            setNewPartner({ pharmacyName: '', contactPerson: '', contactNumber: '', address: '' });
+            toast.success(data.message);
+        } catch (err) {
+            toast.error(err.response?.data?.message || err.message);
+        }
+    };
+
+    if (loading) {
+        return <div className="flex flex-col gap-4 p-4 md:p-6 text-center text-foreground">Loading pharmacy partners...</div>;
+    }
+
+    if (error) {
+        return <div className="flex flex-col gap-4 p-4 md:p-6 text-center text-red-500">Error: {error}</div>;
+    }
+
     return (
         <div className="flex flex-col gap-4 p-4 md:p-6">
             <div className="flex items-center justify-between">
@@ -9,36 +65,18 @@ const HospitalPharmacyPartnersPage = () => {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <div className="bg-card p-5 rounded-xl border border-border/70 shadow-sm">
-                    <div className="mb-3">
-                        <h2 className="font-bold text-xl text-foreground">MediCare Pharmacy</h2>
-                        <p className="text-sm text-muted-foreground">Contact: +91 98765 43210</p>
+                {pharmacyPartners.map((partner) => (
+                    <div key={partner.id} className="bg-card p-5 rounded-xl border border-border/70 shadow-sm">
+                        <div className="mb-3">
+                            <h2 className="font-bold text-xl text-foreground">{partner.name}</h2>
+                            <p className="text-sm text-muted-foreground">Contact: {partner.contact}</p>
+                        </div>
+                        <div className="text-muted-foreground text-sm">
+                            <p>Address: {partner.address}</p>
+                            <p>Last Order: {partner.lastOrder}</p>
+                        </div>
                     </div>
-                    <div className="text-muted-foreground text-sm">
-                        <p>Address: 123 Health St, City, State</p>
-                        <p>Last Order: 2023-10-26</p>
-                    </div>
-                </div>
-                <div className="bg-card p-5 rounded-xl border border-border/70 shadow-sm">
-                    <div className="mb-3">
-                        <h2 className="font-bold text-xl text-foreground">LifeLink Pharmacy</h2>
-                        <p className="text-sm text-muted-foreground">Contact: +91 87654 32109</p>
-                    </div>
-                    <div className="text-muted-foreground text-sm">
-                        <p>Address: 456 Wellness Ave, City, State</p>
-                        <p>Last Order: 2023-10-20</p>
-                    </div>
-                </div>
-                <div className="bg-card p-5 rounded-xl border border-border/70 shadow-sm">
-                    <div className="mb-3">
-                        <h2 className="font-bold text-xl text-foreground">HealthHub Pharmacy</h2>
-                        <p className="text-sm text-muted-foreground">Contact: +91 76543 21098</p>
-                    </div>
-                    <div className="text-muted-foreground text-sm">
-                        <p>Address: 789 Care Rd, City, State</p>
-                        <p>Last Order: 2023-10-15</p>
-                    </div>
-                </div>
+                ))}
             </div>
 
             <div className="bg-card p-6 rounded-xl border border-border/70 shadow-sm mt-4">
@@ -47,25 +85,23 @@ const HospitalPharmacyPartnersPage = () => {
                     <p className="text-sm text-muted-foreground">Fill out the form below to link a new pharmacy partner.</p>
                 </div>
                 <div className="text-muted-foreground text-sm">
-                    {/* Placeholder for a form to add new partners */}
-                    <form className="grid gap-4">
+                    <form onSubmit={handleAddPartner} className="grid gap-4">
                         <div className="grid gap-2">
                             <label htmlFor="pharmacyName" className="text-sm font-medium">Pharmacy Name</label>
-                            <input id="pharmacyName" type="text" placeholder="Enter pharmacy name" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
+                            <input id="pharmacyName" type="text" placeholder="Enter pharmacy name" value={newPartner.pharmacyName} onChange={handleInputChange} required className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
                         </div>
                         <div className="grid gap-2">
                             <label htmlFor="contactPerson" className="text-sm font-medium">Contact Person</label>
-                            <input id="contactPerson" type="text" placeholder="Enter contact person's name" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
+                            <input id="contactPerson" type="text" placeholder="Enter contact person's name" value={newPartner.contactPerson} onChange={handleInputChange} required className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
                         </div>
                         <div className="grid gap-2">
                             <label htmlFor="contactNumber" className="text-sm font-medium">Contact Number</label>
-                            <input id="contactNumber" type="text" placeholder="Enter contact number" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
+                            <input id="contactNumber" type="text" placeholder="Enter contact number" value={newPartner.contactNumber} onChange={handleInputChange} required className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
                         </div>
                         <div className="grid gap-2">
                             <label htmlFor="address" className="text-sm font-medium">Address</label>
-                            <textarea id="address" placeholder="Enter address" rows="3" className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"></textarea>
+                            <textarea id="address" placeholder="Enter address" rows="3" value={newPartner.address} onChange={handleInputChange} required className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"></textarea>
                         </div>
-                        {/* Add Partner button par gradient */}
                         <button type="submit" className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-gradient-to-r from-hs-gradient-start to-hs-gradient-end text-white h-10 px-4 py-2 mt-4 hover:opacity-90">Add Partner</button>
                     </form>
                 </div>

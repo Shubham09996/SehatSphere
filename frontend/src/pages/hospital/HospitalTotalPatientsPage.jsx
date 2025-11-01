@@ -1,26 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Users } from 'lucide-react';
+import { toast } from 'react-toastify';
+import api from '../../utils/api';
 
-const HospitalTotalPatientsPage = ({ dashboardData }) => {
-    // Extract relevant data for Total Patients
-    const operationalInsights = dashboardData?.operationalInsights || {
-        patientsWaiting: 0,
-        totalAppointmentsToday: 0,
-        upcomingAppointments: 0,
-    };
-    
-    // Dummy data for a simple list of patients
-    const patientsData = dashboardData?.patients || [
-        { id: 1, name: 'Rahul Sharma', status: 'Waiting', age: 34, gender: 'Male', lastVisit: '2023-10-25' },
-        { id: 2, name: 'Priya Singh', status: 'Checked In', age: 28, gender: 'Female', lastVisit: '2023-10-26' },
-        { id: 3, name: 'Amit Kumar', status: 'Discharged', age: 45, gender: 'Male', lastVisit: '2023-10-20' },
-        { id: 4, name: 'Sneha Gupta', status: 'Waiting', age: 22, gender: 'Female', lastVisit: '2023-10-27' },
-        { id: 5, name: 'Vikram Patel', status: 'Checked In', age: 50, gender: 'Male', lastVisit: '2023-10-28' },
-        { id: 6, name: 'Neha Sharma', status: 'Discharged', age: 39, gender: 'Female', lastVisit: '2023-10-18' },
-        { id: 7, name: 'Rohan Verma', status: 'Waiting', age: 19, gender: 'Male', lastVisit: '2023-10-29' },
-        { id: 8, name: 'Anjali Devi', status: 'Checked In', age: 62, gender: 'Female', lastVisit: '2023-10-30' },
-    ];
+const HospitalTotalPatientsPage = () => {
+    const [patientsData, setPatientsData] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    // Remove operationalInsights as it's no longer passed via prop, and use the dashboard summary endpoint if needed elsewhere
+
+    useEffect(() => {
+        const fetchPatients = async () => {
+            try {
+                setLoading(true);
+                const { data } = await api.get('/api/hospitals/patients');
+                setPatientsData(data);
+                toast.success('Patient data loaded successfully!');
+            } catch (err) {
+                setError(err.response?.data?.message || err.message);
+                toast.error(err.response?.data?.message || err.message);
+                setPatientsData([]); // Set to empty array on error
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchPatients();
+    }, []);
+
+    if (loading) {
+        return <div className="text-center text-foreground p-8">Loading patient data...</div>;
+    }
+
+    if (error) {
+        return <div className="text-center text-red-500 p-8">Error: {error}</div>;
+    }
 
     return (
         <motion.div
@@ -36,20 +52,14 @@ const HospitalTotalPatientsPage = ({ dashboardData }) => {
             {/* Operational Insights for Patients */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-card p-5 rounded-xl border border-border/70 shadow-sm">
-                    <p className="text-sm font-semibold text-muted-foreground">Patients Waiting</p>
-                    <p className="text-3xl font-bold text-foreground mt-2">{operationalInsights.patientsWaiting}</p>
+                    <p className="text-sm font-semibold text-muted-foreground">Total Patients</p>
+                    <p className="text-3xl font-bold text-foreground mt-2">{patientsData.length}</p>
                 </div>
-                <div className="bg-card p-5 rounded-xl border border-border/70 shadow-sm">
-                    <p className="text-sm font-semibold text-muted-foreground">Appointments Today</p>
-                    <p className="text-3xl font-bold text-foreground mt-2">{operationalInsights.totalAppointmentsToday}</p>
-                </div>
-                <div className="bg-card p-5 rounded-xl border border-border/70 shadow-sm">
-                    <p className="text-sm font-semibold text-muted-foreground">Upcoming Appointments</p>
-                    <p className="text-3xl font-bold text-foreground mt-2">{operationalInsights.upcomingAppointments}</p>
-                </div>
+                {/* Removed other operational insights as they are part of the main dashboard and this page focuses on the patient list */}
+                {/* If specific patient-related operational insights are needed here, they would require a separate API call or aggregation */}
             </div>
 
-            {/* Patient List (Example) */}
+            {/* Patient List */}
             <div className="bg-card p-6 rounded-xl border border-border/70 shadow-sm">
                 <h3 className="font-bold text-lg text-foreground mb-4">Current Patients</h3>
                 <div className="overflow-x-auto">
@@ -67,7 +77,7 @@ const HospitalTotalPatientsPage = ({ dashboardData }) => {
                         </thead>
                         <tbody>
                             {patientsData.map((patient) => (
-                                <tr key={patient.id} className="border-b border-border/70 last:border-b-0">
+                                <tr key={patient._id} className="border-b border-border/70 last:border-b-0">
                                     <td className="p-2 font-semibold text-foreground">{patient.id}</td>
                                     <td className="p-2 text-muted-foreground text-sm">{patient.name}</td>
                                     <td className="p-2">

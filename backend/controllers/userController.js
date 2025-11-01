@@ -4,6 +4,7 @@ import User from '../models/User.js';
 import Patient from '../models/Patient.js';
 import Doctor from '../models/Doctor.js';
 import Shop from '../models/Shop.js';
+import Hospital from '../models/Hospital.js'; // NEW: Import Hospital model
 import uploadToCloudinary from '../utils/cloudinary.js';
 import sendEmail from '../utils/sendEmail.js'; // NEW: Import sendEmail utility
 import crypto from 'crypto'; // NEW: Import crypto for token generation
@@ -42,6 +43,9 @@ const authUser = asyncHandler(async (req, res) => {
     } else if (user.role === 'Shop') {
       const shopProfile = await Shop.findOne({ user: user._id });
       if (shopProfile) specificProfileId = shopProfile._id; // Assuming _id is sufficient for shop
+    } else if (user.role === 'Hospital') { // NEW: Handle Hospital role for login
+      const hospitalProfile = await Hospital.findOne({ user: user._id });
+      if (hospitalProfile) specificProfileId = hospitalProfile._id; // Assuming _id is sufficient for hospital
     }
 
     res.json({
@@ -70,6 +74,24 @@ const registerUser = asyncHandler(async (req, res) => {
   const { fullName, email, password, role, phoneNumber, hospital } = req.body;
   const profilePictureFile = req.file; // Get the uploaded file from multer
 
+  let validatedRole = 'Patient'; // Default role
+
+  if (role) {
+      if (['Patient', 'Doctor', 'Shop', 'Hospital', 'Donor'].includes(role)) {
+          validatedRole = role; // Allow public registration for these roles
+      } else if (role === 'Admin') {
+          // For now, allow direct registration of Admin to unblock development.
+          // In a production environment, this should be a protected route or initial setup only.
+          validatedRole = 'Admin';
+      } else {
+          // If an invalid role is provided, default to Patient
+          console.warn(`Invalid role provided during registration: ${role}. Defaulting to Patient.`);
+      }
+  } else {
+      // If no role is provided, default to Patient
+      validatedRole = 'Patient';
+  }
+
   const userExists = await User.findOne({ email });
 
   if (userExists) {
@@ -89,44 +111,46 @@ const registerUser = asyncHandler(async (req, res) => {
     name: fullName, // Use fullName for the user's name
     email,
     password,
-    role,
+    role: validatedRole, // Use the validated role
     phoneNumber,
     profilePicture: profilePictureUrl,
   });
 
   if (user) {
-    // Create corresponding profile based on role
-    let specificProfileId = null;
-    if (user.role === 'Patient') {
-        const patientProfile = await Patient.create({
-            user: user._id,
-            name: user.name, // Add the user's name to the patient profile
-            patientId: `PID-${Math.floor(100000 + Math.random() * 900000)}`,
-            // other patient defaults
-        });
-        // Link the patient profile to the user
-        user.patient = patientProfile._id;
-        await user.save(); // Save the updated user with patient reference
-        specificProfileId = patientProfile.patientId;
-    } else if (user.role === 'Doctor') {
+    let specificProfileId = null; // Initialize specificProfileId
+
+    // Create a specific profile based on the validated role
+    if (validatedRole === 'Patient') {
+        // Generate a unique patientId, e.g., using a timestamp or a shortid library
+        const newPatientId = `PID-${Date.now()}`;
+        const patientProfile = await Patient.create({ user: user._id, name: fullName, patientId: newPatientId });
+        specificProfileId = patientProfile._id; // Use the patient's _id as specificProfileId
+    } else if (validatedRole === 'Doctor') {
+        // For doctors, create a doctor profile with the associated hospital
+        if (!hospital) {
+            res.status(400);
+            throw new Error('Hospital is required for doctor registration');
+        }
         const doctorProfile = await Doctor.create({
             user: user._id,
-            medicalRegistrationNumber: `MRN-${Math.floor(1000 + Math.random() * 9000)}`,
-            specialty: 'General Medicine',
-            qualifications: 'MBBS',
-            hospital: hospital, // Pass the hospital ID here
-            // other doctor defaults
+            hospital: hospital, // Associate doctor with the selected hospital
+            // Add other required doctor fields if any, e.g., name, medicalRegistrationNumber
+            name: fullName, // Assuming doctor also has a name field
+            medicalRegistrationNumber: `MRN-${Date.now()}`, // Example medical registration number
         });
-        specificProfileId = doctorProfile.medicalRegistrationNumber;
-    } else if (user.role === 'Shop') {
+        specificProfileId = doctorProfile._id; // Use the doctor's _id as specificProfileId
+    } else if (validatedRole === 'Shop') {
         const shopProfile = await Shop.create({
             user: user._id,
-            name: `${user.name}'s Pharmacy`,
-            address: 'Default Address',
-            location: 'Default Location',
-            // other shop defaults
+            // Add other required shop fields if any, e.g., name, address
+            name: fullName, // Assuming shop also has a name field (e.g., owner's name or shop name)
+            address: 'Pending', // Placeholder, will be updated during onboarding
         });
-        specificProfileId = shopProfile._id;
+        specificProfileId = shopProfile._id; // Use the shop's _id as specificProfileId
+    } else if (validatedRole === 'Hospital') {
+        // For Hospital role, the hospital profile will be created on onboarding
+        // For now, no specificProfileId is set here, it will be set on onboarding.
+        specificProfileId = null; // No specificProfileId at this stage for Hospital
     }
 
     const token = generateToken(user._id);
@@ -182,6 +206,8 @@ const getUserProfile = asyncHandler(async (req, res) => {
         specificProfile = await Doctor.findOne({ user: user._id });
     } else if (user.role === 'Shop') {
         specificProfile = await Shop.findOne({ user: user._id });
+    } else if (user.role === 'Hospital') { // NEW: Handle Hospital role for user profile
+        specificProfile = await Hospital.findOne({ user: user._id });
     }
 
     res.json({

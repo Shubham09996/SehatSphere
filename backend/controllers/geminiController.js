@@ -6,10 +6,13 @@ import { getChatbotResponse } from '../services/geminiService.js';
 // @route  POST /api/gemini/chat
 // @access Private
 const getGeminiResponse = asyncHandler(async (req, res) => {
+  console.log('geminiController: getGeminiResponse function started.');
   // multer text fields are inside req.body
   const userMessage = req.body.message;
   const language = req.body.language || 'en';
   const file = req.file;
+
+  console.log('Received file in geminiController:', file);
 
   if (!userMessage && !file) {
     return res.status(400).json({
@@ -27,7 +30,7 @@ const getGeminiResponse = asyncHandler(async (req, res) => {
       userMessage,
       userName,
       language,
-      uploadedFilePath
+      file // Pass the full file object here
     );
 
     // cleanup after processing

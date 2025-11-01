@@ -74,6 +74,9 @@ const ChatWindow = ({
             setInput('');
             setSelectedFile(null);
             setPreviewUrl(null);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = null; // Reset the file input
+            }
         }
     };
 

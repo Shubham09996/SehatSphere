@@ -26,6 +26,7 @@ const roleData = {
     Doctor: { icon: Stethoscope, label: 'Doctor' },
     Shop: { icon: Building, label: 'Shop' },
     Hospital: { icon: BriefcaseMedical, label: 'Hospital' }, // NEW: Hospital role
+    Admin: { icon: ShieldCheck, label: 'Admin' }, // NEW: Admin role
 };
 
 // Mock data for the left promotional panel based on role
@@ -167,6 +168,22 @@ const SignupPage = () => {
         }
     }, [navigate]);
 
+    // NEW: Handle Google OAuth redirect parameters
+    useEffect(() => {
+        const queryParams = new URLSearchParams(window.location.search);
+        const token = queryParams.get('token');
+        const userInfo = queryParams.get('userInfo');
+
+        if (token && userInfo) {
+            console.log("Google OAuth Redirect - Token:", token);
+            console.log("Google OAuth Redirect - UserInfo:", userInfo);
+            const userDataForLogin = { ...JSON.parse(userInfo), token: token }; // Merge token into userInfo
+            login(userDataForLogin); // Use the login function to set user and token
+            // Clear the query parameters from the URL to avoid re-processing on refresh
+            navigate(window.location.pathname, { replace: true });
+        }
+    }, [login, navigate]);
+
     const handleCredentialResponse = async (response) => {
         if (response.credential) {
             try {
@@ -213,32 +230,8 @@ const SignupPage = () => {
         }
         setLoading(true); // Set loading to true
 
-        if (selectedRole === 'Hospital') {
-            // Bypass backend for Hospital role for now
-            console.log("Hospital Signup (Frontend only) Successful:", { fullName, email, selectedRole });
-            const dummyToken = 'dummy_jwt_for_hospital'; // A dummy JWT token
-            const dummyProfilePicture = 'https://res.cloudinary.com/diqraojkd/image/upload/v1709477028/HealthSphere/Users/avatar-placeholder.png';
-            const dummyUserId = 'hospital_123'; // A dummy user ID
-
-            localStorage.setItem('profilePicture', dummyProfilePicture);
-            localStorage.setItem('userName', fullName);
-            localStorage.setItem('userRole', selectedRole);
-            localStorage.setItem('jwt', dummyToken); 
-
-            const userDataForLogin = {
-                _id: dummyUserId,
-                name: fullName,
-                email: email,
-                role: selectedRole,
-                profilePicture: dummyProfilePicture,
-                token: dummyToken,
-            };
-            login(userDataForLogin);
-            toast.success('Hospital Registration successful! (Frontend only)');
-            navigate(`/${selectedRole.toLowerCase()}/dashboard`);
-            setLoading(false);
-            return; // Stop further execution
-        }
+        // Removed the hardcoded frontend-only Hospital registration bypass
+        // All registrations will now go through the backend endpoint.
 
         try {
             const formData = new FormData();
@@ -287,8 +280,8 @@ const SignupPage = () => {
                     setNewlySignedUpDoctorId(res.data.specificProfileId); // Use specificProfileId for doctor
                     setNewlySignedUpUserId(res.data._id); // Use the newly created user's _id
                     setShowDoctorOnboardingModal(true);
-                } else if (userRole === 'hospital') { // NEW: Hospital redirection
-                    navigate(`/${userRole}/dashboard`);
+                } else if (userRole === 'hospital') { // NEW: Hospital redirection to onboarding
+                    navigate(`/hospital-onboarding/${res.data._id}`); // Redirect to hospital onboarding page
                 } else {
                     // For other roles, just navigate to their dashboard
                     navigate(`/${userRole}/dashboard`);

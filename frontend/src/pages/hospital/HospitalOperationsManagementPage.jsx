@@ -1,29 +1,56 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FlaskConical, Droplet, ShieldCheck, BriefcaseMedical } from 'lucide-react';
+import { toast } from 'react-toastify';
+import api from '../../utils/api';
 
-const HospitalOperationsManagementPage = ({ dashboardData }) => {
-    const tokenSystem = dashboardData?.tokenSystem || {
-        status: 'Active',
-    };
+const HospitalOperationsManagementPage = () => {
+    const [tokenSystem, setTokenSystem] = useState({});
+    const [labTests, setLabTests] = useState([]);
+    const [bloodBank, setBloodBank] = useState({});
+    const [insuranceIntegrations, setInsuranceIntegrations] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    const labTests = dashboardData?.labTests || [
-        { name: 'Complete Blood Count', price: 500 },
-        { name: 'Urine Analysis', price: 200 },
-        { name: 'Thyroid Panel', price: 800 },
-    ];
+    useEffect(() => {
+        const fetchOperationsData = async () => {
+            try {
+                setLoading(true);
+                const [tokenSystemRes, labTestsRes, bloodBankRes, insuranceIntegrationsRes] = await Promise.all([
+                    api.get('/api/hospitals/token-system'),
+                    api.get('/api/hospitals/lab-tests'),
+                    api.get('/api/hospitals/blood-bank'),
+                    api.get('/api/hospitals/insurance-integrations'),
+                ]);
 
-    const bloodBank = dashboardData?.bloodBank || {
-        APositive: 100,
-        BPositive: 80,
-        OPositive: 120,
-        ANegative: 30,
-    };
+                setTokenSystem(tokenSystemRes.data);
+                setLabTests(labTestsRes.data);
+                setBloodBank(bloodBankRes.data);
+                setInsuranceIntegrations(insuranceIntegrationsRes.data);
 
-    const insuranceIntegrations = dashboardData?.insuranceIntegrations || [
-        { name: 'HealthSecure', status: 'Active' },
-        { name: 'MediCare', status: 'Inactive' },
-    ];
+                toast.success('Operations management data loaded successfully!');
+            } catch (err) {
+                setError(err.response?.data?.message || err.message);
+                toast.error(err.response?.data?.message || err.message);
+                setTokenSystem({});
+                setLabTests([]);
+                setBloodBank({});
+                setInsuranceIntegrations([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchOperationsData();
+    }, []);
+
+    if (loading) {
+        return <div className="text-center text-foreground p-8">Loading operations management data...</div>;
+    }
+
+    if (error) {
+        return <div className="text-center text-red-500 p-8">Error: {error}</div>;
+    }
 
     return (
         <motion.div
@@ -51,8 +78,8 @@ const HospitalOperationsManagementPage = ({ dashboardData }) => {
                     <h3 className="font-bold text-lg text-foreground mb-4">Lab Test Management</h3>
                     <div className="h-40 flex items-center justify-center text-muted-foreground">
                         <ul className="space-y-2 w-full">
-                            {labTests.map((test, index) => (
-                                <li key={index} className="flex items-center justify-between bg-muted/20 p-2 rounded-md">
+                            {labTests.map((test) => (
+                                <li key={test.name} className="flex items-center justify-between bg-muted/20 p-2 rounded-md">
                                     <span className="font-medium text-foreground">{test.name}</span>
                                     <span className="text-sm text-muted-foreground">₹{test.price}</span>
                                 </li>
@@ -77,8 +104,8 @@ const HospitalOperationsManagementPage = ({ dashboardData }) => {
                     <h3 className="font-bold text-lg text-foreground mb-4">Insurance Integration</h3>
                     <div className="h-40 flex items-center justify-center text-muted-foreground">
                         <ul className="space-y-2 w-full">
-                            {insuranceIntegrations.map((insurance, index) => (
-                                <li key={index} className="flex items-center justify-between bg-muted/20 p-2 rounded-md">
+                            {insuranceIntegrations.map((insurance) => (
+                                <li key={insurance.name} className="flex items-center justify-between bg-muted/20 p-2 rounded-md">
                                     <span className="font-medium text-foreground">{insurance.name}</span>
                                     <span className="text-sm text-muted-foreground">{insurance.status}</span>
                                 </li>
