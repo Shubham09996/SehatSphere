@@ -108,6 +108,8 @@ function App() {
   const navigate = useNavigate();
   const processedRedirectRef = useRef(false);
 
+  console.log('App.jsx - Current location.pathname:', location.pathname); // NEW: Log current path
+
   // 🧩 Step 1: Process token & userInfo from URL (after signup/login redirect)
   useEffect(() => {
     const params = new URLSearchParams(location.search);

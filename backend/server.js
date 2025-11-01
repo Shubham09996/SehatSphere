@@ -23,6 +23,7 @@ import donationRoutes from './routes/donationRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import geminiRoutes from './routes/geminiRoutes.js';
 import familyRoutes from './routes/familyRoutes.js'; // Import family routes
+import labRoutes from './routes/labRoutes.js'; // NEW: Import lab routes
 import config from './config/config.js'; // Import config
 import passport from './config/passport.js'; // Import passport config
 import session from 'express-session'; // Import express-session
@@ -74,6 +75,7 @@ app.use('/api/donations', donationRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/gemini', geminiRoutes); // New Gemini chatbot routes
 app.use('/api/family', familyRoutes); // New Family management routes
+app.use('/api/labs', labRoutes); // NEW: Use lab routes
 
 // Error handling middleware
 app.use(notFound);

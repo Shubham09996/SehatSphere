@@ -5,6 +5,7 @@ import Patient from '../models/Patient.js';
 import Doctor from '../models/Doctor.js';
 import Shop from '../models/Shop.js';
 import Hospital from '../models/Hospital.js'; // NEW: Import Hospital model
+import Lab from '../models/Lab.js'; // NEW: Import Lab model
 import uploadToCloudinary from '../utils/cloudinary.js';
 import sendEmail from '../utils/sendEmail.js'; // NEW: Import sendEmail utility
 import crypto from 'crypto'; // NEW: Import crypto for token generation
@@ -21,7 +22,7 @@ import crypto from 'crypto'; // NEW: Import crypto for token generation
 const authUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email }).populate('lab').populate('patient'); // NEW: Populate patient field
 
   if (user && (await user.matchPassword(password))) {
     const token = generateToken(user._id);
@@ -34,18 +35,21 @@ const authUser = asyncHandler(async (req, res) => {
     });
 
     let specificProfileId = null;
-    if (user.role === 'Patient') {
-      const patientProfile = await Patient.findOne({ user: user._id });
-      if (patientProfile) specificProfileId = patientProfile.patientId;
+    // The patient field is already populated for Patient roles, so we can directly access it.
+    if (user.role === 'Patient' && user.patient) {
+      specificProfileId = user.patient.patientId;
     } else if (user.role === 'Doctor') {
       const doctorProfile = await Doctor.findOne({ user: user._id });
-      if (doctorProfile) specificProfileId = doctorProfile.medicalRegistrationNumber; // Assuming this is the doctor's ID
+      if (doctorProfile) specificProfileId = doctorProfile.medicalRegistrationNumber;
     } else if (user.role === 'Shop') {
       const shopProfile = await Shop.findOne({ user: user._id });
-      if (shopProfile) specificProfileId = shopProfile._id; // Assuming _id is sufficient for shop
-    } else if (user.role === 'Hospital') { // NEW: Handle Hospital role for login
+      if (shopProfile) specificProfileId = shopProfile._id;
+    } else if (user.role === 'Hospital') {
       const hospitalProfile = await Hospital.findOne({ user: user._id });
-      if (hospitalProfile) specificProfileId = hospitalProfile._id; // Assuming _id is sufficient for hospital
+      if (hospitalProfile) specificProfileId = hospitalProfile._id;
+    } else if (user.role === 'Lab') {
+      const labProfile = await Lab.findOne({ user: user._id });
+      if (labProfile) specificProfileId = labProfile._id;
     }
 
     res.json({
@@ -60,6 +64,7 @@ const authUser = asyncHandler(async (req, res) => {
       specificProfileId: specificProfileId, // Include the role-specific ID
       token: token, // NEW: Include token in the response
       isNewUser: false, // Explicitly set to false for existing users
+      lab: user.role === 'Lab' && user.lab ? { _id: user.lab._id } : null, // Ensure lab object with _id is sent for Lab role
     });
   } else {
     res.status(401);
@@ -77,7 +82,7 @@ const registerUser = asyncHandler(async (req, res) => {
   let validatedRole = 'Patient'; // Default role
 
   if (role) {
-      if (['Patient', 'Doctor', 'Shop', 'Hospital', 'Donor'].includes(role)) {
+      if (['Patient', 'Doctor', 'Shop', 'Hospital', 'Donor', 'Lab'].includes(role)) {
           validatedRole = role; // Allow public registration for these roles
       } else if (role === 'Admin') {
           // For now, allow direct registration of Admin to unblock development.
@@ -125,6 +130,8 @@ const registerUser = asyncHandler(async (req, res) => {
         const newPatientId = `PID-${Date.now()}`;
         const patientProfile = await Patient.create({ user: user._id, name: fullName, patientId: newPatientId });
         specificProfileId = patientProfile._id; // Use the patient's _id as specificProfileId
+        user.patient = patientProfile._id; // NEW: Assign the newly created patient's ID to the user.patient field
+        await user.save(); // Save the user with the linked patient ID
     } else if (validatedRole === 'Doctor') {
         // For doctors, create a doctor profile with the associated hospital
         if (!hospital) {
@@ -153,6 +160,17 @@ const registerUser = asyncHandler(async (req, res) => {
         // For Hospital role, the hospital profile will be created on onboarding
         // For now, no specificProfileId is set here, it will be set on onboarding.
         specificProfileId = null; // No specificProfileId at this stage for Hospital
+    } else if (validatedRole === 'Lab') {
+        const labProfile = await Lab.create({
+            user: user._id,
+            name: fullName,
+            labId: `LAB-${Date.now()}`,
+            email: email, // NEW: Assign the email from registration to the lab profile
+            // Add other required lab fields if any
+        });
+        specificProfileId = labProfile._id;
+        user.lab = labProfile._id; // Assign the newly created lab's ID to the user.lab field
+        await user.save(); // Save the user with the linked lab ID
     }
 
     const token = generateToken(user._id);
@@ -176,6 +194,7 @@ const registerUser = asyncHandler(async (req, res) => {
       specificProfileId: specificProfileId, // Include the role-specific ID
       token: token, // NEW: Include token in the response
       isNewUser: true, // Mark as new user for registration
+      lab: validatedRole === 'Lab' && user.lab ? { _id: user.lab._id } : null, // Ensure lab object with _id is sent for Lab role
     });
   } else {
     res.status(400);
@@ -198,7 +217,7 @@ const logoutUser = asyncHandler(async (req, res) => {
 // @route   GET /api/users/profile
 // @access  Private
 const getUserProfile = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user._id);
+  const user = await User.findById(req.user._id).populate('lab').populate('patient'); // NEW: Populate patient field
 
   if (user) {
     let specificProfile = null;
@@ -210,6 +229,8 @@ const getUserProfile = asyncHandler(async (req, res) => {
         specificProfile = await Shop.findOne({ user: user._id });
     } else if (user.role === 'Hospital') { // NEW: Handle Hospital role for user profile
         specificProfile = await Hospital.findOne({ user: user._id });
+    } else if (user.role === 'Lab') { // NEW: Handle Lab role for user profile
+        specificProfile = await Lab.findOne({ user: user._id }); // Assuming a Lab model exists
     }
 
     res.json({
@@ -222,6 +243,7 @@ const getUserProfile = asyncHandler(async (req, res) => {
       isVerified: user.isVerified,
       status: user.status,
       specificProfile, // Include role-specific profile data
+      lab: user.role === 'Lab' && user.lab ? { _id: user.lab._id } : null, // Ensure lab object with _id is sent for Lab role
     });
   } else {
     res.status(404);
@@ -279,6 +301,14 @@ const updateUserProfile = asyncHandler(async (req, res) => {
             shopProfile.logo = req.body.logo || shopProfile.logo;
             // Update other shop-specific fields
             await shopProfile.save();
+        }
+    } else if (updatedUser.role === 'Lab') { // NEW: Handle Lab role for profile update
+        const labProfile = await Lab.findOne({ user: updatedUser._id });
+        if (labProfile) {
+            labProfile.name = req.body.labName || labProfile.name;
+            labProfile.labId = req.body.labId || labProfile.labId;
+            // Update other lab-specific fields
+            await labProfile.save();
         }
     }
 
@@ -419,6 +449,8 @@ const deleteUser = asyncHandler(async (req, res) => {
         await Doctor.deleteOne({ user: user._id });
     } else if (user.role === 'Shop') {
         await Shop.deleteOne({ user: user._id });
+    } else if (user.role === 'Lab') { // NEW: Handle Lab role for deletion
+        await Lab.deleteOne({ user: user._id });
     }
 
     res.json({ message: 'User removed successfully' });
@@ -545,4 +577,18 @@ const resetPassword = asyncHandler(async (req, res) => {
     res.status(200).json({ success: true, message: 'Password reset successfully' });
 });
 
-export { authUser, registerUser, getUserProfile, updateUserProfile, logoutUser, changePassword, updateNotificationPreferences, getUsers, updateUserRole, deleteUser, adminUpdateUser, forgotPassword, resetPassword };
+export {
+  authUser,
+  registerUser,
+  getUserProfile,
+  updateUserProfile,
+  logoutUser,
+  changePassword,
+  updateNotificationPreferences,
+  getUsers,
+  updateUserRole,
+  deleteUser,
+  adminUpdateUser,
+  forgotPassword,
+  resetPassword,
+};

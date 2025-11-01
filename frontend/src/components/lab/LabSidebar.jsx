@@ -32,12 +32,12 @@ const LabSidebar = ({ isCollapsed, toggleCollapse, onCloseMobileSidebar }) => {
     {
       name: 'Test Order Management',
       icon: CalendarDays,
-      path: '/lab/test-orders',
+      path: '/lab/test-order-management',
     },
     {
       name: 'Report & Data Management',
       icon: FileText,
-      path: '/lab/reports',
+      path: '/lab/report-data-management',
     },
     {
       name: 'Stock Analytics',
@@ -45,6 +45,8 @@ const LabSidebar = ({ isCollapsed, toggleCollapse, onCloseMobileSidebar }) => {
       path: '/lab/stock-analytics',
     },
   ];
+
+  console.log('LabSidebar.jsx - Nav Items:', navItems);
 
   return (
     <aside className="w-full h-full bg-card text-foreground flex flex-col p-4 border-r border-border relative">

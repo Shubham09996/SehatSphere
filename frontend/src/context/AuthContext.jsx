@@ -13,16 +13,6 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('jwt', token);
         localStorage.setItem('userInfo', JSON.stringify(parsedUserInfo));
         setUser(parsedUserInfo);
-        // NEW: Also store specificProfileId if available (for Google sign-ups)
-        if (parsedUserInfo.specificProfileId) {
-            if (parsedUserInfo.role === 'Patient') {
-                localStorage.setItem('patientId', parsedUserInfo.specificProfileId);
-            } else if (parsedUserInfo.role === 'Doctor') {
-                localStorage.setItem('doctorId', parsedUserInfo.specificProfileId);
-            } else if (parsedUserInfo.role === 'Shop') {
-                localStorage.setItem('shopId', parsedUserInfo.specificProfileId);
-            }
-        }
     };
 
     useEffect(() => {
@@ -31,6 +21,7 @@ export const AuthProvider = ({ children }) => {
                 const storedUser = localStorage.getItem('userInfo');
                 if (storedUser) {
                     const parsedUser = JSON.parse(storedUser);
+                    console.log("AuthContext: Parsed user from localStorage", parsedUser); // NEW LOG
                     // Ensure specificProfileId is present for doctors
                     if (parsedUser.role === 'Doctor' && !parsedUser.specificProfileId) {
                         console.warn('Doctor user loaded from localStorage without specificProfileId.');
@@ -67,17 +58,6 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('jwt', userData.token); // Store JWT in localStorage here
         console.log("AuthContext: JWT stored in localStorage:", localStorage.getItem('jwt')); // NEW LOG
         setUser(userData);
-        // Ensure specificProfileId is always stored in localStorage regardless of role
-        if (userData.specificProfileId) {
-            console.log("AuthContext: specificProfileId from userData:", userData.specificProfileId); // Debug log
-            if (userData.role === 'Doctor') {
-                localStorage.setItem('doctorId', userData.specificProfileId); // Store doctorId in local storage
-            } else if (userData.role === 'Patient') {
-                localStorage.setItem('patientId', userData.specificProfileId); // Store patientId in local storage
-            } else if (userData.role === 'Shop') {
-                localStorage.setItem('shopId', userData.specificProfileId);
-            }
-        }
     };
 
     const logout = async () => {

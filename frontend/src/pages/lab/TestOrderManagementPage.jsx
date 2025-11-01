@@ -1,33 +1,55 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import api from '../../utils/api'; // Import api for backend calls
+import { useAuth } from '../../context/AuthContext'; // Import useAuth to get lab ID
+import moment from 'moment'; // Import moment for date formatting
 
 const TestOrderManagementPage = () => {
-  // Removed const navigate = useNavigate();
-
+  const { user } = useAuth();
+  const [testOrders, setTestOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedDayFilter, setSelectedDayFilter] = useState('All');
   const [selectedTestFilter, setSelectedTestFilter] = useState('All');
 
-  const allBookings = [
-    { id: '#1001', patient: 'Blood Test', time: 'Today, 10:00 AM', testType: 'Blood Test' },
-    { id: '#1002', patient: 'Urine Analysis', time: 'Today, 11:30 AM', testType: 'Urine Analysis' },
-    { id: '#1003', patient: 'X-Ray', time: 'Yesterday, 02:00 PM', testType: 'X-Ray' },
-    { id: '#1004', patient: 'MRI Scan', time: 'Yesterday, 03:00 PM', testType: 'MRI Scan' },
-    { id: '#1005', patient: 'CT Scan', time: '2 days ago, 09:00 AM', testType: 'CT Scan' },
-    { id: '#1006', patient: 'Thyroid Panel', time: '3 days ago, 01:00 PM', testType: 'Thyroid Panel' },
-    { id: '#1007', patient: 'Lipid Profile', time: '3 days ago, 04:00 PM', testType: 'Lipid Profile' },
-    { id: '#1008', patient: 'Blood Test', time: 'This Week, 09:00 AM', testType: 'Blood Test' },
-    { id: '#1009', patient: 'Urine Analysis', time: 'This Month, 01:00 PM', testType: 'Urine Analysis' },
-    { id: '#1010', patient: 'X-Ray', time: 'Last Month, 11:00 AM', testType: 'X-Ray' },
-  ];
+  // Hardcoded filters for display purposes, actual filtering will be done backend
+  const dayFilters = ['All', 'Today', 'Yesterday', 'This Week', 'This Month'];
+  const allTestTypes = ['All', 'Blood Test', 'Urine Analysis', 'X-Ray', 'MRI Scan', 'CT Scan', 'Thyroid Panel', 'Lipid Profile'];
 
-  const dayFilters = ['All', 'Today', 'Yesterday', 'Week', 'Month'];
-  const testTypes = ['All', ...new Set(allBookings.map(booking => booking.testType))];
+  useEffect(() => {
+    const fetchTestOrders = async () => {
+      if (!user || !user.lab) {
+        setError('User not authorized or lab ID not found.');
+        setLoading(false);
+        return;
+      }
 
+      setLoading(true);
+      setError(null);
+      try {
+        console.log("TestOrderManagementPage: User object before API call", user); // NEW LOG
+        console.log("TestOrderManagementPage: user.lab before API call", user.lab); // NEW LOG
+        const response = await api.get('/api/labs/test-orders', {
+          params: {
+            dayFilter: selectedDayFilter,
+            testTypeFilter: selectedTestFilter,
+            labId: user.lab._id, // Pass lab ID for filtering (accessing _id from the populated lab object)
+          },
+        });
+        setTestOrders(response.data);
+      } catch (err) {
+        console.error('Failed to fetch test orders:', err);
+        setError(err.response?.data?.message || err.message || 'Failed to fetch test orders');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTestOrders();
+  }, [selectedDayFilter, selectedTestFilter, user]);
+
+  // This function is now mostly redundant as filtering is backend driven
   const filterBookings = () => {
-    return allBookings.filter(booking => {
-      const matchesDay = selectedDayFilter === 'All' || booking.time.includes(selectedDayFilter);
-      const matchesTest = selectedTestFilter === 'All' || booking.testType === selectedTestFilter;
-      return matchesDay && matchesTest;
-    });
+    return testOrders; // Directly return fetched orders
   };
 
   const filteredBookings = filterBookings();
@@ -67,21 +89,28 @@ const TestOrderManagementPage = () => {
             value={selectedTestFilter}
             className="bg-card border border-border rounded-md px-4 py-2 text-foreground focus:outline-none focus:ring-2 focus:ring-hs-gradient-middle"
           >
-            {testTypes.map(type => (
+            {allTestTypes.map(type => (
               <option key={type} value={type}>{type}</option>
             ))}
           </select>
         </div>
 
-        {/* Placeholder for a list of new bookings */}
-        <ul className="space-y-3">
-          {filteredBookings.map((booking, index) => (
-            <li key={index} className="flex justify-between items-center p-3 border border-border rounded-md bg-background">
-              <span className="font-medium text-foreground">Patient ID: {booking.id} - {booking.patient}</span>
-              <span className="text-sm text-muted-foreground">{booking.time}</span>
-            </li>
-          ))}
-        </ul>
+        {loading ? (
+          <p>Loading test orders...</p>
+        ) : error ? (
+          <p className="text-red-500">Error: {error}</p>
+        ) : filteredBookings.length > 0 ? (
+          <ul className="space-y-3">
+            {filteredBookings.map((order) => (
+              <li key={order._id} className="flex justify-between items-center p-3 border border-border rounded-md bg-background">
+                <span className="font-medium text-foreground">Order ID: {order._id} - Patient: {order.patient.name} - Test: {order.testName}</span>
+                <span className="text-sm text-muted-foreground">Ordered On: {moment(order.orderDate).format('MMMM Do YYYY, h:mm A')} - Status: {order.status}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-muted-foreground">No test orders found.</p>
+        )}
         <button
           // Removed onClick={() => navigate('/lab/test-orders')}
           className="mt-6 px-4 py-2 bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-white rounded-md hover:opacity-90 transition-opacity"
@@ -90,7 +119,7 @@ const TestOrderManagementPage = () => {
         </button>
       </div>
 
-      {/* Doctor Referrals Section */}
+      {/* Doctor Referrals Section - Remains hardcoded for now */}
       <div className="bg-card rounded-lg shadow-md p-6 border border-border">
         <h2 className="text-xl font-semibold mb-4">Doctor Referrals</h2>
         <p className="text-muted-foreground mb-4">

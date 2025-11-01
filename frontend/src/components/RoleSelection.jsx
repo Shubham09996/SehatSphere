@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Stethoscope, Pill, Heart, Shield } from 'lucide-react';
+import { Calendar, Stethoscope, Pill, Heart, Shield, FlaskConical } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const RoleCard = ({ icon, title, description, borderColor }) => (
@@ -58,6 +58,12 @@ const RoleSelection = () => {
       title: 'Admin',
       description: 'Monitor system, manage users, view analytics',
       borderColor: 'border-role-admin-border',
+    },
+    {
+      icon: <FlaskConical size={32} />,
+      title: 'Lab',
+      description: 'Manage lab tests, results, and patient samples',
+      borderColor: 'border-role-lab-border',
     },
   ];
 

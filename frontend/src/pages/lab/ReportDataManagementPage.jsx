@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react'; // NEW: Import useEffect
+import api from '../../utils/api'; // NEW: Import api
+import { useAuth } from '../../context/AuthContext'; // NEW: Import useAuth
+import { toast } from 'react-toastify'; // NEW: Import toast for notifications
 
 const ReportDataManagementPage = () => {
+  const { user } = useAuth();
   const [selectedPatient, setSelectedPatient] = useState(''); // For Generate Report section
   const [selectedPatientToUpload, setSelectedPatientToUpload] = useState(''); // NEW: For Upload Reports section
   const [selectedFile, setSelectedFile] = useState(null); // NEW: For Upload Reports section
@@ -8,49 +12,129 @@ const ReportDataManagementPage = () => {
   const [testResults, setTestResults] = useState(''); // NEW: For manual report generation
   const [comments, setComments] = useState(''); // NEW: For manual report generation
   const [isReportGenerated, setIsReportGenerated] = useState(false); // NEW: State for report generation status
+  const [patients, setPatients] = useState([]); // State for patients fetched from backend
+  const [doctors, setDoctors] = useState([]); // State for doctors fetched from backend
+  const [reports, setReports] = useState([]); // State for report history fetched from backend
+  const [loadingPatients, setLoadingPatients] = useState(true);
+  const [loadingDoctors, setLoadingDoctors] = useState(true);
+  const [loadingReports, setLoadingReports] = useState(true);
+  const [errorPatients, setErrorPatients] = useState(null);
+  const [errorDoctors, setErrorDoctors] = useState(null);
+  const [errorReports, setErrorReports] = useState(null);
+  const [searchQuery, setSearchQuery] = useState(''); // For report history search
 
-  const mockPatientData = [
-    { id: 'P001', name: 'John Doe', doctorId: 'D001' },
-    { id: 'P002', name: 'Jane Smith', doctorId: 'D002' },
-    { id: 'P003', name: 'Peter Jones', doctorId: 'D001' },
-  ];
+  // Removed mockPatientData and mockDoctorData
+  // const mockPatientData = [
+  //   { id: 'P001', name: 'John Doe', doctorId: 'D001' },
+  //   { id: 'P002', name: 'Jane Smith', doctorId: 'D002' },
+  //   { id: 'P003', name: 'Peter Jones', doctorId: 'D001' },
+  // ];
 
-  const mockDoctorData = [
-    { id: 'D001', name: 'Dr. Sarah Johnson' },
-    { id: 'D002', name: 'Dr. Michael Brown' },
-  ];
+  // const mockDoctorData = [
+  //   { id: 'D001', name: 'Dr. Sarah Johnson' },
+  //   { id: 'D002', name: 'Dr. Michael Brown' },
+  // ];
+
+  useEffect(() => {
+    const fetchPatientsAndDoctors = async () => {
+      if (!user || !user.lab) {
+        setErrorPatients('User not authorized or lab ID not found.');
+        setErrorDoctors('User not authorized or lab ID not found.');
+        setLoadingPatients(false);
+        setLoadingDoctors(false);
+        return;
+      }
+
+      try {
+        setLoadingPatients(true);
+        const patientsRes = await api.get('/api/labs/patients', { params: { labId: user.lab._id } });
+        setPatients(patientsRes.data);
+        setLoadingPatients(false);
+      } catch (err) {
+        console.error('Failed to fetch patients:', err);
+        setErrorPatients(err.response?.data?.message || err.message || 'Failed to fetch patients');
+        setLoadingPatients(false);
+      }
+
+      try {
+        setLoadingDoctors(true);
+        const doctorsRes = await api.get('/api/labs/doctors', { params: { labId: user.lab._id } }); // Assuming you want doctors associated with the lab or its network
+        setDoctors(doctorsRes.data);
+        setLoadingDoctors(false);
+      } catch (err) {
+        console.error('Failed to fetch doctors:', err);
+        setErrorDoctors(err.response?.data?.message || err.message || 'Failed to fetch doctors');
+        setLoadingDoctors(false);
+      }
+    };
+
+    const fetchReportHistory = async () => {
+      if (!user || !user.lab) {
+        setErrorReports('User not authorized or lab ID not found.');
+        setLoadingReports(false);
+        return;
+      }
+      setLoadingReports(true);
+      try {
+        const reportsRes = await api.get('/api/labs/reports', {
+          params: {
+            labId: user.lab._id,
+            search: searchQuery,
+          },
+        });
+        setReports(reportsRes.data);
+        setLoadingReports(false);
+      } catch (err) {
+        console.error('Failed to fetch report history:', err);
+        setErrorReports(err.response?.data?.message || err.message || 'Failed to fetch report history');
+        setLoadingReports(false);
+      }
+    };
+
+    fetchPatientsAndDoctors();
+    fetchReportHistory();
+  }, [user, searchQuery]);
 
   // NEW: Reset isReportGenerated when any relevant field changes
   useEffect(() => {
     setIsReportGenerated(false);
   }, [selectedPatient, testName, testResults, comments]);
 
-  const handleGenerateReport = () => {
-    if (selectedPatient && testName && testResults) {
-      const patient = mockPatientData.find(p => p.id === selectedPatient);
-      const doctor = mockDoctorData.find(d => d.id === patient?.doctorId);
-      alert(`Generating manual report for patient: ${patient?.name} (ID: ${patient?.id})\nTest: ${testName}\nResults: ${testResults}\nComments: ${comments}\nAssociated Doctor: ${doctor?.name}`);
-      console.log('Generated Report Data:', {
-        patientId: selectedPatient,
-        patientName: patient?.name,
-        doctorId: doctor?.id,
-        doctorName: doctor?.name,
+  const handleGenerateReport = async () => {
+    if (!selectedPatient || !testName || !testResults) {
+      toast.error('Please select a patient, enter test name and results to generate a report.');
+      setIsReportGenerated(false);
+      return;
+    }
+
+    const patient = patients.find(p => p._id === selectedPatient);
+    if (!patient) {
+      toast.error('Selected patient not found.');
+      return;
+    }
+
+    try {
+      const response = await api.post('/api/labs/reports/generate', {
+        labId: user.lab._id,
+        patientId: patient._id,
         testName,
         testResults,
         comments,
-        date: new Date().toLocaleDateString()
       });
+      toast.success(response.data.message || 'Report generated successfully!');
+      console.log('Generated Report Data:', response.data.report); // Log the generated report from backend
       setIsReportGenerated(true); // Set to true after successful generation
-    } else {
-      alert('Please select a patient, enter test name and results to generate a report.');
-      setIsReportGenerated(false); // Ensure it's false if generation fails
+    } catch (err) {
+      console.error('Failed to generate report:', err);
+      toast.error(err.response?.data?.message || err.message || 'Failed to generate report');
+      setIsReportGenerated(false);
     }
   };
 
   // NEW: Handle Save Report
   const handleSaveReport = () => {
     if (isReportGenerated) {
-      alert('Report saved successfully!');
+      toast.success('Report saved successfully!');
       console.log('Report Saved!');
       // Here you would implement the actual save logic (e.g., API call to backend)
       // After saving, you might want to clear the fields or navigate away
@@ -59,27 +143,74 @@ const ReportDataManagementPage = () => {
       setTestResults('');
       setComments('');
       setIsReportGenerated(false); // Reset after saving
+      // Re-fetch report history to show the new report
+      const fetchReportHistory = async () => {
+        if (!user || !user.lab) return;
+        try {
+          const reportsRes = await api.get('/api/labs/reports', {
+            params: { labId: user.lab._id, search: searchQuery },
+          });
+          setReports(reportsRes.data);
+        } catch (err) {
+          console.error('Failed to re-fetch report history:', err);
+        }
+      };
+      fetchReportHistory();
     } else {
-      alert('Please generate a report first.');
+      toast.error('Please generate a report first.');
     }
   };
 
-  const handleFileUpload = () => {
-    if (selectedPatientToUpload && selectedFile) {
-      alert(`Uploading file for patient ID: ${selectedPatientToUpload}, File: ${selectedFile.name}`);
-      console.log('File uploaded for:', {
-        patientId: selectedPatientToUpload,
-        patientName: mockPatientData.find(p => p.id === selectedPatientToUpload)?.name,
-        doctorId: mockPatientData.find(p => p.id === selectedPatientToUpload)?.doctorId,
-        doctorName: mockDoctorData.find(d => d.id === mockPatientData.find(p => p.id === selectedPatientToUpload)?.doctorId)?.name,
-        file: selectedFile.name
+  const handleFileUpload = async () => {
+    if (!selectedPatientToUpload || !selectedFile) {
+      toast.error('Please select a patient and a file to upload.');
+      return;
+    }
+
+    const patient = patients.find(p => p._id === selectedPatientToUpload);
+    if (!patient) {
+      toast.error('Selected patient not found.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('report', selectedFile);
+    formData.append('patientId', patient._id);
+    formData.append('labId', user.lab._id);
+    // You might also need to append doctorId if relevant for the uploaded report
+
+    try {
+      const response = await api.post('/api/labs/reports/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
-      // Here you would implement the actual file upload logic, e.g., using FormData and an API call
+      toast.success(response.data.message || 'Report uploaded successfully!');
+      console.log('File uploaded response:', response.data); // Log upload response
       setSelectedPatientToUpload('');
       setSelectedFile(null);
-    } else {
-      alert('Please select a patient and a file to upload.');
+      // Re-fetch report history to show the new report
+      const fetchReportHistory = async () => {
+        if (!user || !user.lab) return;
+        try {
+          const reportsRes = await api.get('/api/labs/reports', {
+            params: { labId: user.lab._id, search: searchQuery },
+          });
+          setReports(reportsRes.data);
+        } catch (err) {
+          console.error('Failed to re-fetch report history:', err);
+        }
+      };
+      fetchReportHistory();
+    } catch (err) {
+      console.error('Failed to upload file:', err);
+      toast.error(err.response?.data?.message || err.message || 'Failed to upload file');
     }
+  };
+
+  const getDoctorName = (doctorId) => {
+    const doctor = doctors.find(d => d._id === doctorId);
+    return doctor ? doctor.name : 'N/A';
   };
 
   return (
@@ -103,19 +234,24 @@ const ReportDataManagementPage = () => {
             onChange={(e) => setSelectedPatientToUpload(e.target.value)}
             value={selectedPatientToUpload}
             className="w-full p-3 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-hs-gradient-middle"
+            disabled={loadingPatients} // Disable if patients are loading
           >
-            <option value="">-- Select a Patient --</option>
-            {mockPatientData.map((patient) => (
-              <option key={patient.id} value={patient.id}>
-                {patient.name} (ID: {patient.id})
-              </option>
-            ))}
+            <option value="">{loadingPatients ? 'Loading Patients...' : '-- Select a Patient --'}</option>
+            {errorPatients ? (
+              <option value="" disabled>Error loading patients</option>
+            ) : (
+              patients.map((patient) => (
+                <option key={patient._id} value={patient._id}>
+                  {patient.name} (ID: {patient.patientId})
+                </option>
+              ))
+            )}
           </select>
         </div>
 
-        {selectedPatientToUpload && (
+        {selectedPatientToUpload && !loadingPatients && (
           <div className="mb-4 p-3 bg-background rounded-md border border-border">
-            <p className="text-sm text-muted-foreground">Associated Doctor: <span className="font-medium text-foreground">{mockDoctorData.find(d => d.id === mockPatientData.find(p => p.id === selectedPatientToUpload)?.doctorId)?.name || 'N/A'}</span></p>
+            <p className="text-sm text-muted-foreground">Associated Doctor: <span className="font-medium text-foreground">{getDoctorName(patients.find(p => p._id === selectedPatientToUpload)?.doctor || null)}</span></p>
           </div>
         )}
 
@@ -155,20 +291,25 @@ const ReportDataManagementPage = () => {
             onChange={(e) => setSelectedPatient(e.target.value)}
             value={selectedPatient}
             className="w-full p-3 border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-hs-gradient-middle"
+            disabled={loadingPatients}
           >
-            <option value="">-- Select a Patient --</option>
-            {mockPatientData.map((patient) => (
-              <option key={patient.id} value={patient.id}>
-                {patient.name} (ID: {patient.id})
-              </option>
-            ))}
+            <option value="">{loadingPatients ? 'Loading Patients...' : '-- Select a Patient --'}</option>
+            {errorPatients ? (
+              <option value="" disabled>Error loading patients</option>
+            ) : (
+              patients.map((patient) => (
+                <option key={patient._id} value={patient._id}>
+                  {patient.name} (ID: {patient.patientId})
+                </option>
+              ))
+            )}
           </select>
         </div>
 
-        {selectedPatient && (
+        {selectedPatient && !loadingPatients && (
           <div className="mb-4 p-3 bg-background rounded-md border border-border">
-            <p className="text-sm text-muted-foreground mb-1">Selected Patient: <span className="font-medium text-foreground">{mockPatientData.find(p => p.id === selectedPatient)?.name}</span></p>
-            <p className="text-sm text-muted-foreground">Associated Doctor: <span className="font-medium text-foreground">{mockDoctorData.find(d => d.id === mockPatientData.find(p => p.id === selectedPatient)?.doctorId)?.name || 'N/A'}</span></p>
+            <p className="text-sm text-muted-foreground mb-1">Selected Patient: <span className="font-medium text-foreground">{patients.find(p => p._id === selectedPatient)?.name}</span></p>
+            <p className="text-sm text-muted-foreground">Associated Doctor: <span className="font-medium text-foreground">{getDoctorName(patients.find(p => p._id === selectedPatient)?.doctor || null)}</span></p>
           </div>
         )}
 
@@ -240,17 +381,25 @@ const ReportDataManagementPage = () => {
           type="text"
           placeholder="Search by Patient ID, Name, or Report Date..."
           className="w-full p-3 border border-border rounded-md bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-hs-gradient-middle mb-4"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
         />
-        <ul className="space-y-3">
-          <li className="flex justify-between items-center p-3 border border-border rounded-md bg-background">
-            <span className="font-medium text-foreground">Report ID: #PDF001 - John Doe - Blood Test</span>
-            <span className="text-sm text-muted-foreground">2023-10-20</span>
-          </li>
-          <li className="flex justify-between items-center p-3 border border-border rounded-md bg-background">
-            <span className="font-medium text-foreground">Report ID: #PDF002 - Jane Smith - MRI Scan</span>
-            <span className="text-sm text-muted-foreground">2023-09-15</span>
-          </li>
-        </ul>
+        {loadingReports ? (
+          <p>Loading report history...</p>
+        ) : errorReports ? (
+          <p className="text-red-500">Error: {errorReports}</p>
+        ) : reports.length > 0 ? (
+          <ul className="space-y-3">
+            {reports.map((report) => (
+              <li key={report._id} className="flex justify-between items-center p-3 border border-border rounded-md bg-background">
+                <span className="font-medium text-foreground">Report ID: {report._id} - Patient: {report.patient.name} - Test: {report.testName}</span>
+                <span className="text-sm text-muted-foreground">Date: {new Date(report.createdAt).toLocaleDateString()}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-muted-foreground">No report history found.</p>
+        )}
         <button className="mt-6 px-4 py-2 bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-white rounded-md hover:opacity-90 transition-opacity">
           View All History
         </button>

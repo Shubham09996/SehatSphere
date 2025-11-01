@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
-    Stethoscope, User, Heart, Shield, Eye, EyeOff, Mail, Lock, Building, ShieldCheck, HeartHandshake, Sparkles, TestTube2, BriefcaseMedical, FileText, Phone
+    Stethoscope, User, Heart, Shield, Eye, EyeOff, Mail, Lock, Building, ShieldCheck, HeartHandshake, Sparkles, TestTube2, BriefcaseMedical, FileText, Phone, FlaskConical, CalendarDays, MessageSquare, ClipboardList, CheckCircle, Hospital
 } from 'lucide-react';
 import api from '../utils/api'; // Import the configured axios instance
 import { useNavigate } from 'react-router-dom';
@@ -24,6 +24,7 @@ const GoogleIcon = () => (
 const roleData = {
     Patient: { icon: User, label: 'Patient' },
     Doctor: { icon: Stethoscope, label: 'Doctor' },
+    Lab: { icon: FlaskConical, label: 'Lab' }, // NEW: Lab role
     Shop: { icon: Building, label: 'Shop' },
     Hospital: { icon: BriefcaseMedical, label: 'Hospital' }, // NEW: Hospital role
     Admin: { icon: ShieldCheck, label: 'Admin' }, // NEW: Admin role
@@ -31,13 +32,22 @@ const roleData = {
 
 // Mock data for the left promotional panel based on role
 const roleInfo = {
-    Patient: {
-        title: 'Access your Health Profile',
-        description: 'Book appointments, view prescriptions, and track your health journey.',
+    Patient: { // Patient role info
+        heading: 'Manage Your Health Seamlessly',
+        subheading: 'Access medical records, book appointments, and connect with healthcare providers.',
         features: [
-            { icon: Sparkles, title: 'Smart Token System', text: 'Real-time queue tracking with wait time estimates.' },
-            { icon: FileText, title: 'E-Prescriptions', text: 'Digital prescriptions with automatic verification.' },
-            { icon: ShieldCheck, title: 'Secure Health Records', text: 'Your health data is encrypted and secure with us.' }
+            { icon: Heart, title: 'Personalized Health Dashboard', text: 'View all your health data in one intuitive place.' },
+            { icon: CalendarDays, title: 'Easy Appointment Booking', text: 'Schedule and manage appointments with your preferred doctors.' },
+            { icon: MessageSquare, title: 'Direct Communication', text: 'Securely chat with doctors and healthcare staff.' }
+        ]
+    },
+    Lab: { // NEW: Lab role info
+        heading: 'Streamline Laboratory Operations',
+        subheading: 'Efficiently manage tests, results, and patient samples with advanced tools.',
+        features: [
+            { icon: ClipboardList, title: 'Comprehensive Test Management', text: 'Organize, assign, and track all laboratory tests.' },
+            { icon: CheckCircle, title: 'Secure Result Processing', text: 'Process, store, and share test results securely.' },
+            { icon: Hospital, title: 'Patient Sample Tracking', text: 'Monitor and manage patient samples from collection to analysis.' }
         ]
     },
     Doctor: {

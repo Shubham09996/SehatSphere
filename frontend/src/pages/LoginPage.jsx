@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-    Stethoscope, Pill, Bot, User, Briefcase, Heart, Shield, Eye, EyeOff, Mail, Lock, Ambulance, Building, CheckCircle, Hospital, Syringe, ClipboardList 
+    Stethoscope, Pill, Bot, User, Briefcase, Heart, Shield, Eye, EyeOff, Mail, Lock, Ambulance, Building, CheckCircle, Hospital, Syringe, ClipboardList, FlaskConical, ShieldCheck 
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 // Removed Redux imports as slices/usersApiSlice and slices/authSlice are not found
@@ -73,6 +73,16 @@ const roleData = {
             { icon: Briefcase, title: "User Management", desc: "Onboard, manage, and monitor all user roles." },
             { icon: CheckCircle, title: "Verification Pipeline", desc: "Approve or reject doctor and pharmacy applications." },
             { icon: Bot, title: "System Analytics", desc: "View platform usage statistics and generate reports." }
+        ]
+    },
+    lab: {
+        icon: FlaskConical,
+        welcome: "Lab Management",
+        subtext: "Manage laboratory tests, results, and patient samples.",
+        features: [
+            { icon: ClipboardList, title: "Test Management", desc: "Create, manage, and assign laboratory tests." },
+            { icon: CheckCircle, title: "Result Processing", desc: "Securely process and store laboratory results." },
+            { icon: Hospital, title: "Patient Samples", desc: "Track and manage patient samples and their status." }
         ]
     }
 };
