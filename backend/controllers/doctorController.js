@@ -528,7 +528,7 @@ const getDoctorAppointmentQueue = asyncHandler(async (req, res) => {
     })
     .populate({
         path: 'patient',
-        select: 'patientId dob gender medicalHistory allergies chronicConditions emergencyContact recentVitals user',
+        select: 'patientId name profilePicture dob gender medicalHistory allergies chronicConditions emergencyContact recentVitals user',
         populate: {
             path: 'user',
             select: 'name profilePicture'
@@ -545,8 +545,8 @@ const getDoctorAppointmentQueue = asyncHandler(async (req, res) => {
         return {
             id: app._id,
             patientId: app.patient.patientId, // Include patientId here
-            name: app.patient.user?.name || 'Unknown', // Access name from populated user with optional chaining
-            profilePicture: app.patient.user?.profilePicture || '/uploads/default.jpg', // Access profilePicture from populated user with optional chaining
+            name: app.patient.name || app.patient.user?.name || 'Unknown', // Prioritize patient's own name, then user's name
+            profilePicture: app.patient.profilePicture || app.patient.user?.profilePicture || '/uploads/default.jpg', // Prioritize patient's own PFP, then user's PFP
             age: age,
             time: app.time,
             date: app.date, // Include the date here

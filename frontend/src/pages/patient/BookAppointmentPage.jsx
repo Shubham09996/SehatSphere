@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import api from '../../utils/api'; // api.js se import karein
+import { useLocation } from 'react-router-dom'; // Import useLocation
 
 // Import New and Redesigned Step Components
 import BookingStepper from '../../components/patient/booking/BookingStepper';
@@ -19,9 +20,10 @@ const BookAppointmentPage = () => {
     const [hospitals, setHospitals] = useState([]); // New state for hospitals
     const [loadingHospitals, setLoadingHospitals] = useState(true);
     const [errorHospitals, setErrorHospitals] = useState(null);
+    const location = useLocation(); // Initialize useLocation
     const [bookingDetails, setBookingDetails] = useState({
         hospital: null, department: null, doctor: null,
-        date: null, time: null, token: null,
+        date: null, time: null, token: null, forFamilyMemberId: null, // Add forFamilyMemberId
     });
 
     useEffect(() => {
@@ -39,6 +41,15 @@ const BookAppointmentPage = () => {
 
         fetchHospitals();
     }, []);
+
+    // Effect to read forFamilyMemberId from URL on component mount
+    useEffect(() => {
+        const queryParams = new URLSearchParams(location.search);
+        const familyMemberId = queryParams.get('forFamilyMemberId');
+        if (familyMemberId) {
+            setBookingDetails(prev => ({ ...prev, forFamilyMemberId: familyMemberId }));
+        }
+    }, [location.search]);
 
     if (loadingHospitals) {
         return <div className="text-center text-foreground">Loading hospitals...</div>;
@@ -84,9 +95,9 @@ const BookAppointmentPage = () => {
     const startOver = () => {
         setCurrentStep(1);
         setIsFollowUp(false);
-        setBookingDetails({ hospital: null, department: null, doctor: null, date: null, time: null, token: null });
+        setBookingDetails({ hospital: null, department: null, doctor: null, date: null, time: null, token: null, forFamilyMemberId: null }); // Reset forFamilyMemberId
     };
-
+    
     const progressStep = currentStep === 2.5 ? 1.5 : Math.floor(currentStep);
 
     // If booking is successful, show a full-page success message
@@ -120,7 +131,7 @@ const BookAppointmentPage = () => {
                         {currentStep === 2 && <Step2SelectDepartment onNext={handleNextStep} details={bookingDetails} onBack={handlePrevStep} />}
                         {currentStep === 2.5 && <Step2aSelectDoctor onNext={handleNextStep} details={bookingDetails} onBack={handlePrevStep} />}
                         {currentStep === 3 && <Step3SelectDateAndSlot onNext={handleNextStep} details={bookingDetails} onBack={handlePrevStep} />}
-                        {currentStep === 4 && <Step4Confirmation onNext={handleNextStep} details={bookingDetails} onBack={handlePrevStep} />}
+                        {currentStep === 4 && <Step4Confirmation onNext={handleNextStep} details={bookingDetails} onBack={handlePrevStep} forFamilyMemberId={bookingDetails.forFamilyMemberId} />}
                     </motion.div>
                 </AnimatePresence>
             </div>

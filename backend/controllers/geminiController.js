@@ -1,21 +1,48 @@
 import asyncHandler from 'express-async-handler';
+import fs from 'fs';
 import { getChatbotResponse } from '../services/geminiService.js';
 
-// @desc    Get Gemini chatbot response
-// @route   POST /api/gemini/chat
-// @access  Private
+// @desc   Get Gemini chatbot response
+// @route  POST /api/gemini/chat
+// @access Private
 const getGeminiResponse = asyncHandler(async (req, res) => {
-    const { message, language } = req.body;
+  // multer text fields are inside req.body
+  const userMessage = req.body.message;
+  const language = req.body.language || 'en';
+  const file = req.file;
 
-    if (!message) {
-        res.status(400);
-        throw new Error('Message is required');
+  if (!userMessage && !file) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please provide a message or upload a file.',
+    });
+  }
+
+  const uploadedFilePath = file?.path || null;
+  const userName = req.user?.name || 'User';
+
+  try {
+    // send everything to Gemini
+    const geminiResponse = await getChatbotResponse(
+      userMessage,
+      userName,
+      language,
+      uploadedFilePath
+    );
+
+    // cleanup after processing
+    if (uploadedFilePath && fs.existsSync(uploadedFilePath)) {
+      fs.unlinkSync(uploadedFilePath);
     }
 
-    const userName = req.user ? req.user.name : null; // Assuming user info is attached by auth middleware
-    const geminiResponse = await getChatbotResponse(message, userName, language);
-
-    res.json({ response: geminiResponse });
+    res.status(200).json({ response: geminiResponse });
+  } catch (error) {
+    console.error('Gemini Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get Gemini response. Please try again later.',
+    });
+  }
 });
 
-export { getGeminiResponse };
+export default getGeminiResponse;

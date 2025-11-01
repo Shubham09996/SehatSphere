@@ -12,10 +12,10 @@ const PatientQueueCard = ({ patient, isActive = false }) => {
             layout
         >
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                <img src={patient.profilePicture || '/placeholders/default_avatar.jpg'} alt={patient.name} className="w-14 h-14 rounded-full object-cover"/>
+                <img src={patient.patient?.profilePicture || patient.patient?.user?.profilePicture || '/uploads/default.jpg'} alt={patient.patient?.name || patient.patient?.user?.name || 'Patient'} className="w-14 h-14 rounded-full object-cover"/>
                 <div className="flex-1">
                     <div className="flex items-center gap-2">
-                        <p className="font-bold text-foreground">{patient.name}{patient.age ? `, ${patient.age}` : ''}</p>
+                        <p className="font-bold text-foreground">{patient.patient?.name || patient.patient?.user?.name}{patient.patient?.age ? `, ${patient.patient.age}` : ''}</p>
                         {patient.token && <span className="font-mono text-xs px-2 py-0.5 bg-card rounded-md">Token: {patient.token}</span>} {/* Display token if available */}
                     </div>
                     <p className="text-sm text-muted-foreground">{patient.reason || 'General Consultation'}</p>
@@ -41,7 +41,7 @@ const PatientQueueCard = ({ patient, isActive = false }) => {
             <PrescriptionWriter 
                 isOpen={isPrescriptionWriterOpen}
                 onClose={() => setIsPrescriptionWriterOpen(false)}
-                preselectedPatient={{ ...patient, patientId: patient.patientId }}
+                preselectedPatient={{ ...patient.patient, patientId: patient.patient.patientId || patient.patient.user?.patientId }}
             />
         </motion.div>
     );

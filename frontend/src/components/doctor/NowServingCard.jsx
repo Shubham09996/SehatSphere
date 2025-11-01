@@ -33,6 +33,8 @@ const NowServingCard = ({ nowServingPatient, onConsultationDone }) => {
             </div>
         );
     }
+    
+    const patient = nowServingPatient.patient; // Access the populated patient object
 
     return (
         <motion.div 
@@ -44,7 +46,7 @@ const NowServingCard = ({ nowServingPatient, onConsultationDone }) => {
             <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                 <h3 className="font-bold text-lg text-foreground">Now Serving: 
                     <span className="bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">
-                        {` ${nowServingPatient.name}`}
+                        {` ${patient.name || patient.user?.name}`}
                     </span>
                 </h3>
                 <div className="flex items-center gap-4">
@@ -63,23 +65,19 @@ const NowServingCard = ({ nowServingPatient, onConsultationDone }) => {
                 <div>
                     <h4 className="text-sm font-semibold text-muted-foreground mb-2">Quick Vitals</h4>
                     <div className="space-y-2 text-sm">
-                        <div className="flex items-center gap-2"><Heart size={14} className="text-red-500"/> BP: <span className="font-semibold">{nowServingPatient.recentVitals?.bloodPressure?.value || 'N/A'}</span></div>
-                        <div className="flex items-center gap-2"><Droplets size={14} className="text-blue-500"/> Sugar: <span className="font-semibold">{nowServingPatient.recentVitals?.bloodSugar?.value || 'N/A'}</span></div>
+                        <div className="flex items-center gap-2"><Heart size={14} className="text-red-500"/> BP: <span className="font-semibold">{patient.recentVitals?.bloodPressure?.value || patient.user?.recentVitals?.bloodPressure?.value || 'N/A'}</span></div>
+                        <div className="flex items-center gap-2"><Droplets size={14} className="text-blue-500"/> Sugar: <span className="font-semibold">{patient.recentVitals?.bloodSugar?.value || patient.user?.recentVitals?.bloodSugar?.value || 'N/A'}</span></div>
                     </div>
                 </div>
                  <div>
                     <h4 className="text-sm font-semibold text-muted-foreground mb-2">Allergies</h4>
                      <div className="flex flex-wrap gap-2">
-                        {nowServingPatient.allergies && nowServingPatient.allergies.length > 0 ? (
-                            nowServingPatient.allergies.map(allergy => <span key={allergy} className="text-xs px-2 py-1 bg-red-100 text-red-800 rounded-full font-medium">{allergy}</span>)
-                        ) : (
-                            <span className="text-sm text-muted-foreground">No known allergies.</span>
-                        )}
+                        {(patient.allergies && patient.allergies.length > 0 ? patient.allergies : patient.user?.allergies)?.map(allergy => <span key={allergy} className="text-xs px-2 py-1 bg-red-100 text-red-800 rounded-full font-medium">{allergy}</span>) || <span className="text-sm text-muted-foreground">No known allergies.</span>}
                     </div>
                 </div>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2">
                      <button 
-                        onClick={() => navigate(`/doctor/patients?patientId=${nowServingPatient.id}`)}
+                        onClick={() => navigate(`/doctor/patients?patientId=${patient._id || patient.user?._id}`)}
                         className="flex items-center justify-center gap-2 text-sm font-semibold py-2 px-3 rounded-lg border border-border hover:bg-muted"
                     >
                         <FileText size={14}/> Full History
@@ -98,7 +96,7 @@ const NowServingCard = ({ nowServingPatient, onConsultationDone }) => {
             <PrescriptionWriter 
                 isOpen={isPrescriptionWriterOpen}
                 onClose={() => setIsPrescriptionWriterOpen(false)}
-                preselectedPatient={{ ...nowServingPatient, patientId: nowServingPatient.patientId }}
+                preselectedPatient={{ ...patient, patientId: patient.patientId || patient.user?.patientId }}
             />
             
         </motion.div>

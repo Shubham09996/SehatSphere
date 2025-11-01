@@ -26,7 +26,7 @@ const getPatients = asyncHandler(async (req, res) => {
 
   const patients = await Patient.find(query)
     .populate('user', 'name email profilePicture phoneNumber')
-    .select('patientId dob gender bloodGroup emergencyContact allergies chronicConditions recentVitals recentActivity'); // Select additional fields
+    .select('patientId name profilePicture dob gender bloodGroup emergencyContact allergies chronicConditions recentVitals recentActivity'); // Select additional fields, including name and profilePicture
   res.json(patients);
 });
 

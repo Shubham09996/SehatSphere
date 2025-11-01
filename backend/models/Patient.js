@@ -7,6 +7,15 @@ const patientSchema = mongoose.Schema(
       required: true,
       ref: 'User',
     },
+    name: {
+      type: String,
+      required: true,
+    },
+    primaryPatient: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Patient',
+      default: null, // This patient is a family member of primaryPatient
+    },
     patientId: {
       type: String,
       required: true,
@@ -18,6 +27,10 @@ const patientSchema = mongoose.Schema(
     gender: {
       type: String,
       enum: ['Male', 'Female', 'Other'],
+    },
+    profilePicture: {
+      type: String,
+      default: '/uploads/default.jpg',
     },
     bloodGroup: {
       type: String,

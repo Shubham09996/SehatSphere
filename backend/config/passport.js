@@ -23,6 +23,9 @@ passport.use(
 
                 if (user) {
                     // User found by googleId, log them in
+                    user.isNewUser = false; // Explicitly set to false for existing users
+                    await user.save(); // Save the updated user
+                    user = await User.findById(user._id); // Re-fetch user to ensure specificProfileId is populated
                     done(null, user);
                 } else {
                     // No user with this googleId, check by email
@@ -32,7 +35,9 @@ passport.use(
                         // User found by email, link googleId to existing account
                         user.googleId = googleId;
                         user.profilePicture = profilePicture || user.profilePicture; // Update profile picture if available
+                        user.isNewUser = false; // Explicitly set to false for existing users
                         await user.save();
+                        user = await User.findById(user._id); // Re-fetch user to ensure specificProfileId is populated
                         done(null, user);
                     } else {
                         // No user found by googleId or email, create a new one
@@ -43,17 +48,24 @@ passport.use(
                             password: Math.random().toString(36).slice(-8), // Generate a random password for Google users
                             profilePicture: profilePicture || '/uploads/default.jpg',
                             role: 'Patient', // Default role for new users via Google
+                            isNewUser: true, // Mark as new user
                         };
                         user = await User.create(newUser);
                         user.isNewUser = true; // Mark as new user
 
                         // Create a patient profile for new Google users by default
                         if (user) {
-                            await Patient.create({
+                            const patientProfile = await Patient.create({
                                 user: user._id,
+                                name: name, // Add the user's name to the patient profile
                                 patientId: `PID-${Math.floor(100000 + Math.random() * 900000)}`,
                                 // other patient defaults if any
                             });
+                            // Link the patient profile to the user
+                            user.patient = patientProfile._id; // NEW: Link patient profile
+                            user.specificProfileId = patientProfile.patientId; // Assign specificProfileId
+                            await user.save(); // Save the updated user with patient reference and specificProfileId
+                            user = await User.findById(user._id); // Re-fetch user to ensure specificProfileId is populated in the returned user object
                         }
                         done(null, user);
                     }

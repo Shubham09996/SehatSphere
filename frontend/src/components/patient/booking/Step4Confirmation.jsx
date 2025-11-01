@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, User, Building, Hospital, Calendar, Clock } from 'lucide-react';
 import api from '../../../utils/api'; // Import the API utility
 
-const Step4Confirmation = ({ onNext, details, onBack }) => {
+const Step4Confirmation = ({ onNext, details, onBack, forFamilyMemberId }) => {
     const { hospital, department, doctor, date, time } = details;
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -19,6 +19,9 @@ const Step4Confirmation = ({ onNext, details, onBack }) => {
                 reason: "General check-up", // You might want a dedicated field for this
                 specialty: department.name, // Add specialty here
             };
+            if (forFamilyMemberId) {
+                appointmentData.forFamilyMemberId = forFamilyMemberId;
+            }
             const response = await api.post('/api/appointments', appointmentData);
             onNext({ token: response.data.tokenNumber, appointmentId: response.data._id });
         } catch (err) {

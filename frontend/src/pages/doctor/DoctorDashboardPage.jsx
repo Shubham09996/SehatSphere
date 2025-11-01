@@ -179,6 +179,7 @@ const DoctorDashboardPage = () => {
                                     <th className="px-3 py-2 text-left text-sm font-semibold text-muted-foreground">Name</th>
                                     <th className="px-3 py-2 text-left text-sm font-semibold text-muted-foreground">Email</th>
                                     <th className="px-3 py-2 text-left text-sm font-semibold text-muted-foreground">Phone</th>
+                                    <th className="px-3 py-2 text-left text-sm font-semibold text-muted-foreground">Profile Picture</th>
                                     <th className="px-3 py-2 text-left text-sm font-semibold text-muted-foreground">Actions</th>
                                 </tr>
                             </thead>
@@ -186,9 +187,16 @@ const DoctorDashboardPage = () => {
                                 {patients.map(patient => (
                                     <tr key={patient._id}>
                                         <td className="px-3 py-2 text-sm text-foreground">{patient.patientId}</td>
-                                        <td className="px-3 py-2 text-sm text-foreground">{patient.user?.name || 'N/A'}</td>
+                                        <td className="px-3 py-2 text-sm text-foreground">{patient.name || 'N/A'}</td>
                                         <td className="px-3 py-2 text-sm text-foreground">{patient.user?.email || 'N/A'}</td>
                                         <td className="px-3 py-2 text-sm text-foreground">{patient.user?.phoneNumber || 'N/A'}</td>
+                                        <td className="px-3 py-2 text-sm text-foreground">
+                                            {patient.profilePicture ? (
+                                                <img src={patient.profilePicture} alt={patient.name} className="w-8 h-8 rounded-full object-cover" />
+                                            ) : (
+                                                'N/A'
+                                            )}
+                                        </td>
                                         <td className="px-3 py-2 text-sm font-medium">
                                             <Link to={`/doctor/patients/${patient._id}`} className="text-blue-500 hover:underline">View Profile</Link>
                                         </td>

@@ -1,70 +1,96 @@
-import config from "../config/config.js";
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
 
-// Prefer direct REST as per your working example
+const pdfParse = require('pdf-parse'); // ✅ Fixed import
+import config from '../config/config.js';
+import fetch from 'node-fetch';
+import fs from 'fs';
+import path from 'path';
+import Tesseract from 'tesseract.js';
+
+const GEMINI_API_KEY = config.googleGemini.apiKey || process.env.GEMINI_API_KEY;
+
+// Gemini models list
 const PRIMARY_MODELS = [
   'models/gemini-2.5-flash',
   'models/gemini-1.5-flash-latest',
   'models/gemini-1.0-pro-latest',
-  'models/gemini-pro',
 ];
 
-const getChatbotResponse = async (prompt, userName, language) => {
-  const apiKey = config.googleGemini.apiKey || process.env.GEMINI_API_KEY;
-  if (!apiKey) return "I'm having trouble connecting to the assistant right now. Please try again later.";
-
-  // Quick local intents: date/time without hitting external API
-  try {
-    const q = String(prompt || '').toLowerCase();
-    if (/(current|what's|whats|tell|kya|abhi).*(time|samay|waqt)/.test(q) || /(time|samay|waqt)\??$/.test(q)) {
-      const now = new Date();
-      const time = now.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
-      const date = now.toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
-      return `Abhi ka time ${time} hai • ${date}`;
-    }
-    if (/(current|aaj|today|date|tarikh)/.test(q) && /(date|tarikh|din|day)/.test(q)) {
-      const now = new Date();
-      const date = now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-      return `Aaj ki date: ${date}`;
-    }
-  } catch (_) {}
-
-  const patientName = userName || process.env.DEFAULT_PATIENT_NAME || '';
-  const preferHindi = (language || '').toLowerCase() === 'hi';
-  const tone = preferHindi
-    ? `Tum HealthSphere ke liye ek bahut hi friendly aur madadgar patient assistant ho. Patient se hamesha unke naam (${patientName || 'user'}) se baat karo, unhe apnaपन महसूस कराओ. Baaten hamesha halki, pyari aur sanukool rakho. Tumhara kaam HealthSphere ke features jaise appointments book karna, medicines dhundhna, health records dekhna, bill check karna aur donation options ke baare mein guide karna hai. Kabhi bhi medical diagnosis mat do; agar zarurat ho toh patient ko doctor se consult karne ki salah do.`
-    : `You are a very friendly and helpful patient assistant for HealthSphere. Always address the patient by their name (${patientName || 'user'}) to make them feel comfortable and welcomed. Keep your responses warm, concise, and helpful. Your role is to guide patients on HealthSphere's features such as booking appointments, finding medicines, viewing health records, checking billing, and understanding donation options. Never provide medical diagnoses; if necessary, advise the patient to consult a doctor.`;
-
-  const body = {
-    contents: [
-      { role: 'user', parts: [{ text: tone + "\nUser: " + String(prompt || '') }] },
-    ],
-  };
-
-  // Try candidate models on v1beta (as per your snippet), then v1
-  for (const name of PRIMARY_MODELS) {
-    for (const version of ['v1beta', 'v1']) {
-      try {
-        const url = `https://generativelanguage.googleapis.com/${version}/${name}:generateContent?key=${apiKey}`;
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
-        const data = await res.json();
-        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim?.();
-        if (text) return text;
-        if (data?.error) {
-          // Continue to next model/version if 404/unsupported
-          if (String(data.error.message||'').includes('not found') || data.error.code === 404) continue;
-        }
-      } catch (err) {
-        // try next
-        continue;
-      }
-    }
+export const getChatbotResponse = async (prompt, userName, language, uploadedFilePath = null) => {
+  if (!GEMINI_API_KEY) {
+    return "Assistant connection issue. Please try again later.";
   }
 
-  return "Sorry, I couldn't process that right now. Please try again later.";
-};
+  const patientName = userName || 'User';
+  const isHindi = (language || '').toLowerCase() === 'hi';
 
-export { getChatbotResponse };
+  let extractedText = '';
+
+  try {
+    // 🔍 Step 1: File handling
+    if (uploadedFilePath && fs.existsSync(uploadedFilePath)) {
+      const ext = path.extname(uploadedFilePath).toLowerCase();
+
+      if (ext === '.pdf') {
+        const pdfData = await pdfParse(fs.readFileSync(uploadedFilePath));
+        extractedText = pdfData.text;
+        console.log('📄 PDF text extracted successfully');
+      } else if (['.jpg', '.jpeg', '.png'].includes(ext)) {
+        const result = await Tesseract.recognize(uploadedFilePath, 'eng');
+        extractedText = result.data.text;
+        console.log('🖼️ Image OCR extracted successfully');
+      }
+    }
+
+    // 🧠 Step 2: Create prompt
+    const tone = isHindi
+      ? `You are HealthSphere’s friendly and helpful patient assistant.
+         Talk to the patient by their name (${patientName}) and clearly answer all health-related queries.
+         End each response with: "Main 100% sahi nahi ho sakta, kripya doctor se consult kare."`
+      : `You are HealthSphere’s friendly and helpful patient assistant.
+         Always address the patient by their name (${patientName}) and clearly answer all health-related queries.
+         End each response with: "I'm not 100% accurate, please consult a doctor for confirmation."`;
+
+    let finalPrompt = `${tone}\n`;
+
+    if (extractedText) {
+      finalPrompt += `The user has uploaded a medical report. Here is the extracted text:\n${extractedText}\n\nNow analyze this report and explain it in ${
+        isHindi ? 'Hindi' : 'English'
+      } language.`;
+    } else {
+      finalPrompt += `User: ${prompt || ''}`;
+    }
+
+    // 🧩 Step 3: Call Gemini API
+    const body = {
+      contents: [{ role: 'user', parts: [{ text: finalPrompt }] }],
+    };
+
+    for (const model of PRIMARY_MODELS) {
+      for (const version of ['v1beta', 'v1']) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/${version}/${model}:generateContent?key=${GEMINI_API_KEY}`;
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          });
+
+          const data = await response.json();
+          const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim?.();
+          if (text) return text;
+        } catch (err) {
+          console.error(`❌ Gemini model error [${model}]:`, err.message);
+          continue;
+        }
+      }
+    }
+
+    return "Sorry, I'm unable to respond right now. Please try again later.";
+
+  } catch (err) {
+    console.error('💥 Gemini Service Error:', err);
+    return 'Something went wrong while analyzing your file.';
+  }
+};

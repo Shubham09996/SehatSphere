@@ -42,7 +42,7 @@ const getMyAppointments = asyncHandler(async (req, res) => {
     // Admins can see all appointments (no specific query needed for admin, already covered by getAppointments if not filtered)
 
     const appointments = await Appointment.find(query)
-      .populate('patient', 'patientId dob gender bloodGroup isPremium user')
+      .populate('patient', 'patientId name profilePicture dob gender bloodGroup isPremium user')
       .populate({
         path: 'doctor',
         select: 'specialty qualifications averageRating numberOfReviews user',
@@ -87,13 +87,46 @@ const getAppointmentById = asyncHandler(async (req, res) => {
 // @route   POST /api/appointments
 // @access  Private/Patient
 const createAppointment = asyncHandler(async (req, res) => {
-  const { doctorId, hospitalId, date, time, reason, specialty } = req.body;
+  const { doctorId, hospitalId, date, time, reason, specialty, forFamilyMemberId } = req.body; // Added forFamilyMemberId
 
-  const patient = await Patient.findOne({ user: req.user._id });
-  if (!patient) {
-    res.status(404);
-    throw new Error('Patient profile not found');
+  let patientToBook;
+
+  if (forFamilyMemberId) {
+    console.log('createAppointment: forFamilyMemberId provided:', forFamilyMemberId); // NEW LOG
+    // Find the family member patient
+    const familyMember = await Patient.findById(forFamilyMemberId);
+    if (!familyMember) {
+      res.status(404);
+      throw new Error('Family member patient profile not found');
+    }
+    console.log('createAppointment: Found familyMember:', familyMember); // NEW LOG
+
+    // Verify that this family member belongs to the logged-in user's primary patient
+    const primaryUser = await User.findById(req.user._id); // Logged-in user
+    if (!primaryUser || !primaryUser.patient) {
+      res.status(404);
+      throw new Error('Primary patient profile not found for this user');
+    }
+
+    // Ensure the found family member's primaryPatient field matches the logged-in user's primary patient ID
+    // Or, ensure family member's user ID matches the logged-in user ID (if family members are directly linked to user, which they are now).
+    if (familyMember.user.toString() !== req.user._id.toString()) {
+        res.status(403);
+        throw new Error('Not authorized to book for this family member');
+    }
+    patientToBook = familyMember;
+
+  } else {
+    // Default to the logged-in user's patient profile
+    const primaryPatient = await Patient.findOne({ user: req.user._id });
+    if (!primaryPatient) {
+      res.status(404);
+      throw new Error('Patient profile not found');
+    }
+    patientToBook = primaryPatient;
   }
+  
+  console.log('createAppointment: patientToBook._id before appointment creation:', patientToBook._id); // NEW LOG
 
   let doctorToBook;
   if (doctorId === 'first_available') {
@@ -139,7 +172,7 @@ const createAppointment = asyncHandler(async (req, res) => {
   const tokenNumber = (appointmentsToday + 1).toString();
 
   const appointment = new Appointment({
-    patient: patient._id,
+    patient: patientToBook._id,
     doctor: doctorToBook._id,
     hospital: hospitalId,
     date,
@@ -150,6 +183,8 @@ const createAppointment = asyncHandler(async (req, res) => {
   });
 
   const createdAppointment = await appointment.save();
+
+  console.log('createAppointment: Created appointment with patient ID:', createdAppointment.patient); // NEW LOG
 
   // Notify doctor and patient (using Twilio for SMS)
   // if (patient.user && patient.user.phoneNumber) {
@@ -174,8 +209,8 @@ const createAppointment = asyncHandler(async (req, res) => {
 
   const delay = tenMinutesBeforeAppointment.getTime() - currentTime.getTime();
 
-  if (delay > 0 && patient.user) { // Only schedule call if delay is positive and patient user exists
-      const patientUser = await User.findById(patient.user);
+  if (delay > 0 && patientToBook.user) { // Only schedule call if delay is positive and patient user exists
+      const patientUser = await User.findById(patientToBook.user);
       if (patientUser && patientUser.phoneNumber) {
           const patientPhoneNumber = `+91${patientUser.phoneNumber}`; // Add +91 prefix
           console.log("Attempting to schedule Twilio call for patient:", patientPhoneNumber);
@@ -189,10 +224,10 @@ const createAppointment = asyncHandler(async (req, res) => {
 
   // Create notifications for patient and doctor
   await Notification.create({
-      recipient: patient._id,
+      recipient: patientToBook._id,
       onModel: 'Patient',
       title: 'Appointment Created',
-      message: `Your appointment with Dr. ${doctorToBook.user.name} on ${new Date(date).toDateString()} at ${time} is pending. Your token number is ${tokenNumber}.`,
+      message: `Your appointment for ${patientToBook.name} with Dr. ${doctorToBook.user.name} on ${new Date(date).toDateString()} at ${time} is pending. Your token number is ${tokenNumber}.`,
       category: 'Appointment',
       link: `/patient/appointments/${createdAppointment._id}`,
   });
@@ -201,7 +236,7 @@ const createAppointment = asyncHandler(async (req, res) => {
       recipient: doctorToBook._id,
       onModel: 'Doctor',
       title: 'New Appointment Request',
-      message: `New appointment request from ${patient.user.name} on ${new Date(date).toDateString()} at ${time}. Token: ${tokenNumber}.`,
+      message: `New appointment request from ${patientToBook.name} (ID: ${patientToBook.patientId}) on ${new Date(date).toDateString()} at ${time}. Token: ${tokenNumber}.`,
       category: 'Appointment',
       link: `/doctor/appointments/${createdAppointment._id}`,
   });
@@ -260,14 +295,14 @@ const updateAppointment = asyncHandler(async (req, res) => {
         if (doctor && doctor.user && req.user.role === 'Admin' || req.user.role === 'Doctor') { // Only notify doctor if admin or doctor updated it
             const doctorUser = await User.findById(doctor.user);
             if (doctorUser && doctorUser.phoneNumber) {
-                const msg = `Hello Dr. ${doctorUser.name}, the appointment for ${patient.user.name} on ${new Date(updatedAppointment.date).toDateString()} at ${updatedAppointment.time} has been ${updatedAppointment.status}.`;
+                const msg = `Hello Dr. ${doctorUser.name}, the appointment for ${patient.name} (ID: ${patient.patientId}) on ${new Date(updatedAppointment.date).toDateString()} at ${updatedAppointment.time} has been ${updatedAppointment.status}.`;
                 sendSms(doctorUser.phoneNumber, msg);
             }
             await Notification.create({
                 recipient: doctor._id,
                 onModel: 'Doctor',
                 title: 'Appointment Status Update',
-                message: `Appointment for ${patient.user.name} on ${new Date(updatedAppointment.date).toDateString()} at ${updatedAppointment.time} is now ${updatedAppointment.status}.`,
+                message: `Appointment for ${patient.name} (ID: ${patient.patientId}) on ${new Date(updatedAppointment.date).toDateString()} at ${updatedAppointment.time} is now ${updatedAppointment.status}.`,
                 category: 'Appointment',
                 link: `/doctor/appointments/${updatedAppointment._id}`,
             });

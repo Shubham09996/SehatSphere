@@ -27,9 +27,26 @@ const getPatientHealthRecords = asyncHandler(async (req, res) => {
     }
 
     // Authorization: Patient can only view their own records, Doctor can view their patients' records, Admin can view all.
-    const isAuthorized = req.user.role === 'Admin' || 
-                         (req.user.role === 'Patient' && patient.user.toString() === req.user._id.toString()) ||
-                         (req.user.role === 'Doctor' && true); // Simplified: Doctor can view any patient's records for now
+    let isAuthorized = req.user.role === 'Admin' || (req.user.role === 'Doctor' && true); // Admins and Doctors are authorized
+
+    if (req.user.role === 'Patient') {
+        const primaryPatient = await Patient.findOne({ user: req.user._id });
+        if (primaryPatient) {
+            // Check if the requested patient is the primary patient itself
+            if (patient._id.toString() === primaryPatient._id.toString()) {
+                isAuthorized = true;
+            } else {
+                // Check if the requested patient is a family member of the primary patient
+                const isFamilyMember = await Patient.exists({
+                    _id: patient._id,
+                    primaryPatient: primaryPatient._id,
+                });
+                if (isFamilyMember) {
+                    isAuthorized = true;
+                }
+            }
+        }
+    }
 
     if (!isAuthorized) {
         res.status(403);

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Building, IndianRupee, UserPlus, Check, X, AlertTriangle } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell, Legend } from 'recharts';
+import { toast } from 'react-toastify'; // NEW: Import toast
 // import { adminData } from '../../data/adminData'; // Remove this import
 import PendingApprovals from '../../components/admin/widgets/PendingApprovals';
 import SystemAlerts from '../../components/admin/widgets/SystemAlerts';

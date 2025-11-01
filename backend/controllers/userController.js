@@ -55,6 +55,7 @@ const authUser = asyncHandler(async (req, res) => {
       status: user.status,
       specificProfileId: specificProfileId, // Include the role-specific ID
       token: token, // NEW: Include token in the response
+      isNewUser: false, // Explicitly set to false for existing users
     });
   } else {
     res.status(401);
@@ -99,9 +100,13 @@ const registerUser = asyncHandler(async (req, res) => {
     if (user.role === 'Patient') {
         const patientProfile = await Patient.create({
             user: user._id,
+            name: user.name, // Add the user's name to the patient profile
             patientId: `PID-${Math.floor(100000 + Math.random() * 900000)}`,
             // other patient defaults
         });
+        // Link the patient profile to the user
+        user.patient = patientProfile._id;
+        await user.save(); // Save the updated user with patient reference
         specificProfileId = patientProfile.patientId;
     } else if (user.role === 'Doctor') {
         const doctorProfile = await Doctor.create({
@@ -144,6 +149,7 @@ const registerUser = asyncHandler(async (req, res) => {
       status: user.status,
       specificProfileId: specificProfileId, // Include the role-specific ID
       token: token, // NEW: Include token in the response
+      isNewUser: true, // Mark as new user for registration
     });
   } else {
     res.status(400);

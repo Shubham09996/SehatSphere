@@ -2,27 +2,52 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { ArrowLeft, Clock } from 'lucide-react';
 import BookingCalendar from './BookingCalendar';
 import api from '../../../utils/api'; // Import the API utility
-import { motion } from 'framer-motion'; // FIX: Missing import ko yahan add kiya gaya hai
+import { motion } from 'framer-motion';
 
 const getTodayString = () => new Date().toISOString().split('T')[0];
 
-const Step3SelectDateAndSlot = ({ onNext, details, onBack }) => {
+// Dummy slots for test booking
+const dummyTestSlots = [
+    { time: '09:00 AM', available: true },
+    { time: '10:00 AM', available: true },
+    { time: '11:00 AM', available: false },
+    { time: '02:00 PM', available: true },
+    { time: '03:00 PM', available: true },
+    { time: '04:00 PM', available: false },
+];
+
+const dummyDailyAvailability = {
+    // Example: Current date and next few days available
+    [getTodayString()]: 'fully_available',
+    [new Date(Date.now() + 86400000).toISOString().split('T')[0]]: 'partially_available',
+    [new Date(Date.now() + 2 * 86400000).toISOString().split('T')[0]]: 'fully_available',
+    [new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0]]: 'unavailable',
+};
+
+const Step3SelectDateAndSlot = ({ onNext, details, onBack, isTestBooking }) => {
     const [selectedDate, setSelectedDate] = useState(getTodayString());
     const [availableSlots, setAvailableSlots] = useState([]);
     const [loadingSlots, setLoadingSlots] = useState(false);
     const [errorSlots, setErrorSlots] = useState(null);
     const { hospital, department, doctor } = details;
-    const [dailyAvailability, setDailyAvailability] = useState({}); // New state for daily availability
+    const [dailyAvailability, setDailyAvailability] = useState({});
     const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
     const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
+    const doctorOrHospitalId = isTestBooking ? hospital?._id : doctor?._id;
+    const doctorOrHospitalName = isTestBooking ? hospital?.name : doctor?.user?.name;
+
     // Effect to fetch daily availability for the calendar
     useEffect(() => {
+        if (isTestBooking) {
+            setDailyAvailability(dummyDailyAvailability);
+            return;
+        }
+
         const fetchDailyAvailability = async () => {
-            if (!doctor) {
+            if (!doctorOrHospitalId) {
                 return;
             }
-            // If 'first_available' doctor is selected, ensure hospital and department details are present
             if (doctor._id === 'first_available' && (!hospital?._id || !department?.name)) {
                 return;
             }
@@ -31,28 +56,33 @@ const Step3SelectDateAndSlot = ({ onNext, details, onBack }) => {
                 const params = { year: currentYear, month: currentMonth };
                 if (doctor._id === 'first_available') {
                     params.hospitalId = hospital._id;
-                    // Conditionally set specialty. If 'All Departments', don't send specialty filter.
                     if (department?.name !== 'All Departments') {
                         params.specialty = department.name;
                     }
                 }
-                const res = await api.get(`/api/doctors/daily-availability/${doctor._id}`, { params });
+                const res = await api.get(`/api/doctors/daily-availability/${doctorOrHospitalId}`, { params });
                 setDailyAvailability(res.data);
             } catch (err) {
                 console.error("Failed to fetch daily availability:", err);
+                setErrorSlots(err); // Also set error for UI
             }
         };
         fetchDailyAvailability();
-    }, [doctor?._id, hospital?._id, department?.name, currentMonth, currentYear]); // Refined dependencies
+    }, [doctorOrHospitalId, hospital?._id, department?.name, currentMonth, currentYear, isTestBooking]);
 
     useEffect(() => {
+        if (isTestBooking) {
+            setAvailableSlots(dummyTestSlots);
+            setLoadingSlots(false);
+            return;
+        }
+
         const fetchAvailableSlots = async () => {
-            if (!selectedDate || !doctor) {
+            if (!selectedDate || !doctorOrHospitalId) {
                 setAvailableSlots([]);
                 setLoadingSlots(false);
                 return;
             }
-            // If 'first_available' doctor is selected, ensure hospital and department details are present
             if (doctor._id === 'first_available' && (!hospital?._id || !department?.name)) {
                 setAvailableSlots([]);
                 setLoadingSlots(false);
@@ -65,25 +95,29 @@ const Step3SelectDateAndSlot = ({ onNext, details, onBack }) => {
                 const params = { date: selectedDate };
                 if (doctor._id === 'first_available') {
                     params.hospitalId = hospital._id;
-                    // Conditionally set specialty. If 'All Departments', don't send specialty filter.
                     if (department?.name !== 'All Departments') {
                         params.specialty = department.name;
                     }
                 }
-                const response = await api.get(`/api/doctors/available-slots/${doctor._id}`, { params });
+                const response = await api.get(`/api/doctors/available-slots/${doctorOrHospitalId}`, { params });
                 setAvailableSlots(response.data);
             } catch (err) {
                 console.error("Failed to fetch available slots:", err);
+                setErrorSlots(err); // Also set error for UI
             } finally {
                 setLoadingSlots(false);
             }
         };
 
         fetchAvailableSlots();
-    }, [selectedDate, doctor?._id, hospital?._id, department?.name]); // Refined dependencies
+    }, [selectedDate, doctorOrHospitalId, hospital?._id, department?.name, isTestBooking]);
 
     const getDayStatus = (dateString) => {
-        // Use the fetched dailyAvailability to determine the status
+        if (isTestBooking) {
+            // For test booking, any future date is potentially available
+            if (new Date(dateString) < new Date(getTodayString())) return 'disabled';
+            return dummyDailyAvailability[dateString] || 'fully_available';
+        }
         const status = dailyAvailability[dateString];
         if (new Date(dateString) < new Date(getTodayString())) return 'disabled';
         switch (status) {
@@ -99,15 +133,13 @@ const Step3SelectDateAndSlot = ({ onNext, details, onBack }) => {
         setCurrentYear(newYear);
     };
 
-    // Remove the old `availableTimes` useMemo as `availableSlots` is now fetched directly
-
     return (
         <div>
             <div className="flex items-center gap-4 mb-4">
                  <button onClick={onBack} className="p-2 rounded-full hover:bg-muted"><ArrowLeft size={20}/></button>
                  <div>
                     <h2 className="text-2xl font-bold text-foreground">Select Date & Time</h2>
-                    <p className="text-muted-foreground text-sm">Booking for <span className="font-semibold text-primary">{doctor ? doctor.user.name : department.name}</span></p>
+                    <p className="text-muted-foreground text-sm">Booking for <span className="font-semibold text-primary">{doctorOrHospitalName}</span></p>
                  </div>
             </div>
 

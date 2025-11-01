@@ -7,6 +7,24 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    // NEW: Function to set auth data from redirect (e.g., from Google OAuth)
+    const setAuthDataFromRedirect = (token, userInfo) => {
+        const parsedUserInfo = JSON.parse(userInfo);
+        localStorage.setItem('jwt', token);
+        localStorage.setItem('userInfo', JSON.stringify(parsedUserInfo));
+        setUser(parsedUserInfo);
+        // NEW: Also store specificProfileId if available (for Google sign-ups)
+        if (parsedUserInfo.specificProfileId) {
+            if (parsedUserInfo.role === 'Patient') {
+                localStorage.setItem('patientId', parsedUserInfo.specificProfileId);
+            } else if (parsedUserInfo.role === 'Doctor') {
+                localStorage.setItem('doctorId', parsedUserInfo.specificProfileId);
+            } else if (parsedUserInfo.role === 'Shop') {
+                localStorage.setItem('shopId', parsedUserInfo.specificProfileId);
+            }
+        }
+    };
+
     useEffect(() => {
         const loadUserFromLocalStorage = () => {
             try {
@@ -30,23 +48,32 @@ export const AuthProvider = ({ children }) => {
             }
         };
         loadUserFromLocalStorage();
+
+        // NEW: Listen for localStorage changes
+        const handleStorageChange = () => {
+            loadUserFromLocalStorage();
+        };
+        window.addEventListener('storage', handleStorageChange);
+        window.addEventListener('localStorageUpdated', handleStorageChange); // Custom event
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+            window.removeEventListener('localStorageUpdated', handleStorageChange);
+        };
     }, []);
 
     const login = (userData) => {
         localStorage.setItem('userInfo', JSON.stringify(userData));
         localStorage.setItem('jwt', userData.token); // NEW: Store JWT in localStorage here
         setUser(userData);
-        if (userData.role === 'Doctor') {
-            if (userData.specificProfileId) {
+        // Ensure specificProfileId is always stored in localStorage regardless of role
+        if (userData.specificProfileId) {
+            if (userData.role === 'Doctor') {
                 localStorage.setItem('doctorId', userData.specificProfileId); // Store doctorId in local storage
-            } else {
-                console.warn('Doctor logging in without specificProfileId. Check userController.js response.');
-            }
-        } else if (userData.role === 'Patient') {
-            if (userData.specificProfileId) {
+            } else if (userData.role === 'Patient') {
                 localStorage.setItem('patientId', userData.specificProfileId); // Store patientId in local storage
-            } else {
-                console.warn('Patient logging in without specificProfileId. Check userController.js response.');
+            } else if (userData.role === 'Shop') {
+                localStorage.setItem('shopId', userData.specificProfileId);
             }
         }
     };
@@ -64,7 +91,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, loading }}>
+        <AuthContext.Provider value={{ user, login, logout, loading, setAuthDataFromRedirect }}>
             {!loading && children}
         </AuthContext.Provider>
     );

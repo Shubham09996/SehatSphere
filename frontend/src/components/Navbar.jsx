@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Sun, Moon, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, NavLink, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext.jsx'; // Import useAuth hook
 
 const navLinks = [
     { name: 'Features', to: '/features' },
@@ -12,6 +13,16 @@ const navLinks = [
 const Navbar = ({ theme, toggleTheme }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const location = useLocation();
+    const { user, logout } = useAuth(); // Get user and logout from AuthContext
+
+    const handleLogout = () => {
+        logout();
+        // Optionally redirect after logout, e.g., to the homepage or login page
+        // navigate('/login'); // If navigate is needed, import it
+        window.location.href = '/'; // Redirect to homepage
+    };
+
+    const dashboardPath = user ? `/${user.role?.toLowerCase()}/dashboard` : '/';
 
     return (
         <header className="fixed top-0 left-0 right-0 z-50 flex justify-between items-center py-4 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -46,6 +57,22 @@ const Navbar = ({ theme, toggleTheme }) => {
                             )}
                         </NavLink>
                     ))}
+                    {user && (
+                        <NavLink
+                            to={dashboardPath}
+                            className={({ isActive }) => 
+                                `relative font-medium transition-colors ${isActive ? 'bg-gradient-to-r from-hs-gradient-start to-hs-gradient-end text-transparent bg-clip-text' : 'text-foreground hover:text-primary'}`
+                            }
+                        >
+                            Dashboard
+                            {location.pathname.startsWith(`/${user.role?.toLowerCase()}/dashboard`) && (
+                                <motion.div
+                                    layoutId="underline"
+                                    className="absolute -bottom-1 left-0 right-0 h-0.5 bg-gradient-to-r from-hs-gradient-start to-hs-gradient-end"
+                                />
+                            )}
+                        </NavLink>
+                    )}
                 </nav>
                 
                 <div className="flex items-center space-x-2 sm:space-x-4">
@@ -55,12 +82,23 @@ const Navbar = ({ theme, toggleTheme }) => {
                         {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
                     </motion.button>
 
-                    {/* Desktop Login/Signup Buttons */}
+                    {/* Desktop Login/Signup Buttons / Logout Button */}
                     <div className="hidden md:flex items-center space-x-4">
-                        <Link to="/login" className="font-medium text-foreground hover:text-primary transition-colors">Login</Link>
-                        <Link to="/signup" className="px-4 py-2 rounded-md font-medium bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-primary-foreground hover:opacity-90 transition-opacity">
-                            Get Started
-                        </Link>
+                        {user ? (
+                            <button
+                                onClick={handleLogout}
+                                className="px-4 py-2 rounded-md font-medium bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-primary-foreground hover:opacity-90 transition-opacity"
+                            >
+                                Logout
+                            </button>
+                        ) : (
+                            <>
+                                <Link to="/login" className="font-medium text-foreground hover:text-primary transition-colors">Login</Link>
+                                <Link to="/signup" className="px-4 py-2 rounded-md font-medium bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-primary-foreground hover:opacity-90 transition-opacity">
+                                    Get Started
+                                </Link>
+                            </>
+                        )}
                     </div>
 
                      {/* Mobile Menu Toggle */}
@@ -94,11 +132,33 @@ const Navbar = ({ theme, toggleTheme }) => {
                                 {link.name}
                             </NavLink>
                         ))}
+                        {user && (
+                            <NavLink
+                                to={dashboardPath}
+                                className={({ isActive }) => 
+                                    `font-medium text-lg ${isActive ? 'bg-gradient-to-r from-hs-gradient-start to-hs-gradient-end text-transparent bg-clip-text' : 'text-foreground hover:text-primary'}`
+                                }
+                                onClick={() => setIsMenuOpen(false)}
+                            >
+                                Dashboard
+                            </NavLink>
+                        )}
                         <div className="h-px w-full bg-border"></div>
-                        <Link to="/login" className="font-medium text-lg text-foreground hover:text-primary" onClick={() => setIsMenuOpen(false)}>Login</Link>
-                        <Link to="/signup" className="w-full max-w-xs text-center px-4 py-2 rounded-md font-medium bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-primary-foreground hover:opacity-90 transition-opacity" onClick={() => setIsMenuOpen(false)}>
-                            Get Started
-                        </Link>
+                        {user ? (
+                            <button
+                                onClick={() => { handleLogout(); setIsMenuOpen(false); }}
+                                className="w-full max-w-xs text-center px-4 py-2 rounded-md font-medium bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-primary-foreground hover:opacity-90 transition-opacity"
+                            >
+                                Logout
+                            </button>
+                        ) : (
+                            <>
+                                <Link to="/login" className="font-medium text-lg text-foreground hover:text-primary" onClick={() => setIsMenuOpen(false)}>Login</Link>
+                                <Link to="/signup" className="w-full max-w-xs text-center px-4 py-2 rounded-md font-medium bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-primary-foreground hover:opacity-90 transition-opacity" onClick={() => setIsMenuOpen(false)}>
+                                    Get Started
+                                </Link>
+                            </>
+                        )}
                     </nav>
                 </motion.div>
             )}

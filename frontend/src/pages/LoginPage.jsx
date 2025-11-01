@@ -104,6 +104,7 @@ const LoginPage = () => {
                 localStorage.setItem('profilePicture', res.data.profilePicture);
                 localStorage.setItem('userName', res.data.name);
                 localStorage.setItem('userRole', res.data.role);
+                localStorage.setItem('jwt', res.data.token); // Store JWT token
 
                 // Prepare user data for AuthContext
                 const userData = {

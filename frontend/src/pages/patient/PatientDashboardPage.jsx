@@ -6,6 +6,7 @@ import UpcomingAppointments from '../../components/patient/UpcomingAppointments'
 import EPrescriptions from '../../components/patient/EPrescriptions';
 import Chatbot from '../../components/patient/Chatbot';
 import PremiumBanner from '../../components/patient/PremiumBanner';
+import FamilyMemberList from '../../components/patient/FamilyMemberList'; // NEW: Import FamilyMemberList
 import api from '../../utils/api'; // api.js se import karein
 import { Link } from 'react-router-dom'; // Added Link import
 
@@ -82,6 +83,9 @@ const PatientDashboardPage = () => {
                 <UpcomingAppointments upcomingAppointments={upcomingAppointments} onAppointmentUpdate={fetchPatientDashboardData} />
                 <EPrescriptions ePrescriptions={ePrescriptions} />
             </div>
+
+            {/* New Section for Family Members */}
+            <FamilyMemberList />
 
             {/* New Section for Doctors List */}
             <div className="bg-card p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md">

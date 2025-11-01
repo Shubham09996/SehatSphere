@@ -1,12 +1,14 @@
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect, useRef } from 'react';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
 
 // Layouts
 import PublicLayout from './components/patient/PublicLayout.jsx';
 import PatientDashboardLayout from './components/patient/PatientDashboardLayout.jsx';
 import DoctorDashboardLayout from './components/doctor/DoctorDashboardLayout.jsx';
 import ShopDashboardLayout from './components/shop/ShopDashboardLayout.jsx';
-import AdminDashboardLayout from './components/admin/AdminDashboardLayout.jsx'; 
+import AdminDashboardLayout from './components/admin/AdminDashboardLayout.jsx';
+import HospitalDashboardLayout from './components/hospital/HospitalDashboardLayout.jsx';
 
 // Public Pages
 import FeaturesPage from './pages/FeaturesPage.jsx';
@@ -15,12 +17,15 @@ import AboutPage from './pages/AboutPage.jsx';
 import HomePage from './pages/HomePage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import SignupPage from './pages/SignupPage.jsx';
-import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx'; // NEW: Import ForgotPasswordPage
-import ResetPasswordPage from './pages/ResetPasswordPage.jsx'; // NEW: Import ResetPasswordPage
-import PatientOnboardingPage from './pages/patient/PatientOnboardingPage.jsx'; // Import new onboarding page
-import PrivateRoute from './components/PrivateRoute.jsx'; // Import PrivateRoute
+import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx';
+import ResetPasswordPage from './pages/ResetPasswordPage.jsx';
+import PatientOnboardingPage from './pages/patient/PatientOnboardingPage.jsx';
+import PrivateRoute from './components/PrivateRoute.jsx';
+import BookTestAppointmentPage from './pages/patient/BookTestAppointmentPage.jsx'; // NEW: Import BookTestAppointmentPage
+import AddFamilyMemberPage from './pages/patient/AddFamilyMemberPage.jsx'; // NEW: Import AddFamilyMemberPage
+import FamilyMemberProfilePage from './pages/patient/FamilyMemberProfilePage.jsx'; // NEW: Import FamilyMemberProfilePage
 
-// Patient Pages (all of them)
+// Patient Pages
 import PatientDashboardPage from './pages/patient/PatientDashboardPage.jsx';
 import AppointmentsPage from './pages/patient/AppointmentsPage.jsx';
 import BookAppointmentPage from './pages/patient/BookAppointmentPage.jsx';
@@ -42,52 +47,105 @@ import NotificationSettings from './components/patient/settings/NotificationSett
 
 // Doctor Pages
 import DoctorDashboardPage from './pages/doctor/DoctorDashboardPage.jsx';
-import SchedulePage from './pages/doctor/SchedulePage.jsx'; // NEW: Schedule page import
+import SchedulePage from './pages/doctor/SchedulePage.jsx';
 import MyPatientsPage from './pages/doctor/MyPatientsPage.jsx';
-import DoctorPrescriptionsPage from './pages/doctor/DoctorPrescriptionsPage.jsx'; 
+import DoctorPrescriptionsPage from './pages/doctor/DoctorPrescriptionsPage.jsx';
 import DoctorSettingsPage from './pages/doctor/DoctorSettingsPage.jsx';
 import DoctorProfileSettings from './components/doctor/settings/DoctorProfileSettings.jsx';
 import ConsultationSettings from './components/doctor/settings/ConsultationSettings.jsx';
 import DoctorProfilePage from './pages/doctor/DoctorProfilePage.jsx';
 import DoctorNotificationsPage from './pages/doctor/DoctorNotificationsPage.jsx';
 
-// shop pages
+// Shop Pages
 import ShopDashboardPage from './pages/shop/ShopDashboardPage.jsx';
 import ShopOrdersPage from './pages/shop/ShopOrdersPage.jsx';
-import ShopInventoryPage from './pages/shop/ShopInventoryPage.jsx'; 
+import ShopInventoryPage from './pages/shop/ShopInventoryPage.jsx';
 import ShopBillingPage from './pages/shop/ShopBillingPage.jsx';
-import SalesAnalyticsChart from './components/shop/widgets/SalesAnalyticsChart.jsx';
 import ShopAnalyticsPage from './pages/shop/ShopAnalyticsPage.jsx';
 import ShopSettingsPage from './pages/shop/ShopSettingsPage.jsx';
-import PlanAndBilling from './components/shop/settings/PlanAndBilling.jsx'; 
-import StaffManagement from './components/shop/settings/StaffManagement.jsx'; 
+import PlanAndBilling from './components/shop/settings/PlanAndBilling.jsx';
+import StaffManagement from './components/shop/settings/StaffManagement.jsx';
 import Integrations from './components/shop/settings/Integrations.jsx';
 import ShopProfileSettings from './components/shop/settings/ShopProfileSettings.jsx';
 import ShopNotificationsPage from './pages/shop/ShopNotificationsPage.jsx';
-import ShopProfilePage from './pages/shop/ShopProfilePage.jsx'; 
+import ShopProfilePage from './pages/shop/ShopProfilePage.jsx';
 
-// Admin pages
+// Admin Pages
 import AdminDashboardPage from './pages/admin/AdminDashboardPage.jsx';
 import UserManagementPage from './pages/admin/UserManagementPage.jsx';
 import HospitalManagementPage from './pages/admin/HospitalManagementPage.jsx';
-import AdminAnalyticsPage from './pages/admin/AdminAnalyticsPage.jsx'; 
+import AdminAnalyticsPage from './pages/admin/AdminAnalyticsPage.jsx';
 import AdminSecurityPage from './pages/admin/AdminSecurityPage.jsx';
 import AdminNotificationsPage from './pages/admin/AdminNotificationsPage.jsx';
-import AdminProfilePage from './pages/admin/AdminProfilePage.jsx'; 
-import AddHospitalPage from './pages/admin/hospitals/AddHospitalPage.jsx'; // Import AddHospitalPage
-import AddUserPage from './pages/admin/users/AddUserPage.jsx'; // Import AddUserPage
-import AdminProfileSettings from './components/admin/settings/AdminProfileSettings.jsx'; // Import AdminProfileSettings
+import AdminProfilePage from './pages/admin/AdminProfilePage.jsx';
+import AddHospitalPage from './pages/admin/hospitals/AddHospitalPage.jsx';
+import AddUserPage from './pages/admin/users/AddUserPage.jsx';
+import AdminProfileSettings from './components/admin/settings/AdminProfileSettings.jsx';
 
-// Placeholder for other pages
-const Placeholder = ({ title }) => (
-    <div className="bg-card p-6 rounded-xl shadow-md">
-        <h1 className="text-3xl font-bold text-foreground">{title}</h1>
-        <p className="text-muted-foreground mt-2">This is a placeholder page for {title}.</p>
-    </div>
-);
+// Hospital Pages
+import HospitalDashboardPage from './pages/hospital/HospitalDashboardPage.jsx';
+import HospitalTotalPatientsPage from './pages/hospital/HospitalTotalPatientsPage.jsx';
+import HospitalStaffManagementPage from './pages/hospital/HospitalStaffManagementPage.jsx';
+import HospitalOperationsManagementPage from './pages/hospital/HospitalOperationsManagementPage.jsx';
+import HospitalAnalyticsFraudPage from './pages/hospital/HospitalAnalyticsFraudPage.jsx';
+import HospitalPharmacyPartnersPage from './pages/hospital/HospitalPharmacyPartnersPage.jsx';
+import HospitalNotificationsPage from './pages/hospital/HospitalNotificationsPage.jsx';
+import HospitalProfilePage from './pages/hospital/HospitalProfilePage.jsx';
 
 
 function App() {
+  const { setAuthDataFromRedirect, user, loading } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const processedRedirectRef = useRef(false);
+
+  // 🧩 Step 1: Process token & userInfo from URL (after signup/login redirect)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const token = params.get('token');
+    const userInfo = params.get('userInfo');
+
+    if (token && userInfo && !processedRedirectRef.current) {
+      setAuthDataFromRedirect(token, userInfo);
+      processedRedirectRef.current = true;
+
+      // remove token & userInfo from URL
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete('token');
+      cleanUrl.searchParams.delete('userInfo');
+      window.history.replaceState({}, document.title, cleanUrl.toString());
+    }
+  }, [location.search, setAuthDataFromRedirect]);
+
+  // 🧩 Step 2: Redirect user once context updates
+  useEffect(() => {
+    // Ensure user is logged in, not loading, and it's the immediate redirect after initial auth.
+    if (!loading && user && processedRedirectRef.current) {
+      let redirectPath;
+      if (user.isNewUser && user.role?.toLowerCase() === 'patient') {
+        redirectPath = `/patient-onboarding/${user._id}`;
+      } else {
+        redirectPath = `/${user.role?.toLowerCase()}/dashboard`;
+      }
+      navigate(redirectPath, { replace: true });
+      processedRedirectRef.current = false; // Reset to allow public route access after initial dashboard redirect
+    }
+  }, [user, loading, navigate]);
+
+  // 🧩 Step 3: Protect routes for unauthenticated users
+  useEffect(() => {
+    if (!loading && !user) {
+      const isPublicRoute = [
+        '/', '/features', '/roles', '/about',
+        '/login', '/signup', '/forgot-password', '/reset-password', '/patient-onboarding'
+      ].some(route => location.pathname === route || location.pathname.startsWith(route + '/'));
+
+      if (!isPublicRoute) {
+        navigate('/login', { replace: true });
+      }
+    }
+  }, [user, loading, navigate, location.pathname]);
+
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
       <Routes>
@@ -96,22 +154,21 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/features" element={<FeaturesPage />} />
           <Route path="/roles" element={<RolesPage />} />
-          <Route path="/about" element={<AboutPage />} /> 
+          <Route path="/about" element={<AboutPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} /> {/* NEW: Forgot password route */}
-          <Route path="/reset-password/:token" element={<ResetPasswordPage />} /> {/* NEW: Reset password route */}
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
         </Route>
 
-        {/* --- PATIENT DASHBOARD ROUTES --- */}
+        {/* --- PATIENT --- */}
         <Route element={<PrivateRoute allowedRoles={['Patient']} />}>
           <Route path="/patient" element={<PatientDashboardLayout />}>
-            {/* All patient routes are correctly configured here */}
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<PatientDashboardPage />} />
             <Route path="appointments" element={<AppointmentsPage />} />
-            <Route path="book-appointment" element={<BookAppointmentPage />} /> 
-            <Route path="prescriptions" element={<PrescriptionsPage />} />          
+            <Route path="book-appointment" element={<BookAppointmentPage />} />
+            <Route path="prescriptions" element={<PrescriptionsPage />} />
             <Route path="medicine-finder" element={<MedicineFinderPage />} />
             <Route path="medicine-finder/:medicineId" element={<MedicineDetailPage />} />
             <Route path="health-records" element={<HealthRecordsPage />} />
@@ -123,29 +180,28 @@ function App() {
             <Route path="profile" element={<PatientProfilePage />} />
             <Route path="notifications" element={<NotificationsPage />} />
             <Route path="settings" element={<SettingsPage />}>
-                <Route index element={<Navigate to="profile" replace />} />
-                <Route path="profile" element={<ProfileSettings />} />
-                <Route path="security" element={<SecuritySettings />} />
-                <Route path="notifications" element={<NotificationSettings />} />
+              <Route index element={<Navigate to="profile" replace />} />
+              <Route path="profile" element={<ProfileSettings />} />
+              <Route path="security" element={<SecuritySettings />} />
+              <Route path="notifications" element={<NotificationSettings />} />
             </Route>
+            <Route path="book-test-appointment" element={<BookTestAppointmentPage />} /> {/* NEW: Book Test Appointment page nested */} 
+            <Route path="add-family-member" element={<AddFamilyMemberPage />} /> {/* NEW: Add Family Member page nested */} 
+            <Route path="family-member-profile/:id" element={<FamilyMemberProfilePage />} /> {/* NEW: Family Member Profile page nested */} 
           </Route>
-          <Route path="patient-onboarding/:userId" element={<PatientOnboardingPage />} /> {/* New onboarding route */}
+          <Route path="patient-onboarding/:userId" element={<PatientOnboardingPage />} />
         </Route>
 
-        {/* --- DOCTOR DASHBOARD ROUTES --- */}
+        {/* --- DOCTOR --- */}
         <Route element={<PrivateRoute allowedRoles={['Doctor']} />}>
           <Route path="/doctor" element={<DoctorDashboardLayout />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<DoctorDashboardPage />} />
-            
-            {/* UPDATED: Functional route for Schedule Page */}
             <Route path="schedule" element={<SchedulePage />} />
-
             <Route path="patients" element={<MyPatientsPage />} />
             <Route path="prescriptions" element={<DoctorPrescriptionsPage />} />
             <Route path="profile" element={<DoctorProfilePage />} />
             <Route path="notifications" element={<DoctorNotificationsPage />} />
-
             <Route path="settings" element={<DoctorSettingsPage />}>
               <Route index element={<Navigate to="profile" replace />} />
               <Route path="profile" element={<DoctorProfileSettings />} />
@@ -156,6 +212,7 @@ function App() {
           </Route>
         </Route>
 
+        {/* --- SHOP --- */}
         <Route path="/shop" element={<ShopDashboardLayout />}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<ShopDashboardPage />} />
@@ -165,8 +222,6 @@ function App() {
           <Route path="analytics" element={<ShopAnalyticsPage />} />
           <Route path="notifications" element={<ShopNotificationsPage />} />
           <Route path="profile" element={<ShopProfilePage />} />
-
-
           <Route path="settings" element={<ShopSettingsPage />}>
             <Route index element={<Navigate to="profile" replace />} />
             <Route path="profile" element={<ShopProfileSettings />} />
@@ -176,23 +231,37 @@ function App() {
           </Route>
         </Route>
 
-        {/* --- NEW: ADMIN DASHBOARD ROUTES --- */}
+        {/* --- ADMIN --- */}
         <Route element={<PrivateRoute allowedRoles={['Admin']} />}>
           <Route path="/admin" element={<AdminDashboardLayout />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboardPage />} />
             <Route path="users" element={<UserManagementPage />} />
-            <Route path="users/add" element={<AddUserPage />} /> {/* New route for adding users */}
+            <Route path="users/add" element={<AddUserPage />} />
             <Route path="hospitals" element={<HospitalManagementPage />} />
-            <Route path="hospitals/add" element={<AddHospitalPage />} /> {/* New route for adding hospitals */}
+            <Route path="hospitals/add" element={<AddHospitalPage />} />
             <Route path="analytics" element={<AdminAnalyticsPage />} />
             <Route path="security" element={<AdminSecurityPage />} />
             <Route path="notifications" element={<AdminNotificationsPage />} />
             <Route path="profile" element={<AdminProfilePage />} />
-            <Route path="profile/settings" element={<AdminProfileSettings />} /> {/* New route for admin profile settings */}
+            <Route path="profile/settings" element={<AdminProfileSettings />} />
           </Route>
         </Route>
 
+        {/* --- HOSPITAL --- */}
+        <Route element={<PrivateRoute allowedRoles={['Hospital']} />}>
+          <Route path="/hospital" element={<HospitalDashboardLayout />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<HospitalDashboardPage />} />
+            <Route path="patients" element={<HospitalTotalPatientsPage />} />
+            <Route path="staff-management" element={<HospitalStaffManagementPage />} />
+            <Route path="operations" element={<HospitalOperationsManagementPage />} />
+            <Route path="pharmacy-partners" element={<HospitalPharmacyPartnersPage />} />
+            <Route path="analytics-fraud" element={<HospitalAnalyticsFraudPage />} />
+            <Route path="notifications" element={<HospitalNotificationsPage />} />
+            <Route path="profile" element={<HospitalProfilePage />} />
+          </Route>
+        </Route>
       </Routes>
     </div>
   );
