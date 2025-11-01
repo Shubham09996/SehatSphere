@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Bell, Menu, Sun, Moon, HelpCircle } from 'lucide-react';
+import { Bell, Menu, Sun, Moon, HelpCircle, LayoutDashboard, Pill, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import { useAuth } from '../../context/AuthContext.jsx'; // Import useAuth hook
 
@@ -10,6 +10,7 @@ const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
+    const location = useLocation();
     const { user, logout } = useAuth(); // Get user and logout from AuthContext
 
     // Debug: Log user data to console
@@ -69,15 +70,44 @@ const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
                 </div>
             </div>
 
-            {/* Search Bar */}
-            <div className="relative w-full max-w-md hidden sm:block">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={20} />
-                <input
-                    type="text"
-                    placeholder="Search hospitals, medicines..."
-                    className="w-full bg-background border border-border rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-hs-gradient-middle"
-                />
-            </div>
+            {/* Navigation Bar - Merged with main navbar */}
+            <nav className="hidden sm:flex items-center space-x-2">
+                <Link
+                    to="/patient/dashboard"
+                    className={`relative px-4 py-2 text-sm font-semibold rounded-lg transition-colors flex items-center gap-2 ${
+                        location.pathname === '/patient/dashboard' 
+                            ? 'text-foreground bg-muted' 
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    }`}
+                >
+                    <LayoutDashboard size={16} />
+                    <span>Dashboard</span>
+                </Link>
+                
+                <Link
+                    to="/patient/medicine-finder"
+                    className={`relative px-4 py-2 text-sm font-semibold rounded-lg transition-colors flex items-center gap-2 ${
+                        location.pathname === '/patient/medicine-finder' || location.pathname.startsWith('/patient/medicine-finder/')
+                            ? 'text-foreground bg-muted' 
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    }`}
+                >
+                    <Pill size={16} />
+                    <span>Medicine Finder</span>
+                </Link>
+                
+                <Link
+                    to="/patient/donate"
+                    className={`relative px-4 py-2 text-sm font-semibold rounded-lg transition-colors flex items-center gap-2 ${
+                        location.pathname === '/patient/donate' 
+                            ? 'text-foreground bg-muted' 
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    }`}
+                >
+                    <Heart size={16} />
+                    <span>Donate</span>
+                </Link>
+            </nav>
 
             {/* Right Side Icons */}
             <div className="flex items-center space-x-4">

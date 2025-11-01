@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Calendar, FileText, Pill, BarChart2, CreditCard, Settings, LifeBuoy, ChevronsLeft, ChevronsRight, User, UserPlus, Ticket, Heart, FlaskConical } from 'lucide-react';
+import { Calendar, FileText, BarChart2, Settings, ChevronsLeft, ChevronsRight, User, UserPlus, Ticket, FlaskConical } from 'lucide-react';
 
 const SidebarNavLink = ({ to, icon: Icon, text, isCollapsed, onCloseMobileSidebar }) => (
     <NavLink
@@ -24,16 +24,12 @@ const SidebarNavLink = ({ to, icon: Icon, text, isCollapsed, onCloseMobileSideba
 
 const PatientSidebar = ({ isCollapsed, toggleCollapse, onCloseMobileSidebar }) => {
     const navItems = [
-        { icon: Home, text: 'Dashboard', path: '/patient/dashboard' },
-        { icon: UserPlus, text: 'Add Family Member', path: '/patient/add-family-member' }, // New item
+        { icon: UserPlus, text: 'Add Family Member', path: '/patient/add-family-member' },
         { icon: Calendar, text: 'Appointments', path: '/patient/appointments' },
         { icon: FileText, text: 'Prescriptions', path: '/patient/prescriptions' },
-        { icon: Pill, text: 'Medicine Finder', path: '/patient/medicine-finder' },
         { icon: BarChart2, text: 'Health Records', path: '/patient/health-records' },
         { icon: FlaskConical, text: 'Tests', path: '/patient/tests' },
         { icon: Ticket, text: 'My Token', path: '/patient/my-token' },
-        { icon: Heart, text: 'Donate', path: '/patient/donate' },
-        { icon: CreditCard, text: 'Billing', path: '/patient/billing' },
         { icon: Settings, text: 'Settings', path: '/patient/settings' }
     ];
 
@@ -95,20 +91,6 @@ const PatientSidebar = ({ isCollapsed, toggleCollapse, onCloseMobileSidebar }) =
                     />
                 ))}
             </nav>
-
-            {/* "Need Help?" box ko conditionally render kiya gaya hai */}
-            {!isCollapsed && (
-                <div className="mt-auto">
-                    <div className="bg-muted rounded-lg p-4 text-center">
-                        <LifeBuoy size={32} className="mx-auto text-muted-foreground mb-2" />
-                        <h3 className="font-bold text-foreground">Need Help?</h3>
-                        <p className="text-sm text-muted-foreground mt-1">Contact support 24/7</p>
-                        <button className="mt-4 text-sm font-semibold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">
-                            Get Support
-                        </button>
-                    </div>
-                </div>
-            )}
         </aside>
     );
 };

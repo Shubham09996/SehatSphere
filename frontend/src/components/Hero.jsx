@@ -72,8 +72,8 @@ const Hero = () => {
               transition={{ delay: 0.4, duration: 0.6 }}
               className="text-5xl lg:text-7xl font-bold text-gray-900 leading-tight"
             >
-              Connecting Families,{" "}
-              <span className="text-blue-600">Simplifying Healthcare</span>
+              Welcome to{" "}
+              <span className="text-blue-600">HealthSphare</span>
             </motion.h1>
 
             <motion.p

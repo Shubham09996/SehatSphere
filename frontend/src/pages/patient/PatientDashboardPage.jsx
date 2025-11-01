@@ -5,7 +5,6 @@ import DashboardStats from '../../components/patient/DashboardStats';
 import UpcomingAppointments from '../../components/patient/UpcomingAppointments';
 import EPrescriptions from '../../components/patient/EPrescriptions';
 import Chatbot from '../../components/patient/Chatbot';
-import PremiumBanner from '../../components/patient/PremiumBanner';
 import FamilyMemberList from '../../components/patient/FamilyMemberList'; // NEW: Import FamilyMemberList
 import api from '../../utils/api'; // api.js se import karein
 import { Link } from 'react-router-dom'; // Added Link import
@@ -63,8 +62,6 @@ const PatientDashboardPage = () => {
 
     return (
         <div className="flex flex-col gap-6">
-            <PremiumBanner />
-
             <div>
                 {/* === EMOJI KO GRADIENT SE ALAG KIYA HAI === */}
                 <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
