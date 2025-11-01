@@ -12,6 +12,10 @@ export const AuthProvider = ({ children }) => {
         const parsedUserInfo = JSON.parse(userInfo);
         localStorage.setItem('jwt', token);
         localStorage.setItem('userInfo', JSON.stringify(parsedUserInfo));
+        // NEW: Store specificProfileId for doctors if available during OAuth redirect
+        if (parsedUserInfo.role === 'Doctor' && parsedUserInfo.specificProfileId) {
+            localStorage.setItem('doctorProfileId', parsedUserInfo.specificProfileId);
+        }
         setUser(parsedUserInfo);
     };
 
@@ -56,6 +60,10 @@ export const AuthProvider = ({ children }) => {
     const login = (userData) => {
         localStorage.setItem('userInfo', JSON.stringify(userData));
         localStorage.setItem('jwt', userData.token); // Store JWT in localStorage here
+        // NEW: Store specificProfileId for doctors if available during normal login
+        if (userData.role === 'Doctor' && userData.specificProfileId) {
+            localStorage.setItem('doctorProfileId', userData.specificProfileId);
+        }
         console.log("AuthContext: JWT stored in localStorage:", localStorage.getItem('jwt')); // NEW LOG
         setUser(userData);
     };

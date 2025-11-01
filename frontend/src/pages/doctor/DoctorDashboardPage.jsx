@@ -37,10 +37,10 @@ const DoctorDashboardPage = () => {
         const fetchDoctorDashboardData = async () => {
             try {
                 setLoading(true);
-                const medicalRegistrationNumber = localStorage.getItem('doctorId'); // Now this directly holds medicalRegistrationNumber
-                console.log("DoctorDashboardPage: medicalRegistrationNumber from localStorage:", medicalRegistrationNumber); // Debug log
-                if (!medicalRegistrationNumber) {
-                    setError(new Error('Medical Registration Number not found in local storage.'));
+                const doctorProfileId = localStorage.getItem('doctorProfileId'); // Retrieve doctorProfileId
+                console.log("DoctorDashboardPage: doctorProfileId from localStorage:", doctorProfileId); // Debug log
+                if (!doctorProfileId) {
+                    setError(new Error('Doctor Profile ID not found in local storage.'));
                     setLoading(false);
                     return;
                 }
@@ -55,11 +55,11 @@ const DoctorDashboardPage = () => {
                 // The medicalRegistrationNumber is now directly from localStorage
                 
                 const [doctorProfileRes, queueRes, patientsRes, statsRes, hourlyActivityRes] = await Promise.all([
-                    api.get(`/api/doctors/profile/${medicalRegistrationNumber}`), // Fetch full profile using medicalRegistrationNumber
-                    api.get(`/api/doctors/appointment-queue/${medicalRegistrationNumber}`),
+                    api.get(`/api/doctors/${doctorProfileId}`), // Fetch full profile using doctorProfileId
+                    api.get(`/api/doctors/appointment-queue/${doctorProfileId}`),
                     api.get(`/api/patients`), // Fetch doctor's patients (this might need to be specific to the doctor's patients in future)
-                    api.get(`/api/doctors/dashboard-stats/${medicalRegistrationNumber}`),
-                    api.get(`/api/doctors/hourly-activity/${medicalRegistrationNumber}`),
+                    api.get(`/api/doctors/dashboard-stats/${doctorProfileId}`),
+                    api.get(`/api/doctors/hourly-activity/${doctorProfileId}`),
                 ]);
 
                 // Set doctor info from the newly fetched doctorProfileRes

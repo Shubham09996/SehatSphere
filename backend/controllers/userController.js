@@ -40,7 +40,7 @@ const authUser = asyncHandler(async (req, res) => {
       specificProfileId = user.patient.patientId;
     } else if (user.role === 'Doctor') {
       const doctorProfile = await Doctor.findOne({ user: user._id });
-      if (doctorProfile) specificProfileId = doctorProfile.medicalRegistrationNumber;
+      if (doctorProfile) specificProfileId = doctorProfile._id;
     } else if (user.role === 'Shop') {
       const shopProfile = await Shop.findOne({ user: user._id });
       if (shopProfile) specificProfileId = shopProfile._id;
@@ -146,7 +146,7 @@ const registerUser = asyncHandler(async (req, res) => {
             specialty: 'General Medicine', // Placeholder
             qualifications: 'MD', // Placeholder
         });
-        specificProfileId = doctorProfile.medicalRegistrationNumber; // Use medicalRegistrationNumber as specificProfileId
+        specificProfileId = doctorProfile._id; // Use doctorProfile._id as specificProfileId
         console.log('registerUser: Doctor specificProfileId (medicalRegistrationNumber):', specificProfileId); // Debug log
     } else if (validatedRole === 'Shop') {
         const shopProfile = await Shop.create({

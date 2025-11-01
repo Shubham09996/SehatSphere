@@ -55,6 +55,7 @@ import DoctorProfileSettings from './components/doctor/settings/DoctorProfileSet
 import ConsultationSettings from './components/doctor/settings/ConsultationSettings.jsx';
 import DoctorProfilePage from './pages/doctor/DoctorProfilePage.jsx';
 import DoctorNotificationsPage from './pages/doctor/DoctorNotificationsPage.jsx';
+import PrescriptionWriter from './components/doctor/prescriptions/PrescriptionWriter.jsx'; // NEW: Import PrescriptionWriter
 
 // Shop Pages
 import ShopDashboardPage from './pages/shop/ShopDashboardPage.jsx';
@@ -215,6 +216,7 @@ function App() {
             <Route path="prescriptions" element={<DoctorPrescriptionsPage />} />
             <Route path="profile" element={<DoctorProfilePage />} />
             <Route path="notifications" element={<DoctorNotificationsPage />} />
+            <Route path="prescribe/:patientId" element={<PrescriptionWriter />} /> {/* New route for PrescriptionWriter */}
             <Route path="settings" element={<DoctorSettingsPage />}>
               <Route index element={<Navigate to="profile" replace />} />
               <Route path="profile" element={<DoctorProfileSettings />} />

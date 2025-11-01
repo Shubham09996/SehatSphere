@@ -114,7 +114,7 @@ const DoctorOnboardingModal = ({ isOpen, onClose, doctorId, userId }) => {
             let res;
             if (doctorId) {
                 // If doctorId exists, it's an update operation
-                res = await api.put(`/api/doctors/profile/${medicalRegistrationNumber}`, doctorDetails);
+                res = await api.put(`/api/doctors/${doctorId}`, doctorDetails);
                 console.log('Doctor details updated successfully', res.data);
             } else {
                 // If no doctorId, it's an initial onboarding (create operation)

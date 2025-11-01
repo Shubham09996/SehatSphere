@@ -31,15 +31,15 @@ const DoctorProfileSettings = () => {
     const [saving, setSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
 
-    const doctorId = '60d0fe4f5311236168a109cb'; // Temporarily using a dummy doctorId. This should come from auth context.
+    const doctorProfileId = localStorage.getItem('doctorProfileId'); // Retrieve doctorProfileId from local storage
 
     useEffect(() => {
         const fetchDoctorProfile = async () => {
             try {
                 setLoading(true);
-                const response = await api.get(`/doctors/${doctorId}/profile`);
-                const data = response.data.doctorProfile;
-                setFullName(data.name || '');
+                const response = await api.get(`/api/doctors/${doctorProfileId}`);
+                const data = response.data;
+                setFullName(data.user?.name || ''); // Access name from user object
                 setSpecialty(data.specialty || '');
                 setQualifications(data.qualifications || '');
                 setMedicalRegistrationNumber(data.medicalRegistrationNumber || '');
@@ -53,21 +53,21 @@ const DoctorProfileSettings = () => {
         };
 
         fetchDoctorProfile();
-    }, [doctorId]);
+    }, [doctorProfileId]);
 
     const handleSaveChanges = async () => {
         setSaving(true);
         setSaveSuccess(false);
         try {
             const updatedProfile = {
-                name: fullName,
+                name: fullName, // Pass name for user update
                 specialty,
                 qualifications,
                 medicalRegistrationNumber,
-                yearsOfExperience: parseInt(yearsOfExperience),
+                experience: parseInt(yearsOfExperience),
                 bio,
             };
-            await api.put(`/doctors/${doctorId}/profile`, updatedProfile);
+            await api.put(`/api/doctors/${doctorProfileId}`, updatedProfile);
             setSaveSuccess(true);
         } catch (err) {
             console.error('Error saving profile:', err);

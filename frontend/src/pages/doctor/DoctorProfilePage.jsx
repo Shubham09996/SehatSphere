@@ -27,15 +27,15 @@ const DoctorProfilePage = () => {
 
     useEffect(() => {
         const fetchDoctorProfile = async () => {
-            const medicalRegistrationNumber = localStorage.getItem('doctorId'); // Retrieve doctorId from localStorage as medicalRegistrationNumber
-            if (!medicalRegistrationNumber) {
-                setError(new Error('Doctor ID (Medical Registration Number) not found in local storage.'));
+            const doctorProfileId = localStorage.getItem('doctorProfileId'); // Retrieve doctorProfileId from local storage
+            if (!doctorProfileId) {
+                setError(new Error('Doctor Profile ID not found in local storage.'));
                 setLoading(false);
                 return;
             }
             try {
                 setLoading(true);
-                const response = await api.get(`/api/doctors/profile/${medicalRegistrationNumber}`); // Corrected API route
+                const response = await api.get(`/api/doctors/${doctorProfileId}`); // Corrected API route to use MongoDB _id
                 setDoctorProfile(response.data); // Corrected: getDoctorById returns the doctor object directly
             } catch (err) {
                 setError(err);
