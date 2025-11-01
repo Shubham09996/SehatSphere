@@ -56,6 +56,9 @@ const Chatbot = () => {
             formData.append('language', language);
             if (file) formData.append('file', file);
 
+            console.log('FormData before API call:', formData);
+            console.log('File object before API call:', file);
+
             const res = await api.post('/api/gemini/chat', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
