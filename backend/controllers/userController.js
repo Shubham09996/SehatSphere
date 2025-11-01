@@ -134,11 +134,13 @@ const registerUser = asyncHandler(async (req, res) => {
         const doctorProfile = await Doctor.create({
             user: user._id,
             hospital: hospital, // Associate doctor with the selected hospital
-            // Add other required doctor fields if any, e.g., name, medicalRegistrationNumber
             name: fullName, // Assuming doctor also has a name field
-            medicalRegistrationNumber: `MRN-${Date.now()}`, // Example medical registration number
+            medicalRegistrationNumber: `MRN-${Date.now()}`,
+            specialty: 'General Medicine', // Placeholder
+            qualifications: 'MD', // Placeholder
         });
-        specificProfileId = doctorProfile._id; // Use the doctor's _id as specificProfileId
+        specificProfileId = doctorProfile.medicalRegistrationNumber; // Use medicalRegistrationNumber as specificProfileId
+        console.log('registerUser: Doctor specificProfileId (medicalRegistrationNumber):', specificProfileId); // Debug log
     } else if (validatedRole === 'Shop') {
         const shopProfile = await Shop.create({
             user: user._id,
