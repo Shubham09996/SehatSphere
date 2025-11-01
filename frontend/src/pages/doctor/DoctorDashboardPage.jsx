@@ -24,45 +24,50 @@ const StatCard = ({ icon, title, value, change, colorClass }) => (
 
 const DoctorDashboardPage = () => {
     const [doctorInfo, setDoctorInfo] = useState(null);
-    // const [dashboardStats, setDashboardStats] = useState(null); // Removed dashboardStats state
+    const [dashboardStats, setDashboardStats] = useState(null); // Added dashboardStats state
     const [queue, setQueue] = useState([]); // State for managing the appointment queue
     const [patients, setPatients] = useState([]); // State for doctor's patients
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [hourlyActivityData, setHourlyActivityData] = useState([]); // State for real hourly activity data
 
-    const mockHourlyActivityData = Array.from({ length: 24 }, (_, i) => ({ // Hardcoded data
-        hour: i,
-        patients: Math.floor(Math.random() * 10) // Changed 'appointments' to 'patients'
-    }));
-
-    // Hardcoded dashboard stats
-    const mockDashboardStats = {
-        totalPatients: { value: 10, change: '+5%' },
-        avgConsultationTime: { value: '15 mins', change: '-2%' },
-        pendingReports: { value: 3, change: '+1' },
-    };
+    // Removed hardcoded dashboard stats
 
     useEffect(() => {
         const fetchDoctorDashboardData = async () => {
             try {
                 setLoading(true);
-                const medicalRegistrationNumber = localStorage.getItem('doctorId'); // Retrieve doctorId from localStorage as medicalRegistrationNumber
+                const medicalRegistrationNumber = localStorage.getItem('doctorId'); // Now this directly holds medicalRegistrationNumber
+                console.log("DoctorDashboardPage: medicalRegistrationNumber from localStorage:", medicalRegistrationNumber); // Debug log
                 if (!medicalRegistrationNumber) {
-                    setError(new Error('Doctor ID (Medical Registration Number) not found in local storage.'));
+                    setError(new Error('Medical Registration Number not found in local storage.'));
                     setLoading(false);
                     return;
                 }
-                const [infoRes, queueRes, patientsRes] = await Promise.all([
-                    api.get(`/api/doctors/profile/${medicalRegistrationNumber}`), 
-                    // api.get(`/api/doctors/dashboard-stats/${medicalRegistrationNumber}`), // Removed API call for dashboard stats
+
+                // Removed the initial fetch of doctorProfile as medicalRegistrationNumber is directly available
+                // const doctorProfileRes = await api.get(`/api/doctors/${doctorIdFromLocalStorage}`);
+                // const doctorProfile = doctorProfileRes.data;
+                // console.log("Doctor Profile fetched:", doctorProfile); // Debug log
+                // console.log("Doctor User object:", doctorProfile.user); // Debug log
+                // const medicalRegistrationNumber = doctorProfile.medicalRegistrationNumber;
+                
+                // The medicalRegistrationNumber is now directly from localStorage
+                
+                const [doctorProfileRes, queueRes, patientsRes, statsRes, hourlyActivityRes] = await Promise.all([
+                    api.get(`/api/doctors/profile/${medicalRegistrationNumber}`), // Fetch full profile using medicalRegistrationNumber
                     api.get(`/api/doctors/appointment-queue/${medicalRegistrationNumber}`),
-                    api.get(`/api/patients`), // Fetch doctor's patients
+                    api.get(`/api/patients`), // Fetch doctor's patients (this might need to be specific to the doctor's patients in future)
+                    api.get(`/api/doctors/dashboard-stats/${medicalRegistrationNumber}`),
+                    api.get(`/api/doctors/hourly-activity/${medicalRegistrationNumber}`),
                 ]);
 
-                setDoctorInfo(infoRes.data.personalInfo); // Corrected: Access personalInfo
-                // setDashboardStats(statsRes.data.dashboardStats); // Removed setting dashboardStats state
-                setQueue(queueRes.data); 
+                // Set doctor info from the newly fetched doctorProfileRes
+                setDoctorInfo(doctorProfileRes.data.user); // Assuming doctorProfileRes.data contains a user object
+                setQueue(queueRes.data);
                 setPatients(patientsRes.data); // Set doctor's patients
+                setDashboardStats(statsRes.data.dashboardStats); // Set dashboardStats state
+                setHourlyActivityData(hourlyActivityRes.data); // Set hourly activity data
 
             } catch (err) {
                 setError(err);
@@ -108,7 +113,7 @@ const DoctorDashboardPage = () => {
         return <div className="text-center text-red-500">Error loading dashboard: {error.message}</div>;
     }
 
-    if (!doctorInfo || !queue) { // Removed dashboardStats from check
+    if (!doctorInfo || !queue || !dashboardStats || !hourlyActivityData) { // Added hourlyActivityData to check
         return <div className="text-center text-muted-foreground">No doctor dashboard data found.</div>;
     }
 
@@ -144,15 +149,15 @@ const DoctorDashboardPage = () => {
             <div>
                 {/* === IS HEADING PAR GRADIENT LAGAYA HAI === */}
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">
-                    Welcome back, {doctorInfo.name}!
+                    Welcome back, {doctorInfo?.name || 'Doctor'}!
                 </h1>
                 <p className="text-muted-foreground mt-1">Today is {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                <StatCard icon={<Users size={20}/>} title="Total Patients" value={mockDashboardStats.totalPatients.value} change={mockDashboardStats.totalPatients.change} colorClass="bg-blue-500/20 text-blue-500"/>
-                <StatCard icon={<Clock size={20}/>} title="Avg. Consult Time" value={mockDashboardStats.avgConsultationTime.value} change={mockDashboardStats.avgConsultationTime.change} colorClass="bg-green-500/20 text-green-500"/>
-                <StatCard icon={<FileWarning size={20}/>} title="Pending Reports" value={mockDashboardStats.pendingReports.value} change={mockDashboardStats.pendingReports.change} colorClass="bg-orange-500/20 text-orange-500"/>
+                <StatCard icon={<Users size={20}/>} title="Total Patients" value={dashboardStats.totalPatients.value} change={dashboardStats.totalPatients.change} colorClass="bg-blue-500/20 text-blue-500"/>
+                <StatCard icon={<Clock size={20}/>} title="Avg. Consult Time" value={dashboardStats.avgConsultationTime.value} change={dashboardStats.avgConsultationTime.change} colorClass="bg-green-500/20 text-green-500"/>
+                <StatCard icon={<FileWarning size={20}/>} title="Pending Reports" value={dashboardStats.pendingReports.value} change={dashboardStats.pendingReports.change} colorClass="bg-orange-500/20 text-orange-500"/>
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -163,7 +168,7 @@ const DoctorDashboardPage = () => {
                 
                 <div className="lg:col-span-1 space-y-8">
                     {/* The DoctorStatusToggle has been moved to the new DoctorHeader */}
-                    <HourlyActivityChart data={mockHourlyActivityData} /> {/* Pass hardcoded data */}
+                    <HourlyActivityChart data={hourlyActivityData} /> {/* Pass real hourly activity data */}
                 </div>
             </div>
 

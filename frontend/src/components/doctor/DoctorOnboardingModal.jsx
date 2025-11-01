@@ -45,6 +45,43 @@ const DoctorOnboardingModal = ({ isOpen, onClose, doctorId, userId }) => {
         }
     }, [isOpen]);
 
+    // NEW: Fetch doctor details to get medicalRegistrationNumber
+    useEffect(() => {
+        if (isOpen && doctorId) {
+            const fetchDoctorDetails = async () => {
+                try {
+                    // Use the /api/doctors/:id route which fetches by MongoDB _id
+                    const res = await api.get(`/api/doctors/${doctorId}`);
+                    const doctorData = res.data;
+                    setSpecialty(doctorData.specialty || '');
+                    setQualifications(doctorData.qualifications || '');
+                    setExperience(doctorData.experience || 0);
+                    setMedicalRegistrationNumber(doctorData.medicalRegistrationNumber || '');
+                    setBio(doctorData.bio || '');
+                    setExpertise(doctorData.expertise ? doctorData.expertise.join(', ') : '');
+                    setConsultationFee(doctorData.consultationFee || 0);
+                    setAppointmentDuration(doctorData.appointmentDuration || 15);
+                    setSelectedHospital(doctorData.hospital?._id || '');
+                    if (doctorData.workSchedule) {
+                        setWorkSchedule(prev => {
+                            const newSchedule = { ...prev };
+                            daysOfWeek.forEach(day => {
+                                if (doctorData.workSchedule[day]) { // Changed .get(day) to [day]
+                                    newSchedule[day] = doctorData.workSchedule[day];
+                                }
+                            });
+                            return newSchedule;
+                        });
+                    }
+                } catch (err) {
+                    console.error('Error fetching doctor details:', err);
+                    // Handle case where doctor might not be found or data is incomplete
+                }
+            };
+            fetchDoctorDetails();
+        }
+    }, [isOpen, doctorId]);
+
     const handleScheduleChange = (day, field, value) => {
         setWorkSchedule(prev => ({
             ...prev,
@@ -71,7 +108,8 @@ const DoctorOnboardingModal = ({ isOpen, onClose, doctorId, userId }) => {
         };
 
         try {
-            await api.put(`/api/doctors/profile/${doctorId}`, doctorDetails);
+            // Use medicalRegistrationNumber for the PUT request to the specific route
+            await api.put(`/api/doctors/profile/${medicalRegistrationNumber}`, doctorDetails);
             console.log('Doctor details updated successfully');
             onClose();
             navigate('/doctor/dashboard'); // Redirect to dashboard after updating details

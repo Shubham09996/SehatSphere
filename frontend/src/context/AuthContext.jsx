@@ -69,6 +69,7 @@ export const AuthProvider = ({ children }) => {
         setUser(userData);
         // Ensure specificProfileId is always stored in localStorage regardless of role
         if (userData.specificProfileId) {
+            console.log("AuthContext: specificProfileId from userData:", userData.specificProfileId); // Debug log
             if (userData.role === 'Doctor') {
                 localStorage.setItem('doctorId', userData.specificProfileId); // Store doctorId in local storage
             } else if (userData.role === 'Patient') {

@@ -8,6 +8,7 @@ import Chatbot from '../../components/patient/Chatbot';
 import FamilyMemberList from '../../components/patient/FamilyMemberList'; // NEW: Import FamilyMemberList
 import api from '../../utils/api'; // api.js se import karein
 import { Link } from 'react-router-dom'; // Added Link import
+import { useAuth } from '../../context/AuthContext'; // Import useAuth
 
 const PatientDashboardPage = () => {
     const [patientDashboardStats, setPatientDashboardStats] = useState(null);
@@ -17,6 +18,8 @@ const PatientDashboardPage = () => {
     const [doctors, setDoctors] = useState([]); // New state for doctors list
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    
+    const { user } = useAuth(); // Access the user object from AuthContext
 
     // Function to fetch all dashboard data
     const fetchPatientDashboardData = async () => {
@@ -82,7 +85,9 @@ const PatientDashboardPage = () => {
             </div>
 
             {/* New Section for Family Members */}
-            <FamilyMemberList />
+            {user?.role === 'Patient' && (
+                <FamilyMemberList /> // Conditionally render for Patients only
+            )}
 
             {/* New Section for Doctors List */}
             <div className="bg-card p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md">

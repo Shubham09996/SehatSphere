@@ -93,6 +93,14 @@ import HospitalNotificationsPage from './pages/hospital/HospitalNotificationsPag
 import HospitalProfilePage from './pages/hospital/HospitalProfilePage.jsx';
 import HospitalOnboardingPage from './pages/hospital/HospitalOnboardingPage.jsx'; // NEW: Import HospitalOnboardingPage
 
+// Lab Pages and Components
+import LabDashboardLayout from './components/lab/LabDashboardLayout.jsx';
+import LabDashboardPage from './pages/lab/LabDashboardPage.jsx';
+import LabProfilePage from './pages/lab/LabProfilePage.jsx';
+import LabNotificationsPage from './pages/lab/LabNotificationsPage.jsx';
+import ReportDataManagementPage from './pages/lab/ReportDataManagementPage.jsx'; // NEW: Import ReportDataManagementPage
+import StockAnalyticsPage from './pages/lab/StockAnalyticsPage.jsx'; // NEW: Import StockAnalyticsPage
+import TestOrderManagementPage from './pages/lab/TestOrderManagementPage.jsx'; // NEW: Import TestOrderManagementPage
 
 function App() {
   const { setAuthDataFromRedirect, user, loading } = useAuth();
@@ -252,6 +260,7 @@ function App() {
         </Route>
 
         {/* --- HOSPITAL --- */}
+        <Route path="/hospital-onboarding/:userId" element={<HospitalOnboardingPage />} /> {/* NEW: Hospital Onboarding Page outside any dashboard layout */}
         <Route element={<PrivateRoute allowedRoles={['Hospital']} />}>
           <Route path="/hospital" element={<HospitalDashboardLayout />}>
             <Route index element={<Navigate to="dashboard" replace />} />
@@ -263,7 +272,19 @@ function App() {
             <Route path="analytics-fraud" element={<HospitalAnalyticsFraudPage />} />
             <Route path="notifications" element={<HospitalNotificationsPage />} />
             <Route path="profile" element={<HospitalProfilePage />} />
-            <Route path="onboarding/:userId" element={<HospitalOnboardingPage />} /> {/* NEW: Hospital Onboarding Page nested under /hospital */}
+          </Route>
+        </Route>
+
+        {/* --- LAB --- */}
+        <Route element={<PrivateRoute allowedRoles={['Lab']} />}> {/* Assuming 'Lab' is the role for Lab users */}
+          <Route path="/lab" element={<LabDashboardLayout />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<LabDashboardPage />} />
+            <Route path="profile" element={<LabProfilePage />} />
+            <Route path="notifications" element={<LabNotificationsPage />} />
+            <Route path="report-data-management" element={<ReportDataManagementPage />} />
+            <Route path="stock-analytics" element={<StockAnalyticsPage />} />
+            <Route path="test-order-management" element={<TestOrderManagementPage />} />
           </Route>
         </Route>
       </Routes>
