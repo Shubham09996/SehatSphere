@@ -29,6 +29,7 @@ import MedicineFinderPage from './pages/patient/MedicineFinderPage.jsx';
 import MedicineDetailPage from './pages/patient/MedicineDetailPage.jsx';
 import HealthRecordsPage from './pages/patient/HealthRecordsPage.jsx';
 import BillingPage from './pages/patient/BillingPage.jsx';
+import TestsPage from './pages/patient/TestsPage.jsx';
 import PatientProfilePage from './pages/patient/PatientProfilePage.jsx';
 import NotificationsPage from './pages/patient/NotificationsPage.jsx';
 import SettingsPage from './pages/patient/SettingsPage.jsx';
@@ -118,6 +119,7 @@ function App() {
             <Route path="donate" element={<DonatePage />} />
             <Route path="how-to-use" element={<HowToUsePage />} />
             <Route path="billing" element={<BillingPage />} />
+            <Route path="tests" element={<TestsPage />} />
             <Route path="profile" element={<PatientProfilePage />} />
             <Route path="notifications" element={<NotificationsPage />} />
             <Route path="settings" element={<SettingsPage />}>
