@@ -1,45 +1,44 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Heart, AlertTriangle, Stethoscope, FlaskConical } from 'lucide-react'; // Removed MessageSquare
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../../context/AuthContext'; // NEW: Import useAuth
 
 const PatientDetailModal = ({ isOpen, onClose, patientId }) => {
-  const mockPatientData = {
-    'patient_id_1': {
-      _id: 'patient_id_1',
-      user: {
-        name: 'Priya Sharma',
-        profilePicture: 'https://randomuser.me/api/portraits/women/44.jpg',
-      },
-      test: 'Blood Test',
-      bloodGroup: 'A+',
-      allergies: ['Penicillin', 'Dust'],
-      medicalHistory: ['Asthma'],
-    },
-    'patient_id_2': {
-      _id: 'patient_id_2',
-      user: {
-        name: 'Rahul Verma',
-        profilePicture: 'https://randomuser.me/api/portraits/men/32.jpg',
-      },
-      test: 'Urine Analysis',
-      bloodGroup: 'B-',
-      allergies: [],
-      medicalHistory: ['Hypertension'],
-    },
-    'patient_id_3': {
-      _id: 'patient_id_3',
-      user: {
-        name: 'Sneha Singh',
-        profilePicture: 'https://randomuser.me/api/portraits/women/67.jpg',
-      },
-      test: 'X-Ray',
-      bloodGroup: 'O+',
-      allergies: ['Pollen'],
-      medicalHistory: [],
-    },
-  };
+  const [patientDetails, setPatientDetails] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const { user } = useAuth(); // NEW: Get user from AuthContext
 
-  const patientDetails = mockPatientData[patientId];
+  useEffect(() => {
+    const fetchPatientDetails = async () => {
+      if (!isOpen || !patientId) {
+        setPatientDetails(null);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(`/api/patients/profile/${patientId}`, {
+          headers: {
+            Authorization: `Bearer ${user.token}`, // NEW: Add Authorization header
+          },
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        setPatientDetails(data.personalInfo); // Assuming personalInfo contains the details needed
+      } catch (err) {
+        console.error("Failed to fetch patient details:", err);
+        setError("Failed to load patient details.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPatientDetails();
+  }, [isOpen, patientId, user]); // NEW: Add user to dependency array
 
   if (!isOpen) return null;
 
@@ -80,16 +79,20 @@ const PatientDetailModal = ({ isOpen, onClose, patientId }) => {
 
             <h2 className="text-2xl font-bold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text mb-6 text-center">Patient Details</h2>
 
-            {patientDetails ? (
+            {loading ? (
+              <div className="text-center text-muted-foreground">Loading patient details...</div>
+            ) : error ? (
+              <div className="text-center text-red-500">Error: {error}</div>
+            ) : patientDetails ? (
               <div className="space-y-4">
                 <div className="flex flex-col items-center mb-6">
                   <img
-                    src={patientDetails.user?.profilePicture || `https://ui-avatars.com/api/?name=${patientDetails.user?.name}`}
-                    alt={patientDetails.user?.name || 'Patient Avatar'}
+                    src={patientDetails.pfp || `https://ui-avatars.com/api/?name=${patientDetails.name}`}
+                    alt={patientDetails.name || 'Patient Avatar'}
                     className="w-24 h-24 rounded-full object-cover border-2 border-primary/50 mb-3"
                   />
-                  <p className="text-2xl font-bold text-foreground">{patientDetails.user?.name || 'N/A'}</p>
-                  <p className="text-sm text-muted-foreground">Patient ID: <span className="font-semibold text-primary">{patientDetails._id}</span></p>
+                  <p className="text-2xl font-bold text-foreground">{patientDetails.name || 'N/A'}</p>
+                  <p className="text-sm text-muted-foreground">Patient ID: <span className="font-semibold text-primary">{patientDetails.patientId}</span></p>
                 </div>
 
                 <div className="space-y-3 text-muted-foreground">
@@ -99,18 +102,25 @@ const PatientDetailModal = ({ isOpen, onClose, patientId }) => {
                   </div>
                   <div className="flex items-center space-x-3">
                     <FlaskConical className="h-5 w-5 flex-shrink-0 text-hs-gradient-middle" />
-                    <span><span className="font-semibold text-foreground">Test:</span> {patientDetails.test || 'N/A'}</span>
+                    <span><span className="font-semibold text-foreground">Email:</span> {patientDetails.email || 'N/A'}</span>
                   </div>
+                  {/* Removed Phone number display as per user request */}
+                  {/*
+                  <div className="flex items-center space-x-3">
+                    <Stethoscope className="h-5 w-5 flex-shrink-0 text-hs-gradient-middle mt-1" />
+                    <span><span className="font-semibold text-foreground">Phone:</span> {patientDetails.phoneNumber || 'N/A'}</span>
+                  </div>
+                  */}
                   {patientDetails.allergies && patientDetails.allergies.length > 0 && (
                     <div className="flex items-start space-x-3">
                       <AlertTriangle className="h-5 w-5 flex-shrink-0 text-red-500 mt-1" />
                       <span><span className="font-semibold text-foreground">Allergies:</span> {patientDetails.allergies.join(', ')}</span>
                     </div>
                   )}
-                  {patientDetails.medicalHistory && patientDetails.medicalHistory.length > 0 && (
+                  {patientDetails.chronicConditions && patientDetails.chronicConditions.length > 0 && (
                     <div className="flex items-start space-x-3">
                       <Stethoscope className="h-5 w-5 flex-shrink-0 text-hs-gradient-middle mt-1" />
-                      <span><span className="font-semibold text-foreground">Medical History:</span> {patientDetails.medicalHistory.join(', ')}</span>
+                      <span><span className="font-semibold text-foreground">Chronic Conditions:</span> {patientDetails.chronicConditions.join(', ')}</span>
                     </div>
                   )}
                 </div>

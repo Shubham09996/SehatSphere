@@ -92,6 +92,7 @@ const getPatientProfile = asyncHandler(async (req, res) => {
     if (
       req.user.role !== 'Admin' &&
       req.user.role !== 'Doctor' &&
+      req.user.role !== 'Lab' && // NEW: Allow Lab role
       patient.user._id.toString() !== req.user._id.toString()
     ) {
       res.status(403);
@@ -178,7 +179,7 @@ const getPatientProfile = asyncHandler(async (req, res) => {
           emergencyContact: patient.emergencyContact,
           isVerified: patient.user.isVerified,
           email: patient.user.email,
-          phoneNumber: patient.user.phoneNumber,
+          // phoneNumber: patient.user.phoneNumber, // Removed as per user request
       },
       quickStats: {
           upcomingAppointments: upcomingAppointmentsCount,
