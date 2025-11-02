@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import axios from 'axios'; // Import axios
 import api from '../../../utils/api'; // api.js se import karein
 import { CheckCircle, XCircle } from 'lucide-react';
+import { useAuth } from '../../../context/AuthContext'; // Import useAuth
 
 // Reusable components
 const SettingsCard = ({ title, description, children, footer }) => (
@@ -68,8 +69,8 @@ const ConsultationSettings = () => {
     const [error, setError] = useState(null);
     const [saving, setSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
-
-    const doctorId = '60d0fe4f5311236168a109cb'; // Temporarily using a dummy doctorId. This should come from auth context.
+    const { user } = useAuth(); // Get logged-in user (doctor)
+    const doctorId = user?.specificProfileId; // Assuming specificProfileId is stored in user object for doctor
 
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -77,8 +78,9 @@ const ConsultationSettings = () => {
         const fetchConsultationSettings = async () => {
             try {
                 setLoading(true);
-                const response = await api.get(`/doctors/${doctorId}/settings/consultation`);
-                const settings = response.data.settings;
+                console.log(`ConsultationSettings: Fetching settings for doctorId: ${doctorId}`); // NEW LOG
+                const response = await api.get(`/api/doctors/${doctorId}`);
+                const settings = response.data; // The doctor object itself contains the settings
                 setConsultationFee(settings.consultationFee);
                 setAppointmentDuration(settings.appointmentDuration ? String(settings.appointmentDuration) : '');
                 setWorkSchedule(settings.workSchedule || {});
@@ -108,7 +110,7 @@ const ConsultationSettings = () => {
                 appointmentDuration,
                 workSchedule,
             };
-            await api.put(`/doctors/${doctorId}/settings/consultation`, updatedSettings);
+            await api.put(`/api/doctors/${doctorId}`, updatedSettings);
             setSaveSuccess(true);
         } catch (err) {
             console.error('Error saving consultation settings:', err);

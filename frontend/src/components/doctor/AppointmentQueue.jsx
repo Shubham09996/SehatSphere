@@ -1,7 +1,7 @@
 import React from 'react';
 import PatientQueueCard from './PatientQueueCard';
 
-const AppointmentQueue = ({ upNextPatient, waitingPatients }) => {
+const AppointmentQueue = ({ upNextPatient, waitingPatients, onViewHistory }) => {
     return (
         <div className="bg-card p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md h-full">
             <h3 className="font-bold text-lg text-foreground mb-4">Upcoming Queue</h3>
@@ -9,7 +9,7 @@ const AppointmentQueue = ({ upNextPatient, waitingPatients }) => {
                 {upNextPatient && (
                     <div>
                         <h4 className="font-semibold text-muted-foreground mb-2">Up Next</h4>
-                        <PatientQueueCard patient={upNextPatient} />
+                        <PatientQueueCard patient={upNextPatient} onViewHistory={onViewHistory} />
                     </div>
                 )}
                 
@@ -17,7 +17,7 @@ const AppointmentQueue = ({ upNextPatient, waitingPatients }) => {
                      <div>
                         <h4 className="font-semibold text-muted-foreground mb-2">Waiting ({waitingPatients.length})</h4>
                         <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
-                             {waitingPatients.map(p => <PatientQueueCard key={p.id} patient={p} />)}
+                             {waitingPatients.map(p => <PatientQueueCard key={p.id} patient={p} onViewHistory={onViewHistory} />)}
                         </div>
                     </div>
                 ) : (

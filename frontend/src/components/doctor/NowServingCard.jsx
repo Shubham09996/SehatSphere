@@ -84,7 +84,10 @@ const NowServingCard = ({ nowServingPatient, onConsultationDone }) => {
                     </button>
                     {/* === IS BUTTON PAR GRADIENT LAGAYA HAI === */}
                      <button 
-                        onClick={() => navigate(`/doctor/prescribe/${patient._id}`)} // Navigate to new route
+                        onClick={() => {
+                            const targetUrl = `/doctor/prescribe/${nowServingPatient.patient._id}`;
+                            navigate(targetUrl);
+                        }} // Navigate to new route
                         className="flex items-center justify-center gap-2 text-sm font-semibold py-2 px-3 rounded-lg bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-white hover:opacity-90 transition-opacity"
                     >
                         <Pill size={14}/>

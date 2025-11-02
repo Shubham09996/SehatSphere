@@ -40,6 +40,9 @@ const prescriptionSchema = mongoose.Schema(
     notes: {
       type: String,
     },
+    secretNotes: {
+      type: String,
+    },
     prescriptionImage: {
       type: String, // URL to the uploaded prescription image
     },

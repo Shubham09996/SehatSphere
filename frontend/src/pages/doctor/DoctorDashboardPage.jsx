@@ -31,7 +31,31 @@ const DoctorDashboardPage = () => {
     const [error, setError] = useState(null);
     const [hourlyActivityData, setHourlyActivityData] = useState([]); // State for real hourly activity data
 
+    // State for Patient History Modal
+    const [showHistoryModal, setShowHistoryModal] = useState(false);
+    const [patientHistory, setPatientHistory] = useState([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
+    const [historyError, setHistoryError] = useState(null);
+
     // Removed hardcoded dashboard stats
+
+    const handleViewHistory = async (patientId) => {
+        try {
+            setHistoryLoading(true);
+            setHistoryError(null);
+            // Make API call to fetch patient history
+            const response = await api.get(`/api/patients/${patientId}/history`); 
+            setPatientHistory(response.data);
+            setShowHistoryModal(true);
+        } catch (error) {
+            console.error('Error fetching patient history:', error);
+            setHistoryError(error.response?.data?.message || 'Failed to fetch patient history.');
+            setPatientHistory([]);
+            setShowHistoryModal(true);
+        } finally {
+            setHistoryLoading(false);
+        }
+    };
 
     useEffect(() => {
         const fetchDoctorDashboardData = async () => {
@@ -144,6 +168,10 @@ const DoctorDashboardPage = () => {
         waiting = remainingQueue.slice(1);
     }
 
+    console.log("DoctorDashboardPage: nowServing", nowServing);
+    console.log("DoctorDashboardPage: upNext", upNext);
+    console.log("DoctorDashboardPage: waiting", waiting);
+
     return (
         <div className="space-y-8">
             <div>
@@ -163,7 +191,7 @@ const DoctorDashboardPage = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
                     <NowServingCard nowServingPatient={nowServing} onConsultationDone={handleNextPatient} />
-                    <AppointmentQueue upNextPatient={upNext} waitingPatients={waiting} />
+                    <AppointmentQueue upNextPatient={upNext} waitingPatients={waiting} onViewHistory={handleViewHistory} />
                 </div>
                 
                 <div className="lg:col-span-1 space-y-8">
@@ -203,7 +231,8 @@ const DoctorDashboardPage = () => {
                                             )}
                                         </td>
                                         <td className="px-3 py-2 text-sm font-medium">
-                                            <Link to={`/doctor/patients/${patient._id}`} className="text-blue-500 hover:underline">View Profile</Link>
+                                            <Link to={`/doctor/patients/${patient._id}`} className="text-blue-500 hover:underline mr-4">View Profile</Link>
+                                            <Link to={`/doctor/patients/${patient._id}/history`} className="text-purple-500 hover:underline">View History</Link>
                                         </td>
                                     </tr>
                                 ))}
@@ -214,6 +243,64 @@ const DoctorDashboardPage = () => {
                     <p className="text-muted-foreground">No patients found for your practice.</p>
                 )}
             </div>
+            {/* Patient History Modal */}
+            <AnimatePresence>
+                {showHistoryModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, y: 30 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: -30 }}
+                            className="bg-card p-6 rounded-lg shadow-xl max-w-lg w-full"
+                        >
+                            <h2 className="text-xl font-bold mb-4 text-foreground">Patient History</h2>
+                            {historyLoading ? (
+                                <p>Loading history...</p>
+                            ) : historyError ? (
+                                <p className="text-red-500">Error: {historyError}</p>
+                            ) : patientHistory.length > 0 ? (
+                                <div className="bg-muted p-4 rounded-md h-64 overflow-y-auto">
+                                    {patientHistory.map((item, index) => (
+                                        <div key={index} className="mb-4 last:mb-0">
+                                            <p className="text-sm font-semibold text-foreground mb-1">Date: {new Date(item.date).toLocaleDateString()}</p>
+                                            {item.type === 'Prescription' ? (
+                                                <div className="text-muted-foreground whitespace-pre-wrap">
+                                                    <p>Prescribed by Dr. {item.doctorName}.</p>
+                                                    <p>Notes: {item.notes}.</p>
+                                                    <p>Medicines: {item.medicines}</p>
+                                                </div>
+                                            ) : item.type === 'Appointment' ? (
+                                                <div className="text-muted-foreground whitespace-pre-wrap">
+                                                    <p>Appointment with Dr. {item.doctorName}.</p>
+                                                    <p>Reason: {item.reason}.</p>
+                                                    <p>Status: {item.status}</p>
+                                                </div>
+                                            ) : (
+                                                <p className="text-muted-foreground whitespace-pre-wrap">{item.details}</p>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-muted-foreground">No history found for this patient.</p>
+                            )}
+                            <div className="mt-4 flex justify-end">
+                                <button 
+                                    onClick={() => setShowHistoryModal(false)}
+                                    className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

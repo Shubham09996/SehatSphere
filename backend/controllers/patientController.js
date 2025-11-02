@@ -30,29 +30,63 @@ const getPatients = asyncHandler(async (req, res) => {
   res.json(patients);
 });
 
-// @desc    Get patient profile
+// @desc    Get patient by ID (for doctors to prescribe or view)
+// @route   GET /api/patients/:id
+// @access  Private/Doctor or Admin
+const getPatientById = asyncHandler(async (req, res) => {
+  let patient;
+  const patientIdFromFrontend = req.params.id;
+
+  // Prioritize finding by MongoDB _id, as patient.id from frontend is usually the _id
+  // Check if it's a valid MongoDB ObjectId format
+  if (patientIdFromFrontend && patientIdFromFrontend.match(/^[0-9a-fA-F]{24}$/)) {
+    patient = await Patient.findById(patientIdFromFrontend)
+      .populate('user', 'name email profilePicture phoneNumber isVerified') // Ensure name and profilePicture are populated
+      .select('patientId name profilePicture dob gender bloodGroup emergencyContact allergies chronicConditions recentVitals recentActivity');
+  }
+
+  // If not found by _id, then try by patientId field (e.g., PID-XXXXX)
+  if (!patient) {
+    patient = await Patient.findOne({ patientId: patientIdFromFrontend })
+      .populate('user', 'name email profilePicture phoneNumber isVerified') // Ensure name and profilePicture are populated
+      .select('patientId name profilePicture dob gender bloodGroup emergencyContact allergies chronicConditions recentVitals recentActivity');
+  }
+
+  if (patient) {
+    res.json(patient);
+  } else {
+    res.status(404);
+    throw new Error('Patient not found');
+  }
+});
+
+// @desc    Get patient profile (for patient to view their own, or admin to view any)
 // @route   GET /api/patients/profile/:id
 // @access  Private/Patient or Admin
 const getPatientProfile = asyncHandler(async (req, res) => {
   let patient;
-  const idOrPatientId = req.params.idOrPatientId || req.params.userId; // Get the ID from route parameters
+  const idOrPatientId = req.params.idOrPatientId; // Corrected to req.params.idOrPatientId
+
+  console.log(`Attempting to fetch patient profile for ID: ${idOrPatientId}`); // Debug log
 
   if (idOrPatientId && idOrPatientId.startsWith('PID-')) {
     // If it starts with 'PID-', assume it's a patientId string
     patient = await Patient.findOne({ patientId: idOrPatientId }).populate('user', 'name email profilePicture phoneNumber isVerified');
-  } else if (idOrPatientId) {
-    // Check if it's a valid MongoDB ObjectId (for _id) or a userId
-    if (idOrPatientId.match(/^[0-9a-fA-F]{24}$/)) {
-      // Try to find by _id
-      patient = await Patient.findById(idOrPatientId).populate('user', 'name email profilePicture phoneNumber isVerified');
-    }
-    // If not found by _id, or if it's not a valid ObjectId, try to find by user ID
+    console.log(`Patient found by patientId: ${patient ? patient._id : 'Not Found'}`); // Debug log
+  } else if (idOrPatientId && idOrPatientId.match(/^[0-9a-fA-F]{24}$/)) {
+    // If it's a valid MongoDB ObjectId, try to find by user ID first, then by patient _id
+    patient = await Patient.findOne({ user: idOrPatientId }).populate('user', 'name email profilePicture phoneNumber isVerified');
+    console.log(`Patient found by user ID (first attempt): ${patient ? patient.user._id : 'Not Found'}`); // Debug log
+
     if (!patient) {
-      patient = await Patient.findOne({ user: idOrPatientId }).populate('user', 'name email profilePicture phoneNumber isVerified');
+      // If not found by user ID, try to find by Patient _id
+      patient = await Patient.findById(idOrPatientId).populate('user', 'name email profilePicture phoneNumber isVerified');
+      console.log(`Patient found by _id (second attempt): ${patient ? patient._id : 'Not Found'}`); // Debug log
     }
   } else {
     // Fallback to finding patient by logged in user's ID if no specific ID is provided in route
     patient = await Patient.findOne({ user: req.user._id }).populate('user', 'name email profilePicture phoneNumber isVerified');
+    console.log(`Patient found by logged-in user ID: ${patient ? patient.user._id : 'Not Found'}`); // Debug log
   }
 
   if (patient) {
@@ -448,4 +482,102 @@ const getUpcomingAppointments = asyncHandler(async (req, res) => {
     })) });
 });
 
-export { getPatients, getPatientProfile, updatePatientProfile, createPatientProfile, deletePatientProfile, getPatientDashboardStats, updateRewardPoints, getUpcomingAppointments };
+const getPatientHistory = asyncHandler(async (req, res) => {
+    const { patientId } = req.params; // Get patientId from URL parameters
+
+    // Find the patient by patientId to get their MongoDB _id
+    const patient = await Patient.findOne({ patientId: patientId });
+
+    if (!patient) {
+        res.status(404);
+        throw new Error('Patient not found');
+    }
+
+    // Authorization: Only admin, the patient, or a doctor who has an appointment with the patient can view history
+    let isAuthorized = false;
+    if (req.user.role === 'Admin' || (req.user.role === 'Patient' && patient.user.toString() === req.user._id.toString())) {
+        isAuthorized = true;
+    } else if (req.user.role === 'Doctor') {
+        const doctor = await Doctor.findOne({ user: req.user._id });
+        if (doctor) {
+            const hasAppointment = await Appointment.exists({ doctor: doctor._id, patient: patient._id });
+            if (hasAppointment) {
+                isAuthorized = true;
+            }
+        }
+    }
+
+    if (!isAuthorized) {
+        res.status(403);
+        throw new Error('Not authorized to view this patient\'s history');
+    }
+
+    const prescriptions = await Prescription.find({ patient: patient._id })
+        .populate({
+            path: 'doctor',
+            populate: {
+                path: 'user',
+                select: 'name'
+            },
+            select: 'user'
+        })
+        .populate({
+            path: 'medicines.medicine',
+            select: 'brandName genericName strength'
+        })
+        .select('issueDate notes doctor medicines');
+
+    const appointments = await Appointment.find({ patient: patient._id })
+        .populate({
+            path: 'doctor',
+            populate: {
+                path: 'user',
+                select: 'name'
+            },
+            select: 'user'
+        })
+        .select('date time reason doctor status');
+
+    const formattedHistory = [];
+
+    prescriptions.forEach(p => {
+        const medicineNames = p.medicines.map(medItem => {
+            if (medItem.medicine && medItem.medicine.brandName) {
+                return medItem.medicine.brandName;
+            } else if (medItem.medicine && medItem.medicine.genericName) {
+                return medItem.medicine.genericName;
+            } else if (medItem.name) {
+                return medItem.name; // Use the name field from the prescription's medicine sub-document
+            } else {
+                return 'Unknown';
+            }
+        }).join(', ');
+        formattedHistory.push({
+            date: p.issueDate,
+            type: 'Prescription',
+            // details: `Prescribed by Dr. ${p.doctor ? p.doctor.user.name : 'N/A'}. Notes: ${p.notes || 'None'}. Medicines: ${medicineNames}`,
+            doctorName: p.doctor ? p.doctor.user.name : 'N/A',
+            notes: p.notes || 'None',
+            medicines: medicineNames,
+            prescriptionId: p._id,
+        });
+    });
+
+    appointments.forEach(a => {
+        formattedHistory.push({
+            date: new Date(`${a.date.toISOString().split('T')[0]}T${a.time}:00`),
+            type: 'Appointment',
+            // details: `Appointment with Dr. ${a.doctor ? a.doctor.user.name : 'N/A'}. Reason: ${a.reason || 'N/A'}. Status: ${a.status}`,
+            doctorName: a.doctor ? a.doctor.user.name : 'N/A',
+            reason: a.reason || 'N/A',
+            status: a.status,
+            appointmentId: a._id,
+        });
+    });
+
+    formattedHistory.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    res.json(formattedHistory);
+});
+
+export { getPatients, getPatientProfile, updatePatientProfile, createPatientProfile, deletePatientProfile, getPatientDashboardStats, updateRewardPoints, getUpcomingAppointments, getPatientById, getPatientHistory };

@@ -10,6 +10,8 @@ import {
   getPatientDashboardStats,
   updateRewardPoints,
   getUpcomingAppointments,
+  getPatientById,
+  getPatientHistory,
 } from '../controllers/patientController.js';
 import { protect, authorizeRoles } from '../middleware/authMiddleware.js';
 
@@ -26,5 +28,11 @@ router
   .get(protect, getPatientProfile)
   .put(protect, authorizeRoles('Patient', 'Admin'), updatePatientProfile)
   .delete(protect, authorizeRoles('Admin'), deletePatientProfile);
+
+// Doctor fetches patient by ID for prescriptions or other needs
+router.route('/:id').get(protect, authorizeRoles('Doctor', 'Admin'), getPatientById);
+
+// NEW: Route to get patient history
+router.route('/:patientId/history').get(protect, authorizeRoles('Doctor', 'Admin', 'Patient'), getPatientHistory);
 
 export const patientRoutes = router; // Change to named export

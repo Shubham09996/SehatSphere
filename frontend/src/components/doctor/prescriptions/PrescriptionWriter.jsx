@@ -4,16 +4,21 @@ import { X, Plus, Trash2, Mic, FileJson } from 'lucide-react';
 // import { patientsData } from '../../../data/patientsData'; // Removed hardcoded patientsData import
 import api from '../../../utils/api'; // Import API utility
 import { useAuth } from '../../../context/AuthContext'; // Corrected import path for AuthContext
+import { useParams, useNavigate } from 'react-router-dom';
 
-const PrescriptionWriter = ({ isOpen, onClose, preselectedPatient }) => {
+const PrescriptionWriter = ({ onClose }) => {
+    const { patientId } = useParams(); // Get patientId from URL parameters
+    const navigate = useNavigate();
     const [medicines, setMedicines] = useState([{ medicine: '', dosage: '', frequency: '', duration: '', instructions: '' }]);
-    const [notes, setNotes] = useState('');
+    const [publicNotes, setPublicNotes] = useState('');
+    const [secretNotes, setSecretNotes] = useState('');
     const [issueDate, setIssueDate] = useState(new Date().toISOString().split('T')[0]); // Default to today
     const [expiryDate, setExpiryDate] = useState(() => {
         const today = new Date();
         today.setDate(today.getDate() + 7); // Default to 7 days from now
         return today.toISOString().split('T')[0];
     });
+    const [selectedPatient, setSelectedPatient] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [availableMedicines, setAvailableMedicines] = useState([]); // State for medicines from API
@@ -22,31 +27,49 @@ const PrescriptionWriter = ({ isOpen, onClose, preselectedPatient }) => {
     const doctorId = user?.specificProfileId; // Assuming specificProfileId is stored in user object for doctor
 
     useEffect(() => {
-        if (isOpen) {
-            // Fetch medicines from backend
-            const fetchMedicines = async () => {
+        // Fetch patient data if patientId is present in URL
+        const fetchPatient = async () => {
+            if (patientId) {
                 try {
                     setLoading(true);
-                    const { data } = await api.get('/api/medicines');
-                    setAvailableMedicines(data);
+                    const { data } = await api.get(`/api/patients/${patientId}`);
+                    setSelectedPatient(data);
                 } catch (err) {
-                    setError(err.response?.data?.message || 'Failed to fetch medicines');
+                    setError(err.response?.data?.message || 'Failed to fetch patient details');
+                    // Optionally navigate away or show a specific error for invalid patientId
                 } finally {
                     setLoading(false);
                 }
-            };
-            fetchMedicines();
-        }
-        if (!isOpen) { // Reset form when closed
+            }
+        };
+        fetchPatient();
+
+        // Fetch medicines from backend
+        const fetchMedicines = async () => {
+            try {
+                setLoading(true);
+                const { data } = await api.get('/api/medicines');
+                setAvailableMedicines(data);
+            } catch (err) {
+                setError(err.response?.data?.message || 'Failed to fetch medicines');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchMedicines();
+
+        // Reset form when closed
+        if (!patientId) {
             setMedicines([{ medicine: '', dosage: '', frequency: '', duration: '', instructions: '' }]);
-            setNotes('');
+            setPublicNotes('');
+            setSecretNotes('');
             setIssueDate(new Date().toISOString().split('T')[0]);
             const today = new Date();
             today.setDate(today.getDate() + 7);
             setExpiryDate(today.toISOString().split('T')[0]);
             setError(null);
         }
-    }, [isOpen]);
+    }, [patientId, user]); // Depend on patientId and user
 
     const handleAddMedicine = () => {
         setMedicines([...medicines, { medicine: '', dosage: '', frequency: '', duration: '', instructions: '' }]);
@@ -67,7 +90,7 @@ const PrescriptionWriter = ({ isOpen, onClose, preselectedPatient }) => {
 
     const handleSubmitPrescription = async () => {
         setError(null);
-        if (!preselectedPatient) {
+        if (!selectedPatient) {
             setError('No patient selected for prescription.');
             return;
         }
@@ -105,18 +128,19 @@ const PrescriptionWriter = ({ isOpen, onClose, preselectedPatient }) => {
             }
 
             const prescriptionData = {
-                patientId: preselectedPatient.patient._id, // Use the actual patient's MongoDB _id
+                patientId: selectedPatient._id, // Use the actual patient's MongoDB _id
                 doctorId: doctorId,
                 issueDate: issueDate,
                 expiryDate: expiryDate,
                 medicines: formattedMedicines,
-                notes: notes,
+                notes: publicNotes, // Use publicNotes for the main notes field
+                secretNotes: secretNotes, // Include secret notes
                 // prescriptionImage: null, // No image upload for now
             };
 
             await api.post('/api/prescriptions', prescriptionData);
             alert('Prescription issued successfully!');
-            onClose();
+            onClose(); // Call onClose prop if it exists, otherwise navigate back
         } catch (err) {
             setError(err.response?.data?.message || err.message);
         } finally {
@@ -124,7 +148,7 @@ const PrescriptionWriter = ({ isOpen, onClose, preselectedPatient }) => {
         }
     };
 
-    if (!isOpen) return null;
+    if (onClose && !patientId) return null; // Only return null if onClose is provided (modal usage) and no patientId is present
 
     return (
         <AnimatePresence>
@@ -143,7 +167,7 @@ const PrescriptionWriter = ({ isOpen, onClose, preselectedPatient }) => {
                     {/* Header */}
                     <div className="p-4 flex justify-between items-center border-b border-border">
                         <h2 className="text-lg font-bold text-foreground">Create New Prescription</h2>
-                        <button onClick={onClose} className="p-2 rounded-full hover:bg-muted"><X size={20}/></button>
+                        <button onClick={onClose ? onClose : () => navigate(-1)} className="p-2 rounded-full hover:bg-muted"><X size={20}/></button>
                     </div>
 
                     {/* Body */}
@@ -151,16 +175,15 @@ const PrescriptionWriter = ({ isOpen, onClose, preselectedPatient }) => {
                         {/* Patient Selection */}
                         <div>
                             <label className="text-sm font-medium">Select Patient</label>
-                            {preselectedPatient ? (
+                            {selectedPatient ? (
                                 <input
                                     type="text"
-                                    value={`${preselectedPatient.name} (${preselectedPatient.patientId})`}
+                                    value={`${selectedPatient.name} (${selectedPatient.patientId})`}
                                     className="mt-1 w-full bg-background border border-border rounded-md p-2 cursor-not-allowed text-muted-foreground"
                                     disabled
                                 />
                             ) : (
-                                <p className="mt-1 text-red-500">No patient pre-selected. This component is typically used from the Now Serving card.</p>
-                                // Original select dropdown was here, removed for this specific use case
+                                <p className="mt-1 text-red-500">Patient details not found or loading...</p>
                             )}
                         </div>
                         
@@ -213,9 +236,14 @@ const PrescriptionWriter = ({ isOpen, onClose, preselectedPatient }) => {
 
                         {/* Notes */}
                         <div className="relative">
-                            <label className="text-sm font-medium">Doctor's Notes</label>
-                            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows="3" placeholder="Add any special instructions..." className="mt-1 w-full bg-background border border-border rounded-md p-2 pr-10"></textarea>
+                            <label className="text-sm font-medium">Public Notes</label>
+                            <textarea value={publicNotes} onChange={e => setPublicNotes(e.target.value)} rows="3" placeholder="Add any special instructions..." className="mt-1 w-full bg-background border border-border rounded-md p-2 pr-10"></textarea>
                             <Mic size={16} className="absolute right-3 top-9 text-muted-foreground cursor-pointer"/>
+                        </div>
+                        {/* Secret Notes */}
+                        <div className="relative">
+                            <label className="text-sm font-medium text-red-500">Secret Notes (Not visible to patient)</label>
+                            <textarea value={secretNotes} onChange={e => setSecretNotes(e.target.value)} rows="3" placeholder="Add any secret notes..." className="mt-1 w-full bg-background border border-border rounded-md p-2 pr-10"></textarea>
                         </div>
                         {error && <p className="text-red-500 text-sm mt-2">Error: {error}</p>}
                         {loading && <p className="text-foreground text-sm mt-2">Loading medicines...</p>}

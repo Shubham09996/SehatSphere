@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Edit, User, Heart, Shield, FileText, Calendar, Droplets, Phone, Activity, BarChart2, QrCode, Stethoscope, TestTube2, ShieldAlert } from 'lucide-react';
 // import { patientProfileData as data } from '../../data/patientProfileData'; // Remove this import
@@ -30,9 +30,10 @@ const PatientProfilePage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    const { patientId } = useParams(); // Retrieve patientId from URL params
+
     useEffect(() => {
         const fetchPatientProfile = async () => {
-            const patientId = localStorage.getItem('patientId'); // Retrieve patientId from localStorage
             try {
                 setLoading(true);
                 const response = await api.get(`/api/patients/profile/${patientId}`);

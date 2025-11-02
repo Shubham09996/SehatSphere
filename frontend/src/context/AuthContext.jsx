@@ -28,12 +28,17 @@ export const AuthProvider = ({ children }) => {
                     console.log("AuthContext: Parsed user from localStorage", parsedUser); // NEW LOG
                     // Ensure specificProfileId is present for doctors
                     if (parsedUser.role === 'Doctor' && !parsedUser.specificProfileId) {
-                        console.warn('Doctor user loaded from localStorage without specificProfileId.');
-                        // You might want to re-fetch user profile here or clear userInfo
-                        setUser(null); // Clear user if critical data is missing
-                    } else {
-                        setUser(parsedUser);
+                        const storedDoctorProfileId = localStorage.getItem('doctorProfileId');
+                        if (storedDoctorProfileId) {
+                            parsedUser.specificProfileId = storedDoctorProfileId;
+                            console.log("AuthContext: Populated missing specificProfileId from localStorage", parsedUser);
+                        } else {
+                            console.warn('Doctor user loaded from localStorage without specificProfileId and no doctorProfileId found.');
+                            setUser(null); // Clear user if critical data is missing
+                            return; // Exit to prevent setting partial user data
+                        }
                     }
+                    setUser(parsedUser);
                 }
             } catch (error) {
                 console.error("Failed to parse user info from localStorage", error);

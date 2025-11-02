@@ -85,10 +85,10 @@ const getPrescriptionById = asyncHandler(async (req, res) => {
 // @route   POST /api/prescriptions
 // @access  Private/Doctor
 const createPrescription = asyncHandler(async (req, res) => {
-  const { patientId, doctorId, issueDate, expiryDate, medicines, notes, prescriptionImage } = req.body;
+  const { patientId, doctorId, issueDate, expiryDate, medicines, notes, secretNotes, prescriptionImage } = req.body;
 
-  console.log('Backend: createPrescription hit!');
-  console.log('Received req.body:', req.body);
+  // console.log('Backend: createPrescription hit!');
+  // console.log('Received req.body:', req.body);
 
   const patient = await Patient.findById(patientId);
   if (!patient) {
@@ -116,11 +116,13 @@ const createPrescription = asyncHandler(async (req, res) => {
     expiryDate,
     medicines,
     notes,
+    secretNotes,
     prescriptionImage,
   });
 
+  // console.log('Before saving prescription:', prescription); // Add this line
   const createdPrescription = await prescription.save();
-  console.log('Prescription saved to DB:', createdPrescription);
+  // console.log('Prescription saved to DB:', createdPrescription);
 
   // Notify patient about new prescription
   if (patient.user) {
@@ -147,7 +149,11 @@ const createPrescription = asyncHandler(async (req, res) => {
 // @route   PUT /api/prescriptions/:id
 // @access  Private/Admin or Doctor
 const updatePrescription = asyncHandler(async (req, res) => {
-  const { issueDate, expiryDate, medicines, notes, prescriptionImage, status } = req.body;
+  const { issueDate, expiryDate, medicines, notes, secretNotes, prescriptionImage, status } = req.body;
+
+  console.log(`Backend: PUT /api/prescriptions/${req.params.id} received.`);
+  console.log('Backend: Request body:', req.body);
+  console.log('Backend: Secret notes received in body:', secretNotes);
 
   const prescription = await Prescription.findById(req.params.id);
 
@@ -163,10 +169,13 @@ const updatePrescription = asyncHandler(async (req, res) => {
     prescription.expiryDate = expiryDate || prescription.expiryDate;
     prescription.medicines = medicines || prescription.medicines;
     prescription.notes = notes || prescription.notes;
+    prescription.secretNotes = secretNotes; // Directly assign secretNotes, as it can be an empty string
     prescription.prescriptionImage = prescriptionImage || prescription.prescriptionImage;
     prescription.status = status || prescription.status;
 
+    console.log("Backend: Prescription object before save in update:", prescription);
     const updatedPrescription = await prescription.save();
+    console.log("Backend: Prescription object after save in update:", updatedPrescription);
 
     // Notify patient about prescription update
     const patient = await Patient.findById(updatedPrescription.patient);
