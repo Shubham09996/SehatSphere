@@ -33,6 +33,7 @@ const protect = async (req, res, next) => {
 
     // Get user from the token
     req.user = await User.findById(decoded.id).select('-password'); // Corrected to decoded.id
+    console.log('authMiddleware: req.user.role:', req.user.role); // NEW: Log user role
 
     next();
   } catch (error) {
@@ -44,6 +45,8 @@ const protect = async (req, res, next) => {
 
 const authorizeRoles = (...roles) => {
   return (req, res, next) => {
+    console.log('authorizeRoles: req.user:', req.user); // NEW: Log req.user
+    console.log('authorizeRoles: allowed roles:', roles); // NEW: Log allowed roles
     if (!req.user || !roles.includes(req.user.role)) {
       return res.status(403).json({ message: `User role ${req.user.role} is not authorized to access this route` });
     }

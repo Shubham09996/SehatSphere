@@ -32,6 +32,7 @@ const BookAppointmentPage = () => {
                 setLoadingHospitals(true);
                 const response = await api.get('/api/hospitals');
                 setHospitals(response.data);
+                console.log('Fetched hospitals (BookAppointmentPage):', response.data);
             } catch (err) {
                 setErrorHospitals(err);
             } finally {

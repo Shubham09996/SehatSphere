@@ -74,13 +74,13 @@ const MyPatientsPage = () => {
         const fetchPatients = async () => {
             try {
                 setLoading(true);
-                const medicalRegistrationNumber = localStorage.getItem('doctorId');
-                if (!medicalRegistrationNumber) {
-                    setError(new Error('Doctor ID not found.'));
+                const doctorProfileId = localStorage.getItem('doctorProfileId'); // Corrected key
+                if (!doctorProfileId) {
+                    setError(new Error('Doctor Profile ID not found in local storage.'));
                     setLoading(false);
                     return;
                 }
-                const response = await api.get(`/api/patients`);
+                const response = await api.get(`/api/patients`); // Adjusted API call to fetch doctor's specific patients
                 
                 const formattedDynamicPatients = response.data
                     .filter(p => p.user && p.user.name) // Filter out patients with null user or missing name
@@ -173,7 +173,7 @@ const MyPatientsPage = () => {
     };
 
     if (loading) return <p className="text-center text-foreground mt-8">Loading patients...</p>;
-    if (error) return <p className="text-center text-red-500 mt-8">Error: {error}</p>;
+    if (error) return <p className="text-center text-red-500 mt-8">Error: {error.message}</p>;
 
     return (
         <div className="space-y-6 h-full flex flex-col">

@@ -1,49 +1,45 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { FileText, Pill, Video } from 'lucide-react';
-import PrescriptionWriter from './prescriptions/PrescriptionWriter';
+import React from 'react';
+import { FileText, Stethoscope } from 'lucide-react'; // Import Stethoscope for 'Prescribe' icon
+import { useNavigate } from 'react-router-dom';
 
-const PatientQueueCard = ({ patient, isActive = false }) => {
-    const [isPrescriptionWriterOpen, setIsPrescriptionWriterOpen] = useState(false);
+const PatientQueueCard = ({ patient }) => {
+    const navigate = useNavigate();
+    const handleHistoryClick = () => {
+        navigate(`/doctor/patients/${patient.id}`); // Assuming patient.id is the MongoDB _id
+    };
+    const handlePrescribeClick = () => {
+        // Logic to open prescription writer, passing patient details
+        console.log(`Prescribe for ${patient.name}`);
+        // You might open a modal or navigate to a prescription page
+        navigate(`/doctor/prescriptions/new?patientId=${patient.id}`);
+    };
 
     return (
-        <motion.div 
-            className={`p-4 rounded-xl border ${isActive ? 'bg-primary/10 border-primary' : 'bg-muted border-transparent'}`}
-            layout
-        >
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                <img src={patient.patient?.profilePicture || patient.patient?.user?.profilePicture || '/uploads/default.jpg'} alt={patient.patient?.name || patient.patient?.user?.name || 'Patient'} className="w-14 h-14 rounded-full object-cover"/>
-                <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                        <p className="font-bold text-foreground">{patient.patient?.name || patient.patient?.user?.name}{patient.patient?.age ? `, ${patient.patient.age}` : ''}</p>
-                        {patient.token && <span className="font-mono text-xs px-2 py-0.5 bg-card rounded-md">Token: {patient.token}</span>} {/* Display token if available */}
-                    </div>
-                    <p className="text-sm text-muted-foreground">{patient.reason || 'General Consultation'}</p>
-                    {patient.date && patient.time && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                            Scheduled: {new Date(patient.date).toLocaleDateString()} at {patient.time}
-                        </p>
-                    )}
-                </div>
-                <div className="flex gap-2 w-full sm:w-auto">
-                     <button className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-sm font-semibold py-2 px-3 rounded-lg border border-border hover:bg-border">
-                        <FileText size={14}/> History
-                    </button>
-                     <button 
-                        onClick={() => setIsPrescriptionWriterOpen(true)}
-                        className="flex-1 sm:flex-none flex items-center justify-center gap-2 text-sm font-semibold py-2 px-3 rounded-lg bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-white hover:opacity-90 transition-opacity"
-                    >
-                        <Pill size={14}/> Prescribe
-                    </button>
+        <div className="bg-card p-4 rounded-xl border border-border flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+                <img src={patient.profilePicture || 'https://via.placeholder.com/100'} alt={patient.name} className="w-12 h-12 rounded-full object-cover"/>
+                <div>
+                    <p className="font-semibold text-foreground">{patient.name}</p>
+                    <p className="text-sm text-muted-foreground">Patient ID: {patient.patientId}</p>
+                    <p className="text-sm text-muted-foreground">{patient.reason || 'General check-up'}</p>
+                    <p className="text-xs text-muted-foreground">Scheduled: {new Date(patient.date).toLocaleDateString()} at {patient.time}</p>
                 </div>
             </div>
-
-            <PrescriptionWriter 
-                isOpen={isPrescriptionWriterOpen}
-                onClose={() => setIsPrescriptionWriterOpen(false)}
-                preselectedPatient={{ ...patient.patient, patientId: patient.patient.patientId || patient.patient.user?.patientId }}
-            />
-        </motion.div>
+            <div className="flex gap-2">
+                <button 
+                    onClick={handleHistoryClick}
+                    className="flex items-center gap-2 text-sm font-medium py-2 px-3 rounded-lg border border-border hover:bg-muted transition-colors"
+                >
+                    <FileText size={16}/> History
+                </button>
+                <button 
+                    onClick={handlePrescribeClick}
+                    className="flex items-center gap-2 text-sm font-semibold py-2 px-3 rounded-lg bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-white hover:opacity-90 transition-opacity"
+                >
+                    <Stethoscope size={16}/> Prescribe
+                </button>
+            </div>
+        </div>
     );
 };
 

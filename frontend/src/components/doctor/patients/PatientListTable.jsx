@@ -16,6 +16,7 @@ const PatientListTable = ({ patients, onPatientSelect }) => {
                 {/* NEW: Sticky header for scrolling */}
                 <thead className="sticky top-0 bg-muted/80 backdrop-blur-sm text-sm text-muted-foreground z-10">
                     <tr>
+                        <th className="p-4">Patient ID</th>
                         <th className="p-4">Patient Name</th>
                         <th className="p-4 hidden md:table-cell">Last Visit</th>
                         <th className="p-4 hidden sm:table-cell">Status</th>
@@ -30,12 +31,13 @@ const PatientListTable = ({ patients, onPatientSelect }) => {
                                 onClick={() => onPatientSelect(patient.id)}
                                 className="border-t border-border hover:bg-muted cursor-pointer"
                             >
+                                <td className="p-4 text-sm text-foreground font-semibold">{patient.id}</td>
                                 <td className="p-4">
                                     <div className="flex items-center gap-3">
                                         <img src={patient.pfp || 'https://via.placeholder.com/100'} alt={patient.name || 'Unknown Patient'} className="w-10 h-10 rounded-full"/>
                                         <div>
                                             <p className="font-bold text-foreground">{patient.name || 'Unknown Patient'}</p>
-                                            <p className="text-sm text-muted-foreground">{patient.id}</p>
+                                            {/* Removed patient.id from here as it's now in its own column */}
                                         </div>
                                     </div>
                                 </td>

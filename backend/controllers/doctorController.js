@@ -184,6 +184,53 @@ const createDoctorProfile = asyncHandler(async (req, res) => {
   res.status(201).json(createdDoctor);
 });
 
+// @desc    Onboard a new doctor profile
+// @route   POST /api/doctors/onboard
+// @access  Private/Doctor
+const onboardDoctorProfile = asyncHandler(async (req, res) => {
+    const { 
+        specialty, qualifications, experience, medicalRegistrationNumber, bio, 
+        expertise, consultationFee, appointmentDuration, workSchedule, hospital
+    } = req.body;
+
+    // The user ID comes from the authenticated user (req.user._id)
+    const userId = req.user._id;
+
+    // Ensure a doctor profile doesn't already exist for this user
+    const existingDoctor = await Doctor.findOne({ user: userId });
+    if (existingDoctor) {
+        res.status(400);
+        throw new Error('Doctor profile already exists for this user');
+    }
+
+    const doctor = new Doctor({
+        user: userId,
+        specialty,
+        qualifications,
+        experience,
+        medicalRegistrationNumber,
+        bio,
+        expertise,
+        consultationFee,
+        appointmentDuration,
+        workSchedule,
+        hospital, // Link to the hospital ID
+        // You might want to add default status etc. here
+    });
+
+    const createdDoctor = await doctor.save();
+
+    // Update the User model to mark onboarding as complete and link to doctor profile
+    const user = await User.findById(userId);
+    if (user) {
+        user.specificProfileId = createdDoctor._id; // Link to the new doctor's _id
+        user.isOnboarded = true; // Mark onboarding as complete
+        await user.save();
+    }
+
+    res.status(201).json(createdDoctor);
+});
+
 // @desc    Update doctor profile
 // @route   PUT /api/doctors/:id
 // @access  Private/Doctor or Admin
@@ -669,4 +716,4 @@ const getDoctorDailyAvailability = asyncHandler(async (req, res) => {
     res.json(dailyAvailability);
 });
 
-export { getDoctors, getDoctorById, createDoctorProfile, updateDoctorProfile, deleteDoctorProfile, updateDoctorSchedule, getAvailableDoctorSlots, getDoctorDailyAvailability, getDoctorDashboardStats, updateAppointmentStatus, getDoctorHourlyActivity, getDoctorAppointmentQueue };
+export { getDoctors, getDoctorById, createDoctorProfile, updateDoctorProfile, deleteDoctorProfile, updateDoctorSchedule, getAvailableDoctorSlots, getDoctorDailyAvailability, getDoctorDashboardStats, updateAppointmentStatus, getDoctorHourlyActivity, getDoctorAppointmentQueue, onboardDoctorProfile };

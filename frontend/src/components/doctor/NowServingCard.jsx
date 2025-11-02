@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 
 const NowServingCard = ({ nowServingPatient, onConsultationDone }) => {
     const [timer, setTimer] = useState(0);
-    const [isPrescriptionWriterOpen, setIsPrescriptionWriterOpen] = useState(false);
+    // const [isPrescriptionWriterOpen, setIsPrescriptionWriterOpen] = useState(false); // Removed
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -84,7 +84,7 @@ const NowServingCard = ({ nowServingPatient, onConsultationDone }) => {
                     </button>
                     {/* === IS BUTTON PAR GRADIENT LAGAYA HAI === */}
                      <button 
-                        onClick={() => setIsPrescriptionWriterOpen(true)}
+                        onClick={() => navigate(`/doctor/prescribe/${patient._id}`)} // Navigate to new route
                         className="flex items-center justify-center gap-2 text-sm font-semibold py-2 px-3 rounded-lg bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-white hover:opacity-90 transition-opacity"
                     >
                         <Pill size={14}/>
@@ -93,11 +93,16 @@ const NowServingCard = ({ nowServingPatient, onConsultationDone }) => {
                 </div>
             </div>
 
-            <PrescriptionWriter 
+            {/* <PrescriptionWriter 
                 isOpen={isPrescriptionWriterOpen}
                 onClose={() => setIsPrescriptionWriterOpen(false)}
-                preselectedPatient={{ ...patient, patientId: patient.patientId || patient.user?.patientId }}
-            />
+                preselectedPatient={{
+                    id: nowServingPatient.patient?._id, // MongoDB _id
+                    patientId: nowServingPatient.patient?.patientId, // Custom patient ID
+                    name: nowServingPatient.patient?.name || nowServingPatient.patient?.user?.name,
+                    pfp: nowServingPatient.patient?.profilePicture || nowServingPatient.patient?.user?.profilePicture || 'https://via.placeholder.com/100',
+                }} // Pass the entire nowServingPatient object
+            /> */} {/* Removed */}
             
         </motion.div>
     );

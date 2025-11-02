@@ -28,6 +28,8 @@ const HospitalOnboardingPage = () => {
     const [specialties, setSpecialties] = useState([]);
     const [emergencyServices, setEmergencyServices] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [departments, setDepartments] = useState([]); // NEW: State for departments
+    const [currentDepartmentInput, setCurrentDepartmentInput] = useState(''); // State for the currently typed department
 
     const availableSpecialties = [
         'Cardiology', 'Neurology', 'Oncology', 'Pediatrics', 'Orthopedics', 
@@ -50,9 +52,35 @@ const HospitalOnboardingPage = () => {
         );
     };
 
+    // NEW: Handler for department input
+    const handleDepartmentInputChange = (e) => {
+        if (e.key === 'Enter' && currentDepartmentInput.trim() !== '') {
+            e.preventDefault();
+            const newDepartment = currentDepartmentInput.trim();
+            if (!departments.includes(newDepartment)) {
+                setDepartments(prev => {
+                    const updatedDepartments = [...prev, newDepartment];
+                    console.log('Departments state after adding:', updatedDepartments);
+                    return updatedDepartments;
+                });
+            }
+            setCurrentDepartmentInput(''); // Clear the input field's state
+        }
+    };
+
+    // NEW: Handler for removing a department
+    const removeDepartment = (deptToRemove) => {
+        setDepartments(prev => prev.filter(dept => dept !== deptToRemove));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
+
+        let finalDepartments = [...departments];
+        if (currentDepartmentInput.trim() !== '' && !finalDepartments.includes(currentDepartmentInput.trim())) {
+            finalDepartments.push(currentDepartmentInput.trim());
+        }
 
         const hospitalData = {
             hospitalName,
@@ -70,7 +98,10 @@ const HospitalOnboardingPage = () => {
             specialties,
             emergencyServices,
             user: userId, // Link to the user ID
+            departments: finalDepartments, // Use the potentially updated departments array
         };
+
+        console.log('Hospital data sent from frontend:', hospitalData);
 
         try {
             // Send data to backend endpoint for hospital onboarding
@@ -268,6 +299,38 @@ const HospitalOnboardingPage = () => {
                             required
                         />
                         <Users size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    </div>
+
+                    {/* Departments */}
+                    <h2 className="text-xl font-semibold text-primary mb-4 border-b pb-2 mt-8">Departments</h2>
+                    <div className="relative">
+                        <input
+                            type="text"
+                            id="departments"
+                            placeholder="Add Department (e.g., Cardiology, Pediatrics) and press Enter"
+                            value={currentDepartmentInput} // Controlled component: bind value to state
+                            onChange={(e) => setCurrentDepartmentInput(e.target.value)} // Update state on change
+                            onKeyDown={handleDepartmentInputChange}
+                            className="w-full p-3 pl-10 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-hs-gradient-middle"
+                        />
+                        <HospitalIcon size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    </div>
+                    <div className="flex flex-wrap gap-3 mt-3">
+                        {departments.map((dept, index) => (
+                            <span 
+                                key={index} 
+                                className="flex items-center bg-muted text-foreground px-3 py-1 rounded-full text-sm font-medium"
+                            >
+                                {dept}
+                                <button 
+                                    type="button" 
+                                    onClick={() => removeDepartment(dept)} 
+                                    className="ml-2 text-muted-foreground hover:text-foreground focus:outline-none"
+                                >
+                                    &times;
+                                </button>
+                            </span>
+                        ))}
                     </div>
 
                     {/* Specialties */}

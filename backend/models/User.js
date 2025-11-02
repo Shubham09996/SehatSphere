@@ -19,7 +19,7 @@ const userSchema = mongoose.Schema(
     role: {
       type: String,
       required: true,
-      enum: ['Patient', 'Doctor', 'Shop', 'Admin', 'Donor', 'Hospital'],
+      enum: ['Patient', 'Doctor', 'Shop', 'Admin', 'Donor', 'Hospital', 'Lab'],
       default: 'Patient',
     },
     profilePicture: {
@@ -68,6 +68,11 @@ const userSchema = mongoose.Schema(
     patient: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Patient',
+        default: null,
+    },
+    lab: { // NEW: Add lab field to link to Lab model
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Lab',
         default: null,
     },
   },

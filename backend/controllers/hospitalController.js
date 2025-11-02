@@ -107,8 +107,11 @@ const onboardHospital = asyncHandler(async (req, res) => {
     const { 
         hospitalName, address, city, state, zipCode, phoneNumber, email, 
         description, licenseNumber, directorName, numberOfBeds, website, 
-        specialties, emergencyServices, user: userId 
+        specialties, emergencyServices, user: userId, departments 
     } = req.body;
+
+    console.log('DEBUG: onboardHospital - Incoming request body:', req.body); // Add this line
+    console.log('DEBUG: onboardHospital - Departments from req.body:', departments); // Add this line
 
     // Ensure the user is authenticated and is a Hospital role
     if (!req.user || req.user.role !== 'Hospital' || req.user._id.toString() !== userId) {
@@ -139,10 +142,14 @@ const onboardHospital = asyncHandler(async (req, res) => {
         website,
         specialties,
         emergencyServices,
+        departments, // Save departments array
         status: 'Pending', // NEW: Set initial status to Pending
         // You might want to add default values for other fields here if not provided
         location: `${city}, ${state}` // Simple location string, can be improved with GeoJSON
     });
+
+    console.log('DEBUG: onboardHospital - Hospital object before save:', hospital); // Add this line
+    console.log('DEBUG: onboardHospital - Hospital.departments before save:', hospital.departments, 'Type:', typeof hospital.departments); // Add this line
 
     const createdHospital = await hospital.save();
 

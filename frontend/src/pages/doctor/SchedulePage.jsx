@@ -53,13 +53,13 @@ const SchedulePage = () => {
         const fetchAppointments = async () => {
             try {
                 setLoading(true);
-                const medicalRegistrationNumber = localStorage.getItem('doctorId');
-                if (!medicalRegistrationNumber) {
-                    setError(new Error('Doctor ID not found.'));
+                const doctorProfileId = localStorage.getItem('doctorProfileId'); // Corrected key
+                if (!doctorProfileId) {
+                    setError(new Error('Doctor Profile ID not found in local storage.'));
                     setLoading(false);
                     return;
                 }
-                const response = await api.get(`/api/doctors/appointment-queue/${medicalRegistrationNumber}`);
+                const response = await api.get(`/api/doctors/appointment-queue/${doctorProfileId}`);
                 
                 // Format dynamic appointments to match hardcoded data structure
                 const formattedDynamicAppointments = response.data.map(app => ({
@@ -125,7 +125,7 @@ const SchedulePage = () => {
     };
 
     if (loading) return <p className="text-center text-foreground mt-8">Loading schedule...</p>;
-    if (error) return <p className="text-center text-red-500 mt-8">Error: {error}</p>;
+    if (error) return <p className="text-center text-red-500 mt-8">Error: {error.message}</p>;
 
     return (
         <div className="h-full flex flex-col">

@@ -13,10 +13,12 @@ import {
   getDoctorHourlyActivity,
   getDoctorAppointmentQueue,
   getDoctorDailyAvailability, // Import the new controller function
+  onboardDoctorProfile, // Import the new controller function
 } from '../controllers/doctorController.js';
 import { protect, authorizeRoles } from '../middleware/authMiddleware.js';
 
 router.route('/').get(getDoctors).post(protect, authorizeRoles('Admin'), createDoctorProfile);
+router.post('/onboard', protect, authorizeRoles('Doctor'), onboardDoctorProfile); // NEW: Doctor onboarding route
 router.route('/dashboard-stats/:medicalRegistrationNumber').get(protect, authorizeRoles('Doctor'), getDoctorDashboardStats);
 router.route('/hourly-activity/:medicalRegistrationNumber').get(protect, authorizeRoles('Doctor'), getDoctorHourlyActivity);
 router.route('/appointment-queue/:medicalRegistrationNumber').get(protect, authorizeRoles('Doctor'), getDoctorAppointmentQueue);

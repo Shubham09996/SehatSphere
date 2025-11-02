@@ -108,9 +108,20 @@ const DoctorOnboardingModal = ({ isOpen, onClose, doctorId, userId }) => {
         };
 
         try {
-            // Use medicalRegistrationNumber for the PUT request to the specific route
-            await api.put(`/api/doctors/profile/${medicalRegistrationNumber}`, doctorDetails);
-            console.log('Doctor details updated successfully');
+            // console.log('DEBUG: DoctorOnboardingModal - medicalRegistrationNumber:', medicalRegistrationNumber);
+            // console.log('DEBUG: DoctorOnboardingModal - API URL:', `/api/doctors/profile/${medicalRegistrationNumber}`);
+            
+            let res;
+            if (doctorId) {
+                // If doctorId exists, it's an update operation
+                res = await api.put(`/api/doctors/${doctorId}`, doctorDetails);
+                console.log('Doctor details updated successfully', res.data);
+            } else {
+                // If no doctorId, it's an initial onboarding (create operation)
+                res = await api.post(`/api/doctors/onboard`, doctorDetails);
+                console.log('Doctor onboarded successfully', res.data);
+            }
+            
             onClose();
             navigate('/doctor/dashboard'); // Redirect to dashboard after updating details
         } catch (err) {
