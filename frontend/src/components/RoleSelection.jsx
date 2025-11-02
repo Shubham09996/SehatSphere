@@ -2,10 +2,11 @@ import React from 'react';
 import { Calendar, Stethoscope, Pill, Heart, Shield, FlaskConical } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../context/ThemeContext';
 
-const RoleCard = ({ icon, title, description, borderColor, onAccessDashboard }) => (
+const RoleCard = ({ icon, title, description, borderColor, onAccessDashboard, theme }) => (
   <motion.div
-    className={`bg-slate-900 rounded-xl shadow-lg border-t-4 ${borderColor} p-6 flex flex-col items-start space-y-4 min-h-[200px] justify-between`}
+    className={`${theme === 'dark' ? 'bg-blue-950' : 'bg-card'} rounded-xl shadow-lg border-t-4 ${borderColor} p-6 flex flex-col items-start space-y-4 min-h-[200px] justify-between`}
     initial={{ opacity: 0, y: 70 }} // Increased y
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true, amount: 0.3 }}
@@ -16,11 +17,11 @@ const RoleCard = ({ icon, title, description, borderColor, onAccessDashboard }) 
       <div className="text-blue-400 mb-2">
         {icon}
       </div>
-      <h3 className="text-xl font-semibold text-white">{title}</h3>
-      <p className="text-gray-300 text-sm">{description}</p>
+      <h3 className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-card-foreground'}`}>{title}</h3>
+      <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-muted-foreground'}`}>{description}</p>
     </div>
     <motion.button 
-      className="text-blue-400 hover:text-blue-300 hover:underline flex items-center space-x-1 text-sm font-medium cursor-pointer"
+      className="text-blue-400 dark:text-blue-400 hover:text-blue-300 dark:hover:text-blue-300 hover:underline flex items-center space-x-1 text-sm font-medium cursor-pointer"
       whileHover={{ x: 5 }} 
       transition={{ duration: 0.2 }}
       onClick={onAccessDashboard}
@@ -33,6 +34,7 @@ const RoleCard = ({ icon, title, description, borderColor, onAccessDashboard }) 
 
 const RoleSelection = () => {
   const navigate = useNavigate();
+  const { theme } = useTheme();
 
   const handleAccessDashboard = () => {
     navigate('/features');
@@ -108,6 +110,7 @@ const RoleSelection = () => {
             description={role.description}
             borderColor={role.borderColor}
             onAccessDashboard={handleAccessDashboard}
+            theme={theme}
           />
         ))}
       </motion.div>

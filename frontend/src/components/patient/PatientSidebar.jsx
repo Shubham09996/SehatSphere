@@ -41,7 +41,7 @@ const PatientSidebar = ({ isCollapsed, toggleCollapse, onCloseMobileSidebar }) =
         { icon: Calendar, text: 'Appointments', path: '/patient/appointments' },
         { icon: FileText, text: 'Prescriptions', path: '/patient/prescriptions' },
         { icon: BarChart2, text: 'Health Records', path: '/patient/health-records' },
-        { icon: FlaskConical, text: 'Tests', path: '/patient/tests' },
+        { icon: FlaskConical, text: 'Tests info & reports', path: '/patient/tests' },
         { icon: Ticket, text: 'My Token', path: '/patient/my-token' },
         { icon: Settings, text: 'Settings', path: '/patient/settings' }
     ];
