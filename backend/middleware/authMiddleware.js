@@ -30,9 +30,11 @@ const protect = async (req, res, next) => {
   try {
     // Verify token
     const decoded = jwt.verify(token, config.jwtSecret);
+    console.log('protect: Decoded JWT ID:', decoded.id);
 
     // Get user from the token
     req.user = await User.findById(decoded.id).select('-password'); // Corrected to decoded.id
+    console.log('protect: Fetched req.user:', req.user);
     console.log('authMiddleware: req.user.role:', req.user.role); // NEW: Log user role
 
     next();
@@ -45,10 +47,11 @@ const protect = async (req, res, next) => {
 
 const authorizeRoles = (...roles) => {
   return (req, res, next) => {
-    console.log('authorizeRoles: req.user:', req.user); // NEW: Log req.user
-    console.log('authorizeRoles: allowed roles:', roles); // NEW: Log allowed roles
+    console.log('authorizeRoles: Start');
+    console.log('authorizeRoles: req.user.role:', req.user?.role);
+    console.log('authorizeRoles: allowed roles:', roles);
     if (!req.user || !roles.includes(req.user.role)) {
-      return res.status(403).json({ message: `User role ${req.user.role} is not authorized to access this route` });
+      return res.status(403).json({ message: `User role ${req.user?.role || 'undefined'} is not authorized to access this route` });
     }
     next();
   };

@@ -7,6 +7,7 @@ import {
   deletePrescription,
   getPatientPrescriptions,
   getPrescriptionsForDoctor,
+  downloadPrescriptionPdf,
 } from '../controllers/prescriptionController.js';
 import { protect, authorizeRoles } from '../middleware/authMiddleware.js';
 
@@ -17,6 +18,9 @@ router
 router
   .route('/doctor')
   .get(protect, authorizeRoles('Doctor'), getPrescriptionsForDoctor);
+router
+  .route('/:id/download-pdf')
+  .get(protect, authorizeRoles('Admin', 'Doctor', 'Patient'), downloadPrescriptionPdf);
 router
   .route('/:id')
   .get(protect, authorizeRoles('Admin', 'Doctor', 'Patient'), getPrescriptionById)
