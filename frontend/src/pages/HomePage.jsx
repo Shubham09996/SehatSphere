@@ -183,8 +183,8 @@ const HomePage = () => {
             {/* Logo + Description */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <img src={logo} alt="CareLink AI Logo" className="w-8 h-8" />
-                <span className="text-2xl font-bold text-foreground">HealthSphare</span>
+                <img src={logo} alt="CareLink AI Logo" className="w-16 h-16" />
+                <span className="text-2xl font-bold text-foreground">HealthSphere</span>
               </div>
               <p className="text-muted-foreground">
                 Your trusted AI-powered health companion for families.
@@ -228,7 +228,7 @@ const HomePage = () => {
           {/* Bottom Section */}
           <div className="border-t border-border pt-8 text-center text-muted-foreground">
             <p>
-              &copy; {new Date().getFullYear()} HealthSphare. All rights reserved.
+              &copy; {new Date().getFullYear()} HealthSphere. All rights reserved.
               <span className="mx-1">❤️</span> Made with love for families everywhere.
             </p>
           </div>

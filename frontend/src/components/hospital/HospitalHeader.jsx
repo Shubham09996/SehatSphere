@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext'; // Assuming AuthContext is 
 import { useTheme } from '../../context/ThemeContext.jsx'; // Import useTheme
 import { motion, AnimatePresence } from 'framer-motion'; // NEW: Import motion and AnimatePresence
 import { useNavigate, Link } from 'react-router-dom'; // NEW: Import Link
+import logo from '../../assets/logo.png'; // Import the logo image
 
 const HospitalHeader = ({ isSidebarOpen, setIsSidebarOpen }) => { // Component name should match export
     const { user, logout } = useAuth(); // === useAuth() hook add kiya ===
@@ -49,9 +50,7 @@ const HospitalHeader = ({ isSidebarOpen, setIsSidebarOpen }) => { // Component n
                     <Menu size={24} />
                 </button>
                 <Link to="/" className="flex items-center space-x-2"> {/* NEW: Link to homepage */}
-                    <div className="p-2 bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end rounded-lg text-white">
-                        <span className="text-primary-foreground font-bold text-lg">H</span>
-                    </div>
+                    <img src={logo} alt="HealthSphere Logo" className="w-16 h-16" />
                     <span className="text-2xl font-semibold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">
                         HealthSphere
                     </span>

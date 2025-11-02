@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import api from '../../utils/api'; // Import the api utility
 import { useAuth } from '../../context/AuthContext.jsx'; // NEW: Import useAuth hook
+import logo from '../../assets/logo.png'; // Import the logo image
 
 const AdminHeader = ({ isSidebarOpen, setIsSidebarOpen }) => {
     const { theme, toggleTheme } = useTheme();
@@ -57,9 +58,7 @@ const AdminHeader = ({ isSidebarOpen, setIsSidebarOpen }) => {
                 </button>
                 {/* UPDATED: Link now points to the homepage "/" */}
                 <Link to="/" className="flex items-center space-x-2">
-                    <div className="bg-gradient-to-r from-[#0096C7] via-[#2A9D8F] to-[#7E57C2] p-2 rounded-md">
-                        <span className="text-white font-bold text-lg">H</span>
-                    </div>
+                    <img src={logo} alt="HealthSphere Logo" className="w-16 h-16" />
                     <span className="hidden sm:inline text-xl font-semibold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">
                         HealthSphere
                     </span>

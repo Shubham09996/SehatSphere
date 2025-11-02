@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import { useAuth } from '../../context/AuthContext.jsx'; // Import useAuth hook
+import logo from '../../assets/logo.png'; // Import the logo image
 
 const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
     const { theme, toggleTheme } = useTheme();
@@ -50,9 +51,7 @@ const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
                 {/* Logo and Brand Name */}
                 <div className="flex items-center space-x-2 md:hidden">
                     <Link to="/" className="flex items-center space-x-2">
-                        <div className="bg-gradient-to-r from-[#0096C7] via-[#2A9D8F] to-[#7E57C2] p-2 rounded-md">
-                            <span className="text-primary-foreground font-bold text-lg">H</span>
-                        </div>
+                        <img src={logo} alt="HealthSphere Logo" className="w-16 h-16" />
                         {/* <span className="text-xl font-semibold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">
                             HealthSphere
                         </span> */}
@@ -60,9 +59,7 @@ const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
                 </div>
                 <div className="hidden md:flex items-center space-x-2">
                     <Link to="/" className="flex items-center space-x-2">
-                        <div className="bg-gradient-to-r from-[#0096C7] via-[#2A9D8F] to-[#7E57C2] p-2 rounded-md">
-                            <span className="text-primary-foreground font-bold text-lg">H</span>
-                        </div>
+                        <img src={logo} alt="HealthSphere Logo" className="w-16 h-16" />
                         <span className="text-xl font-semibold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">
                             HealthSphere
                         </span>

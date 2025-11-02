@@ -3,6 +3,7 @@ import { Sun, Moon, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx'; // Import useAuth hook
+import logo from '../assets/logo.png'; // Import the logo image
 
 const navLinks = [
     { name: 'Features', to: '/features' },
@@ -29,9 +30,7 @@ const Navbar = ({ theme, toggleTheme }) => {
             <div className="container mx-auto flex justify-between items-center">
                 {/* Logo */}
                 <Link to="/" className="flex items-center space-x-2">
-                    <div className="bg-gradient-to-r from-[#0096C7] via-[#2A9D8F] to-[#7E57C2] p-2 rounded-md">
-                        <span className="text-primary-foreground font-bold text-lg">H</span>
-                    </div>
+                    <img src={logo} alt="HealthSphere Logo" className="w-16 h-16" />
                     <span className="text-xl font-semibold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">
                         HealthSphere
                     </span>
