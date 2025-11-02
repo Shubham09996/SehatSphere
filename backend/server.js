@@ -27,6 +27,7 @@ import labRoutes from './routes/labRoutes.js'; // NEW: Import lab routes
 import config from './config/config.js'; // Import config
 import passport from './config/passport.js'; // Import passport config
 import session from 'express-session'; // Import express-session
+import path from 'path'; // NEW: Import path module
 
 
 dotenv.config();
@@ -34,6 +35,9 @@ dotenv.config();
 connectDB();
 
 const app = express();
+
+// Get __dirname equivalent for ES modules
+const __dirname = path.resolve(); // NEW: Define __dirname
 
 // Session middleware (required for passport)
 app.use(session({
@@ -50,6 +54,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(cors({ origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000', 'https://vibe-clash-3iyt.vercel.app', 'https://vibe-clash-mm73.vercel.app'], credentials: true })); // Enable CORS for frontend
+
+// Serve static files from the 'uploads' directory
+app.use('/uploads', express.static(path.join(__dirname, '/backend/uploads'))); // NEW: Serve static files
 
 app.get('/', (req, res) => {
   res.send('API is running...');

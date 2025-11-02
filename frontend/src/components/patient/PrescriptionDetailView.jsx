@@ -27,7 +27,7 @@ const PrescriptionDetailView = ({ prescription }) => {
             <div className="flex justify-between items-start pb-4 border-b border-border">
                 <div>
                     <h2 className="text-xl sm:text-2xl font-bold text-foreground">Prescription Details</h2>
-                    <p className="text-sm text-muted-foreground">ID: {prescription.id}</p>
+                    <p className="text-sm text-muted-foreground">ID: {prescription._id || 'N/A'}</p>
                 </div>
                 {!isExpired ? (
                     <span className="text-sm font-bold px-3 py-1 rounded-full bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">Active</span>
@@ -42,15 +42,15 @@ const PrescriptionDetailView = ({ prescription }) => {
                     <Stethoscope className="text-primary mt-1 flex-shrink-0"/>
                     <div>
                         <p className="text-muted-foreground">Prescribed by</p>
-                        <p className="font-bold text-foreground">{prescription.doctor.name}</p>
-                        <p className="text-muted-foreground">{prescription.doctor.specialty}</p>
+                        <p className="font-bold text-foreground">{prescription.doctor?.user?.name || 'N/A'}</p>
+                        <p className="text-muted-foreground">{prescription.doctor?.specialty || 'N/A'}</p>
                     </div>
                 </div>
                  <div className="flex items-start gap-3">
                     <User className="text-primary mt-1 flex-shrink-0"/>
                     <div>
                         <p className="text-muted-foreground">For Patient</p>
-                        <p className="font-bold text-foreground">{prescription.patient.name}, {prescription.patient.age}</p>
+                        <p className="font-bold text-foreground">{prescription.patient?.user?.name || 'N/A'}</p>
                     </div>
                 </div>
                 <div className="flex items-start gap-3 col-span-2">
@@ -74,14 +74,15 @@ const PrescriptionDetailView = ({ prescription }) => {
                         </tr>
                     </thead>
                     <tbody>
-                        {prescription.medicines.map((med, index) => (
+                        {prescription.medicines.map((med, index) => {
+                             return (
                              <tr key={index} className="border-b border-border">
-                                 <td className="p-3 font-semibold text-foreground">{med.name}</td>
+                                 <td className="p-3 font-semibold text-foreground">{med.name || med.medicine?.brandName || med.medicine?.genericName || 'N/A'}</td>
                                  <td className="p-3 text-muted-foreground">{med.dosage}</td>
                                  <td className="p-3 text-muted-foreground">{med.frequency}</td>
                                  <td className="p-3 text-muted-foreground">{med.duration}</td>
                              </tr>
-                        ))}
+                        )})}
                     </tbody>
                 </table>
             </div>
@@ -89,7 +90,7 @@ const PrescriptionDetailView = ({ prescription }) => {
              {/* Doctor's Notes */}
              <div className="mt-6 p-4 bg-muted rounded-lg">
                 <h4 className="font-semibold text-foreground mb-2">Doctor's Notes</h4>
-                <p className="text-sm text-muted-foreground">{prescription.notes}</p>
+                <p className="text-sm text-muted-foreground">{prescription.notes || 'No notes provided.'}</p>
              </div>
 
             {/* Action Buttons */}

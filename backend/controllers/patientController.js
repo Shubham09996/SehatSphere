@@ -5,6 +5,7 @@ import Appointment from '../models/Appointment.js';
 import Prescription from '../models/Prescription.js';
 import HealthRecord from '../models/HealthRecord.js';
 import Doctor from '../models/Doctor.js'; // Import Doctor model
+import LabTestOrder from '../models/LabTestOrder.js'; // Import LabTestOrder model
 
 // @desc    Get all patients (Admin) or patients of a specific doctor (Doctor)
 // @route   GET /api/patients
@@ -38,26 +39,19 @@ const getPatientProfile = asyncHandler(async (req, res) => {
   const idOrPatientId = req.params.idOrPatientId || req.params.userId; // Get the ID from route parameters
 
   if (idOrPatientId && idOrPatientId.startsWith('PID-')) {
-    // If it starts with 'PID-', assume it's a patientId string
     patient = await Patient.findOne({ patientId: idOrPatientId }).populate('user', 'name email profilePicture phoneNumber isVerified');
   } else if (idOrPatientId) {
-    // Check if it's a valid MongoDB ObjectId (for _id) or a userId
     if (idOrPatientId.match(/^[0-9a-fA-F]{24}$/)) {
-      // Try to find by _id
       patient = await Patient.findById(idOrPatientId).populate('user', 'name email profilePicture phoneNumber isVerified');
     }
-    // If not found by _id, or if it's not a valid ObjectId, try to find by user ID
     if (!patient) {
       patient = await Patient.findOne({ user: idOrPatientId }).populate('user', 'name email profilePicture phoneNumber isVerified');
     }
   } else {
-    // Fallback to finding patient by logged in user's ID if no specific ID is provided in route
     patient = await Patient.findOne({ user: req.user._id }).populate('user', 'name email profilePicture phoneNumber isVerified');
   }
 
   if (patient) {
-    // Allow patient to view their own profile, or admin/doctor to view any patient profile
-    // Also, if fetching by userId, ensure authorization
     if (
       req.user.role !== 'Admin' &&
       req.user.role !== 'Doctor' &&
@@ -67,26 +61,20 @@ const getPatientProfile = asyncHandler(async (req, res) => {
       throw new Error('Not authorized to view this patient profile');
     }
 
-    // Calculate Age
     const dob = new Date(patient.dob);
     const ageDiffMs = Date.now() - dob.getTime();
     const ageDate = new Date(ageDiffMs);
     const age = Math.abs(ageDate.getUTCFullYear() - 1970);
 
-    // Fetch Health Records for Vitals, Allergies, Chronic Conditions
     const healthRecords = await HealthRecord.find({ patient: patient._id }).sort({ date: -1 });
 
     const latestVitals = healthRecords.filter(record => record.recordType === 'Vital');
-    // const allergies = healthRecords.filter(record => record.recordType === 'Allergy').map(record => record.title);
-    // const chronicConditions = healthRecords.filter(record => record.recordType === 'Other' && record.title.includes('Chronic')).map(record => record.title); // Assuming 'Other' type for chronic conditions with specific title
 
-    // For now, let's pick dummy vitals or the latest if available
     const bloodPressure = latestVitals.find(v => v.title === 'Blood Pressure') || { details: { value: '120/80', status: 'Normal' } };
     const bloodSugar = latestVitals.find(v => v.title === 'Blood Sugar') || { details: { value: '90 mg/dL', status: 'Normal' } };
     const bmi = latestVitals.find(v => v.title === 'BMI') || { details: { value: '22.5', status: 'Healthy' } };
     const lastCheckedVitals = latestVitals.length > 0 ? latestVitals[0].date : new Date();
 
-    // Fetch Recent Activity (Appointments, Prescriptions, Health Records)
     const recentAppointments = await Appointment.find({ patient: patient._id }).sort({ date: -1 }).limit(3).populate('doctor', 'user').select('date status reason doctor');
     const recentPrescriptions = await Prescription.find({ patient: patient._id }).sort({ issueDate: -1 }).limit(3).populate('doctor', 'user').select('issueDate medicines doctor');
     const recentHealthRecords = await HealthRecord.find({ patient: patient._id }).sort({ date: -1 }).limit(3).select('date recordType title');
@@ -106,13 +94,12 @@ const getPatientProfile = asyncHandler(async (req, res) => {
         })),
         ...recentHealthRecords.map(rec => ({
             id: rec._id,
-            type: rec.recordType === 'Lab Report' ? 'LabReport' : (rec.recordType === 'Allergy' ? 'Allergy' : 'Other'), // Map to frontend icons
+            type: rec.recordType === 'Lab Report' ? 'LabReport' : (rec.recordType === 'Allergy' ? 'Allergy' : 'Other'),
             title: rec.title,
             date: rec.date,
         }))
-    ].sort((a, b) => b.date - a.date).slice(0, 5); // Get top 5 most recent activities
+    ].sort((a, b) => b.date - a.date).slice(0, 5);
 
-    // Quick Stats counts
     const upcomingAppointmentsCount = await Appointment.countDocuments({
         patient: patient._id,
         date: { $gte: new Date() },
@@ -125,6 +112,25 @@ const getPatientProfile = asyncHandler(async (req, res) => {
     });
     const recordsCount = await HealthRecord.countDocuments({ patient: patient._id });
 
+    console.log('Patient object before response:', patient); // Re-add this for detailed debugging
+
+    // Fetch all prescriptions for the patient
+    const allPrescriptions = await Prescription.find({ patient: patient._id })
+        .populate({
+            path: 'doctor',
+            select: 'user',
+            populate: { path: 'user', select: 'name' }
+        })
+        .select('issueDate medicines doctor notes prescriptionImage status');
+
+    // Fetch all lab test orders for the patient
+    const allLabTestOrders = await LabTestOrder.find({ patient: patient._id })
+        .populate({
+            path: 'lab',
+            select: 'name',
+        })
+        .select('testName testType status result orderDate completionDate price');
+
     res.json({
       personalInfo: {
           name: patient.user.name,
@@ -134,6 +140,8 @@ const getPatientProfile = asyncHandler(async (req, res) => {
           bloodGroup: patient.bloodGroup,
           emergencyContact: patient.emergencyContact,
           isVerified: patient.user.isVerified,
+          email: patient.user.email,
+          phoneNumber: patient.user.phoneNumber,
       },
       quickStats: {
           upcomingAppointments: upcomingAppointmentsCount,
@@ -148,12 +156,32 @@ const getPatientProfile = asyncHandler(async (req, res) => {
           bmi: { value: bmi.details.value, status: bmi.details.status },
       },
       criticalInfo: {
-          allergies: patient.allergies, // Use allergies from Patient model
-          chronicConditions: patient.chronicConditions, // Use chronicConditions from Patient model
+          allergies: patient.allergies,
+          chronicConditions: patient.chronicConditions,
       },
-      // other patient specific details if needed separately
       gender: patient.gender,
       isPremium: patient.isPremium,
+      prescriptions: allPrescriptions.map(p => ({
+          _id: p._id,
+          issueDate: p.issueDate,
+          expiryDate: p.expiryDate,
+          doctorName: p.doctor.user.name,
+          medicines: p.medicines,
+          notes: p.notes,
+          prescriptionImage: p.prescriptionImage,
+          status: p.status,
+      })),
+      labTestOrders: allLabTestOrders.map(lto => ({
+          _id: lto._id,
+          testName: lto.testName,
+          testType: lto.testType,
+          status: lto.status,
+          result: lto.result,
+          orderDate: lto.orderDate,
+          completionDate: lto.completionDate,
+          price: lto.price,
+          labName: lto.lab.name,
+      })),
     });
   } else {
     res.status(404);

@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'; // NEW: Import motion a
 import { useNavigate, Link } from 'react-router-dom'; // NEW: Import Link
 
 const HospitalHeader = ({ isSidebarOpen, setIsSidebarOpen }) => { // Component name should match export
-    const { user } = useAuth(); // === useAuth() hook add kiya ===
+    const { user, logout } = useAuth(); // === useAuth() hook add kiya ===
     const { theme: currentTheme, toggleTheme: toggleCurrentTheme } = useTheme(); // Use theme context
     const navigate = useNavigate(); // Initialize useNavigate
     const [isDropdownOpen, setIsDropdownOpen] = useState(false); // NEW: State for dropdown
@@ -22,7 +22,8 @@ const HospitalHeader = ({ isSidebarOpen, setIsSidebarOpen }) => { // Component n
     };
 
     const handleLogout = () => { // NEW: Handle logout function
-        localStorage.clear(); // Clear all local storage data
+        // console.log('Hospital logout initiated'); // Log when logout is called
+        logout(); // Use the logout function from AuthContext
         navigate('/login'); // Redirect to login page
     };
 

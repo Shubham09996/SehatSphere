@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import { Edit, User, Heart, Shield, FileText, Calendar, Droplets, Phone, Activity, BarChart2, QrCode, Stethoscope, TestTube2, ShieldAlert } from 'lucide-react';
 // import { patientProfileData as data } from '../../data/patientProfileData'; // Remove this import
 import api from '../../utils/api'; // api.js se import karein
+import { toast } from 'react-toastify'; // For notifications
+import { useAuth } from '../../context/AuthContext'; // Import useAuth
 
 // Reusable Card Component - Responsive padding added
 const InfoCard = ({ icon, title, children, className = '' }) => {
@@ -166,12 +168,53 @@ const PatientProfilePage = () => {
                      <InfoCard icon={<Phone size={20}/>} title="Emergency Contact">
                         <p className="font-bold text-lg">{data.personalInfo.emergencyContact?.name || 'N/A'}</p>
                         <p className="text-sm text-muted-foreground">{data.personalInfo.emergencyContact?.relation || 'N/A'}</p>
-                        <a href={`tel:${data.personalInfo.emergencyContact?.phone || '#'}`} className="mt-4 block w-full text-center font-semibold py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-                            Call Now
-                        </a>
+                        {data.personalInfo.emergencyContact && (
+                            <a href={`tel:${data.personalInfo.emergencyContact.phone}`} className="mt-4 block w-full text-center font-semibold py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+                                Call Now
+                            </a>
+                        )}
                      </InfoCard>
                 </div>
             </div>
+
+            {/* --- Prescriptions Section --- */}
+            {data.prescriptions && data.prescriptions.length > 0 && (
+                <InfoCard icon={<FileText size={20}/>} title="My Prescriptions">
+                    <div className="space-y-4">
+                        {data.prescriptions.map(prescription => (
+                            <div key={prescription._id} className="border-b border-border pb-3 last:border-b-0">
+                                <p className="font-semibold text-foreground">{prescription.medicines.map(m => m.name).join(', ')}</p>
+                                <p className="text-sm text-muted-foreground">Prescribed by Dr. {prescription.doctor.user.name} on {new Date(prescription.issueDate).toLocaleDateString()}</p>
+                                {prescription.prescriptionImage && (
+                                    <a href={prescription.prescriptionImage} target="_blank" rel="noopener noreferrer" className="text-primary text-sm mt-1 inline-block hover:underline">
+                                        View Prescription Image
+                                    </a>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </InfoCard>
+            )}
+
+            {/* --- Lab Test Reports Section --- */}
+            {data.labTestOrders && data.labTestOrders.length > 0 && (
+                <InfoCard icon={<TestTube2 size={20}/>} title="Lab Test Reports">
+                    <div className="space-y-4">
+                        {data.labTestOrders.map(report => (
+                            <div key={report._id} className="border-b border-border pb-3 last:border-b-0">
+                                <p className="font-semibold text-foreground">{report.testName} ({report.testType})</p>
+                                <p className="text-sm text-muted-foreground">Ordered by {report.labName} on {new Date(report.orderDate).toLocaleDateString()}</p>
+                                {report.result && (
+                                    <a href={report.result} target="_blank" rel="noopener noreferrer" className="text-primary text-sm mt-1 inline-block hover:underline">
+                                        View Report
+                                    </a>
+                                )}
+                                <p className="text-xs text-muted-foreground mt-1">Status: {report.status}</p>
+                            </div>
+                        ))}
+                    </div>
+                </InfoCard>
+            )}
         </div>
     );
 };

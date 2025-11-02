@@ -17,6 +17,7 @@ const Step1SelectHospital = ({ onNext, data }) => (
                     transition={{ duration: 0.3, delay: index * 0.1 }}
                 >
                     <div className="flex items-center gap-4">
+                        {console.log('Hospital image path:', hosp.image)}
                         <img src={hosp.image || "https://via.placeholder.com/100"} alt={hosp.name} className="w-24 h-16 object-cover rounded-md"/>
                         <div>
                             <h3 className="font-semibold text-foreground text-lg group-hover:text-primary transition-colors">{hosp.name}</h3>

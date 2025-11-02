@@ -1,7 +1,8 @@
 import React from 'react';
 import { Ticket, Calendar, FileText, Award } from 'lucide-react';
+import { Link } from 'react-router-dom'; // Import Link
 
-const StatCard = ({ icon: Icon, title, value, detail, link, progress, colorClass }) => (
+const StatCard = ({ icon: Icon, title, value, detail, link, progress, colorClass, to }) => (
     <div className="bg-card p-4 sm:p-6 rounded-lg sm:rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between min-h-[9rem] sm:min-h-[11rem]">
         <div>
             <div className="flex justify-between items-start mb-3 sm:mb-4">
@@ -26,9 +27,15 @@ const StatCard = ({ icon: Icon, title, value, detail, link, progress, colorClass
         </div>
 
         <div className="mt-3 sm:mt-4">
-            <a href="#" className="text-xs sm:text-sm font-semibold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text block truncate">
-                {link}
-            </a>
+            {to ? (
+                <Link to={to} className="text-xs sm:text-sm font-semibold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text block truncate">
+                    {link}
+                </Link>
+            ) : (
+                <span className="text-xs sm:text-sm font-semibold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text block truncate">
+                    {link}
+                </span>
+            )}
         </div>
     </div>
 );
@@ -54,12 +61,14 @@ const DashboardStats = ({ stats }) => {
                 title="Appointments" 
                 value={stats.appointmentsCount} 
                 link="View all →"
+                to="/patient/appointments"
             />
             <StatCard 
                 icon={FileText} 
                 title="Prescriptions" 
                 value={stats.prescriptionsCount} 
-                link="View prescriptions →"
+                link="View all →"
+                to="/patient/prescriptions"
             />
             <StatCard 
                 icon={Award} 

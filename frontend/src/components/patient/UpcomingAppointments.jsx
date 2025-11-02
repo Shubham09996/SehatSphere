@@ -62,9 +62,9 @@ const UpcomingAppointments = ({ upcomingAppointments }) => {
                                     <button onClick={() => handleReschedule(appointment._id)} className="text-xs sm:text-sm text-muted-foreground font-semibold hover:text-foreground">Reschedule</button>
                                     <button onClick={() => handleCancel(appointment._id)} className="text-xs sm:text-sm text-red-500 font-semibold hover:text-red-700">Cancel</button>
                                 </div>
-                                <a href="#" className="text-xs sm:text-sm font-semibold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text text-left sm:text-right">
-                                    View Queue →
-                                </a>
+                                <Link to="/patient/appointments" className="text-xs sm:text-sm font-semibold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text text-left sm:text-right">
+                                    View All Appointments →
+                                </Link>
                             </div>
                         </div>
                     ))

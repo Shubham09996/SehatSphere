@@ -1,42 +1,66 @@
 import React, { useState, useMemo, useEffect } from 'react'; // useEffect import kiya
-import { prescriptionsData } from '../../data/prescriptionsData.js';
+// import { prescriptionsData } from '../../data/prescriptionsData.js';
 import PrescriptionListItem from '../../components/patient/PrescriptionListItem.jsx';
 import PrescriptionDetailView from '../../components/patient/PrescriptionDetailView.jsx';
 import { Search, ListFilter } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import api from '../../utils/api'; // Import api for fetching data
 
 const PrescriptionsPage = () => {
-    // 1. Default state ab null hai taaki mobile par kuch select na ho
     const [selectedId, setSelectedId] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [filter, setFilter] = useState('All'); // All, Active, Expired
+    const [prescriptions, setPrescriptions] = useState([]); // State for dynamic prescriptions
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    // 2. Yeh effect sirf desktop/tablet par default selection set karega
     useEffect(() => {
-        // Tailwind ke 'md' breakpoint (768px) se check kar rahe hain
-        const isDesktopOrTablet = window.matchMedia('(min-width: 768px)').matches;
-        
-        if (isDesktopOrTablet) {
-            setSelectedId(prescriptionsData[0]?.id || null);
-        }
-    }, []); // Empty array ka matlab yeh code sirf ek baar page load hone par chalega
+        const fetchPrescriptions = async () => {
+            try {
+                setLoading(true);
+                const response = await api.get('/api/prescriptions/patient');
+                setPrescriptions(response.data);
+                if (window.matchMedia('(min-width: 768px)').matches && response.data.length > 0) {
+                    setSelectedId(response.data[0]._id); // Select first prescription for desktop
+                }
+            } catch (err) {
+                setError(err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchPrescriptions();
+    }, []);
 
     const filteredPrescriptions = useMemo(() => {
-        return prescriptionsData
+        return prescriptions
             .filter(p => {
-                if (filter === 'Active') return new Date(p.expiryDate) >= new Date();
-                if (filter === 'Expired') return new Date(p.expiryDate) < new Date();
+                const now = new Date();
+                const expiry = new Date(p.expiryDate);
+                if (filter === 'Active') return expiry >= now;
+                if (filter === 'Expired') return expiry < now;
                 return true;
             })
-            .filter(p => 
-                p.doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                p.medicines.some(med => med.name.toLowerCase().includes(searchTerm.toLowerCase()))
-            );
-    }, [searchTerm, filter]);
+            .filter(p => {
+                const doctorName = p.doctor?.user?.name || '';
+                const medicineNames = p.medicines.map(med => med.medicine?.brandName || med.medicine?.genericName || '').join(' ');
+                return doctorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                       medicineNames.toLowerCase().includes(searchTerm.toLowerCase());
+            });
+    }, [searchTerm, filter, prescriptions]);
     
     const selectedPrescription = useMemo(() => {
-        return prescriptionsData.find(p => p.id === selectedId);
-    }, [selectedId]);
+        return prescriptions.find(p => p._id === selectedId);
+    }, [selectedId, prescriptions]);
+
+    if (loading) {
+        return <div className="text-center py-12 text-foreground">Loading prescriptions...</div>;
+    }
+
+    if (error) {
+        return <div className="text-center py-12 text-red-500">Error loading prescriptions: {error.message}</div>;
+    }
 
     return (
         <div className="flex flex-col xl:grid xl:grid-cols-3 xl:gap-8 gap-6 flex-grow min-h-0 xl:h-[calc(100vh-100px)]">
@@ -76,7 +100,7 @@ const PrescriptionsPage = () => {
                          {filteredPrescriptions.length > 0 ? (
                             filteredPrescriptions.map(p => (
                                 <motion.div
-                                    key={p.id}
+                                    key={p._id}
                                     layout
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
@@ -85,7 +109,7 @@ const PrescriptionsPage = () => {
                                     <PrescriptionListItem 
                                         prescription={p}
                                         onSelect={setSelectedId}
-                                        isActive={selectedId === p.id}
+                                        isActive={selectedId === p._id}
                                     />
                                 </motion.div>
                             ))
@@ -100,7 +124,7 @@ const PrescriptionsPage = () => {
 
             {selectedPrescription && (
                 <motion.div 
-                    key={selectedPrescription.id}
+                    key={selectedPrescription._id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4 }}
@@ -113,7 +137,7 @@ const PrescriptionsPage = () => {
             {/* Tablet Stack-wise Detail View (newly added) */}
             {selectedPrescription && (
                 <motion.div
-                    key={selectedPrescription.id + '-tablet'}
+                    key={selectedPrescription._id + '-tablet'}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4 }}

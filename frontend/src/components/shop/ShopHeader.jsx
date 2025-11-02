@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Bell, Menu, Sun, Moon, User, Settings, LogOut, ChevronDown, Repeat, Star } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import { shopData } from '../../data/shopData.js';
+import { useAuth } from '../../context/AuthContext.jsx';
 
 const ShopHeader = ({ onMenuClick, isPremium, setIsPremium }) => {
     const { theme, toggleTheme } = useTheme();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
+    const navigate = useNavigate();
+    const { logout } = useAuth();
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -101,7 +104,13 @@ const ShopHeader = ({ onMenuClick, isPremium, setIsPremium }) => {
                                     <User size={14}/> View Profile
                                 </Link>
                                 <div className="h-px bg-border my-1"></div>
-                                <button className="flex items-center gap-3 w-full px-3 py-2 text-sm text-red-500 hover:bg-muted rounded-md">
+                                <button 
+                                    onClick={() => {
+                                        logout();
+                                        navigate('/login');
+                                        setIsDropdownOpen(false);
+                                    }}
+                                    className="flex items-center gap-3 w-full px-3 py-2 text-sm text-red-500 hover:bg-muted rounded-md">
                                     <LogOut size={14}/> Logout
                                 </button>
                             </div>

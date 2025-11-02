@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext.jsx';
 import api from '../../utils/api'; // Import the api utility
+import { useAuth } from '../../context/AuthContext.jsx'; // NEW: Import useAuth hook
 
 const AdminHeader = ({ isSidebarOpen, setIsSidebarOpen }) => {
     const { theme, toggleTheme } = useTheme();
@@ -11,6 +12,7 @@ const AdminHeader = ({ isSidebarOpen, setIsSidebarOpen }) => {
     const [adminProfile, setAdminProfile] = useState(null);
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
+    const { logout } = useAuth(); // NEW: Get logout from AuthContext
 
     // Fetch admin profile on component mount
     useEffect(() => {
@@ -28,13 +30,8 @@ const AdminHeader = ({ isSidebarOpen, setIsSidebarOpen }) => {
 
     // Handle Logout
     const handleLogout = async () => {
-        try {
-            await api.post('/api/users/logout'); // Assuming a logout endpoint
-            localStorage.clear(); // Clear ALL localStorage data
-            navigate('/login'); // Redirect to login page
-        } catch (error) {
-            console.error('Logout failed:', error);
-        }
+        logout(); // Use the logout function from AuthContext
+        navigate('/login'); // Redirect to login page
     };
 
     // Close dropdown when clicking outside

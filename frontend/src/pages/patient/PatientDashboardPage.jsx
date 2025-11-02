@@ -12,10 +12,9 @@ import { useAuth } from '../../context/AuthContext'; // Import useAuth
 
 const PatientDashboardPage = () => {
     const [patientDashboardStats, setPatientDashboardStats] = useState(null);
-    const [patientName, setPatientName] = useState('Ravi'); // Default to Ravi, will be updated dynamically
+    const [patientName, setPatientName] = useState(''); // Default to empty, will be updated dynamically
     const [upcomingAppointments, setUpcomingAppointments] = useState([]);
     const [ePrescriptions, setEPrescriptions] = useState([]);
-    const [doctors, setDoctors] = useState([]); // New state for doctors list
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     
@@ -29,11 +28,11 @@ const PatientDashboardPage = () => {
             if (!patientId) {
                 throw new Error("Patient ID not found in local storage.");
             }
-            const [statsRes, appointmentsRes, prescriptionsRes, doctorsRes] = await Promise.all([
+            const [statsRes, appointmentsRes, prescriptionsRes] = await Promise.all([
                 api.get(`/api/patients/dashboard-stats`),
                 api.get(`/api/patients/upcoming-appointments`),
                 api.get(`/api/prescriptions/patient`),
-                api.get(`/api/doctors`), // New API call to fetch all doctors
+                // api.get(`/api/doctors`), // New API call to fetch all doctors
             ]);
 
             setPatientDashboardStats(statsRes.data.dashboardStats);
@@ -43,7 +42,7 @@ const PatientDashboardPage = () => {
             setUpcomingAppointments(appointmentsRes.data.upcomingAppointments);
             
             setEPrescriptions(prescriptionsRes.data.prescriptions);
-            setDoctors(doctorsRes.data); // Set the fetched doctors data
+            // setDoctors(doctorsRes.data); // Set the fetched doctors data
         } catch (err) {
             setError(err);
         } finally {
@@ -89,37 +88,7 @@ const PatientDashboardPage = () => {
                 <FamilyMemberList /> // Conditionally render for Patients only
             )}
 
-            {/* New Section for Doctors List */}
-            <div className="bg-card p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-700 shadow-md">
-                <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground mb-3 sm:mb-4">Find a Doctor</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                    {doctors.length > 0 ? (doctors
-                        .filter(doctor => doctor.user && doctor.user.name) // Filter out doctors with null user or missing name
-                        .map(doctor => (
-                        <motion.div 
-                            key={doctor._id} 
-                            className="bg-background p-3 sm:p-4 rounded-lg border border-border flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 hover:shadow-lg transition-shadow duration-200"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.3 }}
-                        >
-                            <img 
-                                src={doctor.user?.profilePicture || '/uploads/default.jpg'} 
-                                alt={doctor.user?.name || 'Doctor'} 
-                                className="w-12 h-12 rounded-full object-cover border-2 border-primary/50 flex-shrink-0"
-                            />
-                            <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-sm sm:text-base text-foreground truncate">Dr. {doctor.user?.name || 'Unknown Doctor'}</p>
-                                <p className="text-xs sm:text-sm text-muted-foreground truncate">{doctor.specialty}</p>
-                            </div>
-                            <Link to={`/patient/book-appointment/${doctor.medicalRegistrationNumber}`} className="w-full sm:w-auto sm:ml-auto bg-primary text-primary-foreground text-xs sm:text-sm px-3 py-1.5 sm:py-1 rounded-md hover:bg-primary/90 text-center sm:text-left">Book</Link>
-                        </motion.div>
-                    ))) : (
-                        <p className="text-sm sm:text-base text-muted-foreground col-span-full">No doctors available at the moment.</p>
-                    )}
-                </div>
-            </div>
-
+            
             <div className="fixed bottom-4 right-4 sm:bottom-5 sm:right-5 z-30">
                 <button className="bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-white p-3 sm:p-4 rounded-full shadow-lg hover:scale-110 transition-transform">
                     <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6" />

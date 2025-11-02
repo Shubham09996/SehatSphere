@@ -8,7 +8,7 @@ const PrescriptionListItem = ({ prescription, onSelect, isActive }) => {
 
     return (
         <motion.div
-            onClick={() => onSelect(prescription.id)} // Parent ko selected prescription ki ID bhejta hai
+            onClick={() => onSelect(prescription._id)} // Parent ko selected prescription ki ID bhejta hai
             className={`p-4 border-l-4 rounded-r-lg cursor-pointer transition-colors ${
                 isActive 
                     ? 'bg-primary/10 border-primary' 
@@ -26,9 +26,9 @@ const PrescriptionListItem = ({ prescription, onSelect, isActive }) => {
                     </div>
                     
                     <div className="truncate">
-                        <p className="font-bold text-foreground truncate">{prescription.doctor.name}</p>
+                        <p className="font-bold text-foreground truncate">{prescription.doctor?.user?.name || 'N/A'}</p>
                         <p className="text-sm text-muted-foreground truncate">
-                            {prescription.doctor.specialty} • {new Date(prescription.issueDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                            {prescription.doctor?.specialty || 'N/A'} • {new Date(prescription.issueDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                         </p>
                     </div>
                 </div>
