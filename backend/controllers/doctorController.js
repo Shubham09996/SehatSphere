@@ -58,10 +58,22 @@ const getDoctorById = asyncHandler(async (req, res) => {
   const identifier = req.params.medicalRegistrationNumber || req.params.id;
   let doctor;
 
+  console.log(`Attempting to find doctor with identifier: ${identifier}`);
+
   if (req.params.medicalRegistrationNumber) {
     doctor = await Doctor.findOne({ medicalRegistrationNumber: identifier }).populate('user', 'name email profilePicture phoneNumber');
   } else if (req.params.id) {
+    if (!mongoose.Types.ObjectId.isValid(identifier)) {
+      res.status(400);
+      throw new Error('Invalid Doctor ID format');
+    }
     doctor = await Doctor.findById(identifier).populate('user', 'name email profilePicture phoneNumber');
+    console.log(`Doctor found by ID: ${doctor ? doctor._id : 'None'}`); // Existing log
+    if (!doctor) {
+      console.error(`Backend: Doctor with ID ${identifier} not found in database.`);
+      res.status(404); // Explicitly set 404 status if doctor not found
+      throw new Error('Doctor not found in database with provided ID');
+    }
   } else {
     res.status(400);
     throw new Error('Doctor ID or Medical Registration Number not provided');
@@ -717,3 +729,59 @@ const getDoctorDailyAvailability = asyncHandler(async (req, res) => {
 });
 
 export { getDoctors, getDoctorById, createDoctorProfile, updateDoctorProfile, deleteDoctorProfile, updateDoctorSchedule, getAvailableDoctorSlots, getDoctorDailyAvailability, getDoctorDashboardStats, updateAppointmentStatus, getDoctorHourlyActivity, getDoctorAppointmentQueue, onboardDoctorProfile };
+
+export const getPatientHistory = asyncHandler(async (req, res) => {
+    const { patientId } = req.params;
+
+    // Fetch patient's appointments
+    const appointments = await Appointment.find({ patient: patientId }).populate('doctor', 'name');
+
+    // Fetch patient's prescriptions
+    const prescriptions = await Prescription.find({ patient: patientId }).populate('doctor', 'name');
+
+    // Fetch patient's vitals (assuming a Vitals model exists)
+    // If a Vitals model doesn't exist, you'll need to create one or adjust this part
+    // const vitals = await Vitals.find({ patient: patientId });
+    const vitals = []; // Placeholder if Vitals model is not yet implemented
+
+    const history = [];
+
+    appointments.forEach(app => {
+        history.push({
+            type: 'appointment',
+            date: app.date,
+            time: app.time,
+            doctorName: app.doctor ? app.doctor.name : 'N/A',
+            reason: app.reason,
+            notes: app.notes,
+            status: app.status,
+        });
+    });
+
+    prescriptions.forEach(pres => {
+        history.push({
+            type: 'prescription',
+            date: pres.date,
+            doctorName: pres.doctor ? pres.doctor.name : 'N/A',
+            medicineName: pres.medicineName,
+            dosage: pres.dosage,
+            instructions: pres.instructions,
+        });
+    });
+
+    vitals.forEach(vit => {
+        history.push({
+            type: 'vitals',
+            date: vit.date,
+            temperature: vit.temperature,
+            bloodPressure: vit.bloodPressure,
+            heartRate: vit.heartRate,
+            weight: vit.weight,
+        });
+    });
+
+    // Sort history by date, most recent first
+    history.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    res.status(200).json(history);
+});

@@ -24,6 +24,7 @@ import PrivateRoute from './components/PrivateRoute.jsx';
 import BookTestAppointmentPage from './pages/patient/BookTestAppointmentPage.jsx'; // NEW: Import BookTestAppointmentPage
 import AddFamilyMemberPage from './pages/patient/AddFamilyMemberPage.jsx'; // NEW: Import AddFamilyMemberPage
 import FamilyMemberProfilePage from './pages/patient/FamilyMemberProfilePage.jsx'; // NEW: Import FamilyMemberProfilePage
+import PrescriptionWriter from './components/doctor/prescriptions/PrescriptionWriter';
 
 // Patient Pages
 import PatientDashboardPage from './pages/patient/PatientDashboardPage.jsx';
@@ -47,7 +48,6 @@ import NotificationSettings from './components/patient/settings/NotificationSett
 
 // Doctor Pages
 import DoctorDashboardPage from './pages/doctor/DoctorDashboardPage.jsx';
-import SchedulePage from './pages/doctor/SchedulePage.jsx';
 import MyPatientsPage from './pages/doctor/MyPatientsPage.jsx';
 import DoctorPrescriptionsPage from './pages/doctor/DoctorPrescriptionsPage.jsx';
 import DoctorSettingsPage from './pages/doctor/DoctorSettingsPage.jsx';
@@ -55,7 +55,8 @@ import DoctorProfileSettings from './components/doctor/settings/DoctorProfileSet
 import ConsultationSettings from './components/doctor/settings/ConsultationSettings.jsx';
 import DoctorProfilePage from './pages/doctor/DoctorProfilePage.jsx';
 import DoctorNotificationsPage from './pages/doctor/DoctorNotificationsPage.jsx';
-import PrescriptionWriter from './components/doctor/prescriptions/PrescriptionWriter.jsx'; // NEW: Import PrescriptionWriter
+import SchedulePage from './pages/doctor/SchedulePage.jsx'; // NEW: Import SchedulePage
+import PatientHistoryPage from './pages/doctor/PatientHistoryPage.jsx'; // NEW: Import PatientHistoryPage
 import TestReportPage from './pages/doctor/TestReportPage.jsx'; // NEW: Import TestReportPage
 
 // Shop Pages
@@ -212,13 +213,14 @@ function App() {
           <Route path="/doctor" element={<DoctorDashboardLayout />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<DoctorDashboardPage />} />
-            <Route path="schedule" element={<SchedulePage />} />
-            <Route path="patients" element={<MyPatientsPage />} />
+            <Route path="my-patients" element={<MyPatientsPage />} />
+            <Route path="patients" element={<MyPatientsPage />} /> {/* NEW: Route for /doctor/patients */}
+            <Route path="schedule" element={<SchedulePage />} /> {/* NEW: Route for /doctor/schedule */}
+            <Route path="my-schedule" element={<SchedulePage />} />
             <Route path="prescriptions" element={<DoctorPrescriptionsPage />} />
+            <Route path="prescriptions/new" element={<PrescriptionWriter />} /> {/* NEW: Route for creating a new prescription */}
+            <Route path="prescribe/:patientId" element={<PrescriptionWriter />} /> {/* NEW: Route for prescribing to a specific patient */}
             <Route path="test-reports" element={<TestReportPage />} />
-            <Route path="profile" element={<DoctorProfilePage />} />
-            <Route path="notifications" element={<DoctorNotificationsPage />} />
-            <Route path="prescriptions/new" element={<PrescriptionWriter />} /> {/* New route for PrescriptionWriter */}
             <Route path="settings" element={<DoctorSettingsPage />}>
               <Route index element={<Navigate to="profile" replace />} />
               <Route path="profile" element={<DoctorProfileSettings />} />
@@ -226,6 +228,10 @@ function App() {
               <Route path="security" element={<SecuritySettings />} />
               <Route path="notifications" element={<NotificationSettings />} />
             </Route>
+            <Route path="profile" element={<DoctorProfilePage />} />
+            <Route path="notifications" element={<DoctorNotificationsPage />} />
+            <Route path="patients/:patientId" element={<PatientProfilePage />} /> {/* NEW: Route for doctor to view patient profile */}
+            <Route path="patients/:patientId/history" element={<PatientHistoryPage />} /> {/* NEW: Route for patient history */}
           </Route>
         </Route>
 

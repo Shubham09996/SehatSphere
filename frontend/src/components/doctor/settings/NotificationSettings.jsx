@@ -4,6 +4,7 @@ import axios from 'axios'; // Import axios
 import api from '../../../utils/api'; // api.js se import karein
 import SwitchToggle from '../../ui/SwitchToggle';
 import { Bell, Mail, MessageSquare, Smartphone, CheckCircle, XCircle } from 'lucide-react';
+import { useAuth } from '../../../context/AuthContext'; // Import useAuth
 
 // Reusable Components
 const SettingsCard = ({ title, description, children, footer }) => (
@@ -28,12 +29,14 @@ const NotificationSettings = () => {
     const [error, setError] = useState(null);
     const [saving, setSaving] = useState(false);
     const [saveSuccess, setSaveSuccess] = useState(false);
+    const { user } = useAuth(); // Get logged-in user
+    const userId = user?.id; // Assuming user ID is available directly on the user object
 
     useEffect(() => {
         const fetchNotificationPreferences = async () => {
             try {
                 setLoading(true);
-                const response = await api.get(`/users/${userId}/notification-preferences`);
+                const response = await api.get(`/api/users/${userId}/notification-preferences`);
                 const preferences = response.data.preferences;
                 setEmailNotificationsEnabled(preferences.emailNotificationsEnabled);
                 setSmsNotificationsEnabled(preferences.smsNotificationsEnabled);
@@ -57,7 +60,7 @@ const NotificationSettings = () => {
                 smsNotificationsEnabled,
                 inAppNotificationsEnabled,
             };
-            await api.put(`/users/${userId}/notification-preferences`, updatedPreferences);
+            await api.put(`/api/users/${userId}/notification-preferences`, updatedPreferences);
             setSaveSuccess(true);
         } catch (err) {
             console.error('Error saving notification preferences:', err);
