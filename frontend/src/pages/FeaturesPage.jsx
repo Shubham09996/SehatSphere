@@ -124,7 +124,7 @@ const FeaturesPage = () => {
             transition={{ duration: 0.7, delay: 0.4 }}
           >
             <Link to="/signup" className="inline-flex items-center justify-center font-bold py-3 px-8 rounded-full bg-gradient-to-r from-hs-gradient-start to-hs-gradient-end text-white hover:shadow-lg hover:brightness-110 transition-all duration-300">
-              Get Started Free <Users size={20} className="ml-2"/>
+              Get Started <Users size={20} className="ml-2"/>
             </Link>
             <Link to="/login" className="inline-flex items-center justify-center font-semibold py-3 px-8 rounded-full border border-border text-foreground hover:bg-muted transition-colors duration-300">
               Learn More

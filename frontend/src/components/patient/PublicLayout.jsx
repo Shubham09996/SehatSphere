@@ -8,7 +8,7 @@ const PublicLayout = () => {
   return (
     <div>
       <Navbar theme={theme} toggleTheme={toggleTheme} />
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4">
         <Outlet /> {/* Yahan child pages render honge */}
       </main>
     </div>

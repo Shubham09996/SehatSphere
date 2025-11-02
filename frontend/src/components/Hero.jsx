@@ -46,7 +46,7 @@ const Hero = () => {
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      <div className="container mx-auto px-4 pb-20 relative z-10">
+      <div className="container mx-auto px-4 relative z-10">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left Section */}
           <motion.div
@@ -83,7 +83,7 @@ const Hero = () => {
               transition={{ delay: 0.8, duration: 0.6 }}
               className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
             >
-              <Button size="lg" className="shadow-lg">
+              <Button size="lg" className="shadow-lg" style={{ marginLeft: "30px" }}>
                 Get Started
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>

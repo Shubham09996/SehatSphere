@@ -51,7 +51,7 @@ const HomePage = () => {
     <main className="min-h-screen">
       {/* Hero Section - Merged from Hero.jsx */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        <div className="container mx-auto px-4 py-20 relative z-10">
+        <div className="container mx-auto px-4 relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left Section */}
             <motion.div
@@ -170,7 +170,7 @@ const HomePage = () => {
       </section>
 
       {/* Rest of the page content */}
-      <div className="container pt-24">
+      <div className="container">
         <Stats />
         <RoleSelection />
       </div>

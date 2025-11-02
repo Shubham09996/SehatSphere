@@ -14,6 +14,7 @@ import {
   getDoctorAppointmentQueue,
   getDoctorDailyAvailability, // Import the new controller function
   onboardDoctorProfile, // Import the new controller function
+  getPatientHistory, // Import the new controller function
 } from '../controllers/doctorController.js';
 import { protect, authorizeRoles } from '../middleware/authMiddleware.js';
 
@@ -34,5 +35,6 @@ router.route('/schedule/:id').put(protect, authorizeRoles('Doctor', 'Admin'), up
 router.route('/available-slots/:doctorId').get(getAvailableDoctorSlots);
 router.route('/daily-availability/:doctorId').get(getDoctorDailyAvailability); // New route for daily availability
 router.route('/appointments/:id/status').put(protect, authorizeRoles('Doctor'), updateAppointmentStatus);
+router.route('/patients/:patientId/history').get(protect, authorizeRoles('Doctor', 'Admin'), getPatientHistory); // New route for patient history
 
 export default router;

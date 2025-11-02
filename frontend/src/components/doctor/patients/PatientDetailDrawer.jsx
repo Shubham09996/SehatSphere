@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { X, Phone, Mail, FileText, ShieldAlert, Heart, Droplets } from 'lucide-react';
 
-const PatientDetailDrawer = ({ patient, onClose }) => {
+const PatientDetailDrawer = ({ patient, onClose, onViewHistory }) => {
     return (
         <motion.div
             initial={{ opacity: 0 }}
@@ -73,7 +73,10 @@ const PatientDetailDrawer = ({ patient, onClose }) => {
 
                 {/* Footer */}
                 <div className="p-4 border-t border-border bg-muted/50">
-                    <button className="w-full flex items-center justify-center gap-2 font-bold py-2.5 px-4 rounded-lg bg-primary text-primary-foreground">
+                    <button 
+                        onClick={() => onViewHistory(patient.id)}
+                        className="w-full flex items-center justify-center gap-2 font-bold py-2.5 px-4 rounded-lg bg-primary text-primary-foreground"
+                    >
                         <FileText size={18}/> View Full Health Record
                     </button>
                 </div>
