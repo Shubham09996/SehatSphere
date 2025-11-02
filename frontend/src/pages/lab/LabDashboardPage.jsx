@@ -101,7 +101,7 @@ const LabDashboardPage = () => {
 
   return (
     <motion.div
-      className="min-h-screen p-4 sm:p-6 lg:p-8 bg-background text-foreground"
+      className="min-h-screen p-0 sm:p-6 lg:p-8 bg-background text-foreground"
       variants={containerVariants}
       initial="hidden"
       animate="visible"

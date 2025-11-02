@@ -14,6 +14,11 @@ const HospitalHeader = ({ isSidebarOpen, setIsSidebarOpen }) => { // Component n
     const [isDropdownOpen, setIsDropdownOpen] = useState(false); // NEW: State for dropdown
     const dropdownRef = useRef(null); // NEW: Ref for dropdown
 
+    // Get user profile picture - try multiple possible fields and localStorage fallback
+    const userProfilePicture = user?.profilePicture || user?.avatar || user?.profileImage || localStorage.getItem('profilePicture') || null;
+    // Get user name - try multiple possible fields
+    const userName = user?.name || user?.firstName || user?.fullName || user?.username || 'User';
+
     const handleNotificationsClick = () => {
         navigate('/hospital/notifications');
     };
@@ -49,9 +54,9 @@ const HospitalHeader = ({ isSidebarOpen, setIsSidebarOpen }) => { // Component n
                 >
                     <Menu size={24} />
                 </button>
-                <Link to="/" className="flex items-center space-x-2"> {/* NEW: Link to homepage */}
+                <Link to="/" className="flex items-center space-x-2" onClick={(e) => { e.preventDefault(); navigate('/'); }}> {/* NEW: Link to homepage */}
                     <img src={logo} alt="HealthSphere Logo" className="w-16 h-16" />
-                    <span className="text-2xl font-semibold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">
+                    <span className="hidden sm:inline text-2xl font-semibold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">
                         HealthSphere
                     </span>
                 </Link>
@@ -77,16 +82,24 @@ const HospitalHeader = ({ isSidebarOpen, setIsSidebarOpen }) => { // Component n
                 {/* Hospital Profile Dropdown */}
                 <div className="relative" ref={dropdownRef}> {/* Attach ref to the dropdown container */}
                     <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="flex items-center gap-2 group"> {/* Button to toggle dropdown */}
-                        {user?.profilePicture ? (
+                        {userProfilePicture ? (
                             <img 
-                                src={user.profilePicture} 
+                                src={userProfilePicture} 
                                 alt="Profile" 
                                 className="w-8 h-8 rounded-full object-cover border border-border"
+                                onError={(e) => {
+                                    console.log('Avatar image failed to load, showing initials instead', userProfilePicture);
+                                    e.target.style.display = 'none';
+                                }}
                             />
                         ) : (
-                            <UserCircle size={32} className="text-muted-foreground" />
+                            <span 
+                                className="w-8 h-8 rounded-full bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end flex items-center justify-center text-white font-bold"
+                            >
+                                {userName ? userName.charAt(0).toUpperCase() : 'U'}
+                            </span>
                         )}
-                        <span className="font-medium text-foreground hidden sm:block">{user?.name || 'Hospital Admin'}</span>
+                        <span className="font-medium text-foreground hidden sm:block">{userName || 'Hospital Admin'}</span>
                         <ChevronDown size={16} className={`hidden sm:block text-muted-foreground transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} /> {/* Dropdown arrow */}
                     </button>
                     <AnimatePresence> {/* For animation */}

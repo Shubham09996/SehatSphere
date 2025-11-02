@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Sun, Moon, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx'; // Import useAuth hook
 import logo from '../assets/logo.png'; // Import the logo image
 
@@ -14,13 +14,12 @@ const navLinks = [
 const Navbar = ({ theme, toggleTheme }) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const location = useLocation();
+    const navigate = useNavigate(); // Import useNavigate
     const { user, logout } = useAuth(); // Get user and logout from AuthContext
 
     const handleLogout = () => {
         logout();
-        // Optionally redirect after logout, e.g., to the homepage or login page
-        // navigate('/login'); // If navigate is needed, import it
-        window.location.href = '/'; // Redirect to homepage
+        navigate('/login'); // Redirect to login page after logout
     };
 
     const dashboardPath = user ? `/${user.role?.toLowerCase()}/dashboard` : '/';
@@ -29,9 +28,14 @@ const Navbar = ({ theme, toggleTheme }) => {
         <header className="fixed top-0 left-0 right-0 z-50 flex justify-between items-center py-4 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="container mx-auto flex justify-between items-center">
                 {/* Logo */}
-                <Link to="/" className="flex items-center space-x-2">
+                <Link to="/" className="flex items-center space-x-2"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        navigate('/');
+                    }}
+                >
                     <img src={logo} alt="HealthSphere Logo" className="w-16 h-16" />
-                    <span className="text-xl font-semibold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">
+                    <span className="hidden sm:inline text-xl font-semibold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">
                         HealthSphere
                     </span>
                 </Link>

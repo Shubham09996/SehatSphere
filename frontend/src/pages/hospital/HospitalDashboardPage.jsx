@@ -298,7 +298,7 @@ const HospitalDashboardPage = () => {
 
     return (
         <motion.div 
-            className="container mx-auto px-4 pt-4 pb-8 space-y-10" // === `py-8` ko `pt-4 pb-8` mein change kiya ===
+            className="container mx-auto px-4 pt-0 pb-8 space-y-10" // === `py-8` ko `pt-4 pb-8` mein change kiya ===
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}

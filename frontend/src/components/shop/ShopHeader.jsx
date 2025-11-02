@@ -12,7 +12,12 @@ const ShopHeader = ({ onMenuClick, isPremium, setIsPremium }) => {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
-    const { logout } = useAuth();
+    const { logout, user } = useAuth();
+
+    // Get user profile picture - try multiple possible fields and localStorage fallback
+    const userProfilePicture = user?.profilePicture || user?.avatar || user?.profileImage || localStorage.getItem('profilePicture') || null;
+    // Get user name - try multiple possible fields
+    const userName = user?.name || user?.firstName || user?.fullName || user?.username || 'User';
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -32,7 +37,7 @@ const ShopHeader = ({ onMenuClick, isPremium, setIsPremium }) => {
                 <button onClick={onMenuClick} className="lg:hidden p-1 text-muted-foreground hover:text-foreground">
                     <Menu size={24} />
                 </button>
-                <Link to="/" className="flex items-center space-x-2">
+                <Link to="/" className="flex items-center space-x-2" onClick={(e) => { e.preventDefault(); navigate('/'); }}>
                     <img src={logo} alt="HealthSphere Logo" className="w-16 h-16" />
                     <span className="hidden sm:inline text-xl font-semibold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">
                         HealthSphere
@@ -80,9 +85,23 @@ const ShopHeader = ({ onMenuClick, isPremium, setIsPremium }) => {
                 {/* Profile Dropdown */}
                 <div className="relative" ref={dropdownRef}>
                     <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="flex items-center gap-2 group">
-                        <img src="https://avatar.iran.liara.run/public/boy" alt="Owner" className="w-9 h-9 rounded-full group-hover:ring-2 group-hover:ring-primary transition-all"/>
+                        {userProfilePicture ? (
+                            <img 
+                                src={userProfilePicture} 
+                                alt="Owner" 
+                                className="w-9 h-9 rounded-full group-hover:ring-2 group-hover:ring-primary transition-all"
+                                onError={(e) => {
+                                    console.log('Avatar image failed to load, showing initials instead', userProfilePicture);
+                                    e.target.style.display = 'none';
+                                }}
+                            />
+                        ) : (
+                            <div className="w-9 h-9 rounded-full bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end flex items-center justify-center text-white font-bold">
+                                {userName ? userName.charAt(0).toUpperCase() : 'U'}
+                            </div>
+                        )}
                         <div className="hidden lg:block text-left">
-                            <p className="font-bold text-sm text-foreground">{shopData.shopInfo.name}</p>
+                            <p className="font-bold text-sm text-foreground">{userName}</p>
                             <div className="flex items-center gap-1">
                                 {isPremium && <Star size={12} className="text-yellow-500 fill-yellow-500"/>}
                                 <p className="text-xs text-muted-foreground">{isPremium ? 'Premium Tier' : 'Free Tier'}</p>

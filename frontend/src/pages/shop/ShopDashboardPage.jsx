@@ -69,7 +69,7 @@ const ShopDashboardPage = () => {
 
     return (
         <div className="space-y-8">
-            <div>
+            <div className="pt-2">
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">Welcome back, {shopInfo.name}!</h1>
                 <p className="text-muted-foreground mt-1">Here is your shop's performance overview for today.</p>
             </div>

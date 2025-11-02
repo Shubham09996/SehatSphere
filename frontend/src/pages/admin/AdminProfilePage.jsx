@@ -106,9 +106,9 @@ const AdminProfilePage = () => {
                     </Link>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <SparklineStat title="Users Managed" value={adminProfile.performance.usersManaged.value} change={adminProfile.performance.usersManaged.change} chartData={adminProfile.performance.usersManaged.data} color="hsl(var(--primary))"/>
-                    <SparklineStat title="Approvals Done" value={adminProfile.performance.approvalsDone.value} change={adminProfile.performance.approvalsDone.change} chartData={adminProfile.performance.approvalsDone.data} color="#00C49F"/>
-                    <SparklineStat title="Tickets Resolved" value={adminProfile.performance.ticketsResolved.value} change={adminProfile.performance.ticketsResolved.change} chartData={adminProfile.performance.ticketsResolved.data} color="#FFBB28"/>
+                    <SparklineStat title="Users Managed" value={adminProfile.performance?.usersManaged?.value || 0} change={adminProfile.performance?.usersManaged?.change || '+'} chartData={adminProfile.performance?.usersManaged?.data || []} color="hsl(var(--primary))"/>
+                    <SparklineStat title="Approvals Done" value={adminProfile.performance?.approvalsDone?.value || 0} change={adminProfile.performance?.approvalsDone?.change || '+'} chartData={adminProfile.performance?.approvalsDone?.data || []} color="#00C49F"/>
+                    <SparklineStat title="Tickets Resolved" value={adminProfile.performance?.ticketsResolved?.value || 0} change={adminProfile.performance?.ticketsResolved?.change || '+'} chartData={adminProfile.performance?.ticketsResolved?.data || []} color="#FFBB28"/>
                 </div>
             </motion.div>
 

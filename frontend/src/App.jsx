@@ -145,24 +145,7 @@ function App() {
           } else {
               console.log('App.jsx - Already on target path:', redirectPath);
           }
-      } else if (user && !user.isNewUser && location.pathname.includes('onboarding')) { // If user is onboarded but on an onboarding page
-        const dashboardPath = `/${userRole}/dashboard`;
-        console.log(`App.jsx - User is onboarded but on onboarding page. Redirecting to: ${dashboardPath}`);
-        if (location.pathname !== dashboardPath) {
-          navigate(dashboardPath);
-        } else {
-          console.log('App.jsx - Already on target path:', dashboardPath);
-        }
-      } else if (user && !user.isNewUser && !location.pathname.startsWith(`/${userRole}`)) {
-        // If user is logged in, not new, and not on their role's dashboard, redirect to their dashboard.
-        const dashboardPath = `/${userRole}/dashboard`;
-        console.log(`App.jsx - User is not new, redirecting to dashboard. Navigating to: ${dashboardPath}`);
-        if (location.pathname !== dashboardPath) {
-          navigate(dashboardPath);
-        } else {
-          console.log('App.jsx - Already on target path:', dashboardPath);
-        }
-      }
+      } 
     }
   }, [user, loading, navigate, location.pathname]);
 
@@ -172,15 +155,17 @@ function App() {
     if (!loading && !user) {
       const isPublicRoute = [
         '/', '/features', '/roles', '/about',
-        '/login', '/signup', '/forgot-password', '/reset-password',
+        '/login', '/signup', '/forgot-password',
+        /\/reset-password\/[a-zA-Z0-9]+/, // Regex for dynamic reset password route
         /\/patient-onboarding\/[a-zA-Z0-9]+/, // Regex for dynamic patient onboarding route
       ].some(route => {
-        if (typeof route === 'string') {
-          return location.pathname === route || location.pathname.startsWith(route + '/');
-        } else if (route instanceof RegExp) {
-          return route.test(location.pathname);
-        }
-        return false;
+        const isMatch = typeof route === 'string' 
+          ? location.pathname === route || location.pathname.startsWith(route + '/')
+          : route instanceof RegExp 
+            ? route.test(location.pathname)
+            : false;
+        console.log(`Checking route: ${route}, Path: ${location.pathname}, Is Match: ${isMatch}`);
+        return isMatch;
       });
 
       console.log('App.jsx - Protect routes useEffect: isPublicRoute', isPublicRoute);

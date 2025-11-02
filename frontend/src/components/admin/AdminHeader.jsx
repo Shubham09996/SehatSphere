@@ -13,7 +13,12 @@ const AdminHeader = ({ isSidebarOpen, setIsSidebarOpen }) => {
     const [adminProfile, setAdminProfile] = useState(null);
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
-    const { logout } = useAuth(); // NEW: Get logout from AuthContext
+    const { logout, user } = useAuth(); // NEW: Get logout from AuthContext
+
+    // Get user profile picture - try multiple possible fields and localStorage fallback
+    const userProfilePicture = user?.profilePicture || user?.avatar || user?.profileImage || localStorage.getItem('profilePicture') || adminProfile?.pfp || null;
+    // Get user name - try multiple possible fields
+    const userName = user?.name || user?.firstName || user?.fullName || user?.username || adminProfile?.name || 'Admin';
 
     // Fetch admin profile on component mount
     useEffect(() => {
@@ -57,7 +62,7 @@ const AdminHeader = ({ isSidebarOpen, setIsSidebarOpen }) => {
                     <Menu size={24} />
                 </button>
                 {/* UPDATED: Link now points to the homepage "/" */}
-                <Link to="/" className="flex items-center space-x-2">
+                <Link to="/" className="flex items-center space-x-2" onClick={(e) => { e.preventDefault(); navigate('/'); }}>
                     <img src={logo} alt="HealthSphere Logo" className="w-16 h-16" />
                     <span className="hidden sm:inline text-xl font-semibold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">
                         HealthSphere
@@ -93,9 +98,23 @@ const AdminHeader = ({ isSidebarOpen, setIsSidebarOpen }) => {
                 {/* Admin Profile Dropdown */}
                 <div className="relative" ref={dropdownRef}>
                     <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="flex items-center gap-2 group">
-                        <img src={adminProfile?.pfp || "/uploads/default.jpg"} alt={adminProfile?.name || "Admin"} className="w-9 h-9 rounded-full group-hover:ring-2 group-hover:ring-primary transition-all"/>
+                        {userProfilePicture ? (
+                            <img 
+                                src={userProfilePicture} 
+                                alt={userName} 
+                                className="w-9 h-9 rounded-full group-hover:ring-2 group-hover:ring-primary transition-all"
+                                onError={(e) => {
+                                    console.log('Avatar image failed to load, showing initials instead', userProfilePicture);
+                                    e.target.style.display = 'none';
+                                }}
+                            />
+                        ) : (
+                            <div className="w-9 h-9 rounded-full bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end flex items-center justify-center text-white font-bold">
+                                {userName ? userName.charAt(0).toUpperCase() : 'A'}
+                            </div>
+                        )}
                         <div className="hidden lg:block text-left">
-                            <p className="font-bold text-sm text-foreground">{adminProfile?.name || "Admin User"}</p>
+                            <p className="font-bold text-sm text-foreground">{userName}</p>
                             <p className="text-xs text-muted-foreground">{adminProfile?.role || "Super Administrator"}</p>
                         </div>
                         <ChevronDown size={16} className={`hidden lg:block text-muted-foreground transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`}/>
@@ -106,6 +125,10 @@ const AdminHeader = ({ isSidebarOpen, setIsSidebarOpen }) => {
                             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
                             className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-lg shadow-lg z-50"
                         >
+                            <div className="p-2">
+                                <p className="font-bold text-foreground">{userName}</p>
+                                <p className="text-sm text-muted-foreground">{adminProfile?.role || "Super Administrator"}</p>
+                            </div>
                             <div className="p-2">
                                 <Link to="/admin/profile" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-3 w-full px-3 py-2 text-sm text-foreground hover:bg-muted rounded-md"><User size={14}/> View Profile</Link>
                                 <Link to="/admin/security" onClick={() => setIsDropdownOpen(false)} className="flex items-center gap-3 w-full px-3 py-2 text-sm text-foreground hover:bg-muted rounded-md"><Shield size={14}/> Security</Link>

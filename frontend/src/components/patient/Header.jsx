@@ -38,7 +38,7 @@ const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
         };
     }, [dropdownRef]);
     return (
-        <header className="flex items-center justify-between p-4 bg-card border-b border-border sticky top-0 z-40">
+        <header className="flex items-center justify-between p-2 sm:p-4 bg-card border-b border-border sticky top-0 z-40">
             <div className="flex items-center space-x-4">
                 {/* Mobile Menu Button */}
                 <button 
@@ -49,18 +49,15 @@ const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
                 </button>
                 
                 {/* Logo and Brand Name */}
-                <div className="flex items-center space-x-2 md:hidden">
-                    <Link to="/" className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2">
+                    <Link to="/" className="flex items-center space-x-2"
+                        onClick={(e) => {
+                            e.preventDefault(); // Ensure default Link behavior is prevented
+                            navigate('/'); // Explicitly navigate to the homepage
+                        }}
+                    >
                         <img src={logo} alt="HealthSphere Logo" className="w-16 h-16" />
-                        {/* <span className="text-xl font-semibold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">
-                            HealthSphere
-                        </span> */}
-                    </Link>
-                </div>
-                <div className="hidden md:flex items-center space-x-2">
-                    <Link to="/" className="flex items-center space-x-2">
-                        <img src={logo} alt="HealthSphere Logo" className="w-16 h-16" />
-                        <span className="text-xl font-semibold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">
+                        <span className="hidden sm:inline text-xl font-semibold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">
                             HealthSphere
                         </span>
                     </Link>
@@ -145,8 +142,8 @@ const Header = ({ isSidebarOpen, setIsSidebarOpen }) => {
                                 alt="Profile" 
                                 className="w-full h-full rounded-full object-cover"
                                 onError={(e) => {
-                                    console.log('Avatar image failed to load, showing initials instead');
-                                    e.target.style.display = 'none';
+                                    console.log('Avatar image failed to load, showing initials instead', userProfilePicture);
+                                    e.target.style.display = 'none'; // Revert to original behavior
                                 }}
                             />
                         ) : null}

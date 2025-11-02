@@ -63,8 +63,8 @@ const PatientDashboardPage = () => {
     }
 
     return (
-        <div className="flex flex-col gap-4 sm:gap-6">
-            <div>
+        <div className="flex flex-col gap-4 sm:gap-6 pt-0 sm:pt-4">
+            <div className="pt-4">
                 {/* === EMOJI KO GRADIENT SE ALAG KIYA HAI === */}
                 <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold flex items-center gap-2 flex-wrap">
                     <span className="bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">
