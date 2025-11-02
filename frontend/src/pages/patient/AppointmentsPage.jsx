@@ -1,96 +1,104 @@
-import React, { useState } from 'react';
-import { CalendarPlus } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { CalendarPlus, User, Users } from 'lucide-react';
 import AppointmentCard from '../../components/patient/AppointmentCard';
-import { Link } from 'react-router-dom'; // Button ko link banane ke liye import
-import { useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../../utils/api';
 
-// Dummy data for demonstration
-const upcomingAppointmentsData = [
-    {
-        doctor: 'Dr. Anjali Sharma',
-        specialty: 'Cardiology',
-        hospital: 'City Hospital',
-        date: 'Oct 15, 2025',
-        time: '10:30 AM',
-        status: 'Upcoming',
-    },
-    {
-        doctor: 'Dr. Rohan Verma',
-        specialty: 'Dermatology',
-        hospital: 'Care & Cure Clinic',
-        date: 'Oct 22, 2025',
-        time: '02:00 PM',
-        status: 'Upcoming',
-    },
-];
-
-const previousAppointmentsData = [
-    {
-        doctor: 'Dr. Priya Singh',
-        specialty: 'Pediatrics',
-        hospital: 'Child Health Center',
-        date: 'Sep 28, 2025',
-        time: '11:00 AM',
-        status: 'Completed',
-    },
-     {
-        doctor: 'Dr. Sameer Gupta',
-        specialty: 'General Physician',
-        hospital: 'City Hospital',
-        date: 'Aug 12, 2025',
-        time: '09:00 AM',
-        status: 'Cancelled',
-    },
-];
-
-
 const AppointmentsPage = () => {
-    const [activeTab, setActiveTab] = useState('upcoming');
-    const [dynamicUpcomingAppointments, setDynamicUpcomingAppointments] = useState([]);
-    const [dynamicPreviousAppointments, setDynamicPreviousAppointments] = useState([]);
+    const [activeTab, setActiveTab] = useState('upcoming'); // 'upcoming' or 'previous'
+    const [myUpcomingAppointments, setMyUpcomingAppointments] = useState([]);
+    const [myPreviousAppointments, setMyPreviousAppointments] = useState([]);
+    const [familyUpcomingAppointments, setFamilyUpcomingAppointments] = useState([]);
+    const [familyPreviousAppointments, setFamilyPreviousAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    // Helper function to format and categorize appointments
+    const categorizeAppointments = (appointments, isFamilyAppointments = false) => {
+        const now = new Date();
+        const upcoming = [];
+        const previous = [];
+
+        appointments.forEach(appt => {
+            const apptDateTime = new Date(`${appt.date}T${appt.time}:00`);
+            let mappedStatus = appt.status;
+            if (['Pending', 'Confirmed', 'Now Serving', 'Up Next', 'Waiting'].includes(appt.status)) {
+                mappedStatus = 'Upcoming';
+            }
+
+            // Extract patient name - only for family appointments
+            let patientName = null;
+            if (isFamilyAppointments || appt.patient?.primaryPatient) {
+                // For family appointments, use the patient's name
+                patientName = appt.patient?.name || appt.patient?.user?.name || 'Unknown Family Member';
+            }
+
+            const formattedAppt = {
+                _id: appt._id,
+                doctor: appt.doctor?.user?.name || 'Unknown Doctor',
+                specialty: appt.doctor?.specialty || 'N/A',
+                hospital: appt.hospital?.name || 'N/A',
+                date: new Date(appt.date).toDateString(),
+                time: appt.time,
+                status: mappedStatus,
+                patientName: patientName,
+                patientId: appt.patient?._id || appt.patient,
+            };
+
+            if (apptDateTime > now && mappedStatus !== 'Cancelled' && mappedStatus !== 'Completed') {
+                upcoming.push(formattedAppt);
+            } else {
+                previous.push(formattedAppt);
+            }
+        });
+
+        return { upcoming, previous };
+    };
 
     // Function to fetch all appointments
     const fetchAppointments = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/api/appointments/myappointments');
-            const fetchedAppointments = response.data;
+            
+            // Fetch all appointments (includes my appointments + family member appointments)
+            const appointmentsRes = await api.get('/api/appointments/myappointments');
+            const allAppointments = appointmentsRes.data;
 
-            const now = new Date();
-            const upcoming = [];
-            const previous = [];
+            // Get the primary patient ID to distinguish between my appointments and family appointments
+            const patientId = localStorage.getItem('patientId');
+            
+            // Separate my appointments from family appointments
+            const myAppointments = [];
+            const familyAppointments = [];
 
-            fetchedAppointments.forEach(appt => {
-                const apptDateTime = new Date(`${appt.date}T${appt.time}:00`);
-                let mappedStatus = appt.status;
-                if (['Pending', 'Confirmed', 'Now Serving', 'Up Next', 'Waiting'].includes(appt.status)) {
-                    mappedStatus = 'Upcoming';
-                }
-
-                const formattedAppt = {
-                    _id: appt._id, // Pass the original _id for API calls
-                    doctor: appt.doctor?.user?.name,
-                    specialty: appt.doctor?.specialty,
-                    hospital: appt.hospital?.name,
-                    date: new Date(appt.date).toDateString(),
-                    time: appt.time,
-                    status: mappedStatus,
-                };
-
-                if (apptDateTime > now) {
-                    upcoming.push(formattedAppt);
+            allAppointments.forEach(appt => {
+                // Check if the appointment belongs to the primary patient or a family member
+                const apptPatientId = appt.patient?._id || appt.patient;
+                
+                if (appt.patient?.primaryPatient) {
+                    // This is a family member's appointment (has primaryPatient field)
+                    familyAppointments.push(appt);
+                } else if (apptPatientId === patientId || !appt.patient?.primaryPatient) {
+                    // This is my appointment (no primaryPatient field means it's the primary patient)
+                    myAppointments.push(appt);
                 } else {
-                    previous.push(formattedAppt);
+                    // Fallback: treat as family appointment if it has a different patient ID
+                    familyAppointments.push(appt);
                 }
             });
 
-            setDynamicUpcomingAppointments(upcoming);
-            setDynamicPreviousAppointments(previous);
+            // Categorize appointments
+            const myCategorized = categorizeAppointments(myAppointments, false);
+            setMyUpcomingAppointments(myCategorized.upcoming);
+            setMyPreviousAppointments(myCategorized.previous);
+
+            const familyCategorized = categorizeAppointments(familyAppointments, true);
+            setFamilyUpcomingAppointments(familyCategorized.upcoming);
+            setFamilyPreviousAppointments(familyCategorized.previous);
+
         } catch (err) {
-            setError(err);
+            console.error('Error fetching appointments:', err);
+            setError(err.response?.data?.message || err.message || 'Failed to fetch appointments');
         } finally {
             setLoading(false);
         }
@@ -114,47 +122,77 @@ const AppointmentsPage = () => {
     };
 
     const handleReschedule = async (appointmentId) => {
-        // For simplicity, we'll just show an alert. 
-        // A real implementation would involve a date picker modal or navigation.
         alert('Reschedule functionality coming soon!');
-        // You would typically navigate to a rescheduling page or open a modal here.
-        // Example: navigate(`/patient/reschedule-appointment/${appointmentId}`);
-        // Or: onOpenRescheduleModal(appointmentId);
     };
 
-
     if (loading) {
-        return <div className="text-center py-12 text-foreground">Loading appointments...</div>;
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Loading appointments...</p>
+                </div>
+            </div>
+        );
     }
 
     if (error) {
         return <div className="text-center py-12 text-red-500">Error loading appointments: {error.message}</div>;
     }
 
-    const combinedUpcomingAppointments = [...upcomingAppointmentsData, ...dynamicUpcomingAppointments];
-    const combinedPreviousAppointments = [...previousAppointmentsData, ...dynamicPreviousAppointments];
-
-    const appointmentsToShow = activeTab === 'upcoming' ? combinedUpcomingAppointments : combinedPreviousAppointments;
+    // Component for rendering sub-section (My Appointments or Family Appointments)
+    const SubSection = ({ title, icon: Icon, appointments, emptyMessage, isFamilySection = false }) => (
+        <div className="mb-6 last:mb-0">
+            <div className="flex items-center gap-3 mb-4">
+                <div className="p-1.5 bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end rounded-lg">
+                    <Icon className="text-white w-4 h-4" />
+                </div>
+                <h3 className="text-lg sm:text-xl font-bold text-foreground">{title}</h3>
+                <span className="ml-auto text-sm font-semibold text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                    {appointments.length}
+                </span>
+            </div>
+            <div className="space-y-3">
+                {appointments.length > 0 ? (
+                    appointments.map((appt) => (
+                        <AppointmentCard 
+                            key={appt._id} 
+                            appointment={appt} 
+                            onCancel={handleCancel} 
+                            onReschedule={handleReschedule}
+                            isFamilyAppointment={isFamilySection}
+                        />
+                    ))
+                ) : (
+                    <div className="text-center py-6 bg-background rounded-lg border border-dashed">
+                        <p className="text-sm text-muted-foreground">{emptyMessage}</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             {/* Page Header */}
             <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl md:text-3xl font-bold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">My Appointments</h1>
-                    <p className="text-muted-foreground mt-1">View and manage your appointments.</p>
+                    <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">
+                        My Appointments
+                    </h1>
+                    <p className="text-muted-foreground mt-1">View and manage your appointments and family appointments.</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2">
                     <Link 
                         to="/patient/book-appointment"
-                        className="bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-white font-bold py-2 px-4 rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                        className="bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-white font-bold py-2 px-4 rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2 text-sm sm:text-base"
                     >
                         <CalendarPlus size={18} />
                         Book Doctor Appointment
                     </Link>
                     <Link 
-                        to="/patient/book-test-appointment" // NEW ROUTE for test appointments
-                        className="bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-white font-bold py-2 px-4 rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                        to="/patient/book-test-appointment"
+                        className="bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-white font-bold py-2 px-4 rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2 text-sm sm:text-base"
                     >
                         <CalendarPlus size={18} />
                         Book Test Appointment
@@ -163,47 +201,108 @@ const AppointmentsPage = () => {
             </div>
 
             {/* Tabs */}
-            <div className="border-b border-border">
-                <nav className="-mb-px flex space-x-3 sm:space-x-6">
-                    {/* === UPCOMING TAB PAR GRADIENT LAGAYA HAI === */}
-                    <button 
-                        onClick={() => setActiveTab('upcoming')}
-                        className={`py-3 px-1 border-b-2 font-semibold text-sm transition-colors ${
-                            activeTab === 'upcoming' 
-                            ? 'border-primary bg-gradient-to-r from-hs-gradient-start to-hs-gradient-end text-transparent bg-clip-text' 
-                            : 'border-transparent text-muted-foreground hover:text-foreground'
-                        }`}
-                    >
-                        Upcoming
-                    </button>
-                    {/* === PREVIOUS TAB PAR GRADIENT LAGAYA HAI === */}
-                    <button 
-                        onClick={() => setActiveTab('previous')}
-                        className={`py-3 px-1 border-b-2 font-semibold text-sm transition-colors ${
-                            activeTab === 'previous' 
-                            ? 'border-primary bg-gradient-to-r from-hs-gradient-start to-hs-gradient-end text-transparent bg-clip-text' 
-                            : 'border-transparent text-muted-foreground hover:text-foreground'
-                        }`}
-                    >
-                        Previous
-                    </button>
-                </nav>
-            </div>
+            <div className="bg-card rounded-lg sm:rounded-xl border border-border shadow-sm">
+                <div className="border-b border-border">
+                    <nav className="flex -mb-px">
+                        <button
+                            onClick={() => setActiveTab('upcoming')}
+                            className={`flex-1 sm:flex-none py-4 px-6 text-base sm:text-lg font-semibold border-b-2 transition-colors ${
+                                activeTab === 'upcoming'
+                                    ? 'border-blue-500 bg-gradient-to-r from-hs-gradient-start to-hs-gradient-end text-transparent bg-clip-text'
+                                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300'
+                            }`}
+                        >
+                            <div className="flex items-center justify-center gap-2">
+                                <div className={`w-2 h-2 rounded-full ${activeTab === 'upcoming' ? 'bg-blue-500' : 'bg-gray-400'}`}></div>
+                                <span>Upcoming Appointments</span>
+                                <span className={`text-sm font-normal px-2 py-0.5 rounded-full ${
+                                    activeTab === 'upcoming' 
+                                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
+                                        : 'bg-muted text-muted-foreground'
+                                }`}>
+                                    {myPreviousAppointments.length + familyPreviousAppointments.length}
+                                </span>
+                            </div>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('previous')}
+                            className={`flex-1 sm:flex-none py-4 px-6 text-base sm:text-lg font-semibold border-b-2 transition-colors ${
+                                activeTab === 'previous'
+                                    ? 'border-gray-500 bg-gradient-to-r from-hs-gradient-start to-hs-gradient-end text-transparent bg-clip-text'
+                                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300'
+                            }`}
+                        >
+                            <div className="flex items-center justify-center gap-2">
+                                <div className={`w-2 h-2 rounded-full ${activeTab === 'previous' ? 'bg-gray-500' : 'bg-gray-400'}`}></div>
+                                <span>Previous Appointments</span>
+                                <span className={`text-sm font-normal px-2 py-0.5 rounded-full ${
+                                    activeTab === 'previous' 
+                                        ? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300' 
+                                        : 'bg-muted text-muted-foreground'
+                                }`}>
+                                    {myUpcomingAppointments.length + familyUpcomingAppointments.length}
+                                </span>
+                            </div>
+                        </button>
+                    </nav>
+                </div>
 
-            {/* Appointments List */}
-            <div className="space-y-4">
-                {appointmentsToShow.length > 0 ? (
-                    appointmentsToShow.map((appt, index) => (
-                        <AppointmentCard key={appt._id || index} appointment={appt} onCancel={handleCancel} onReschedule={handleReschedule} />
-                    ))
-                ) : (
-                    <div className="text-center py-12 bg-card rounded-lg border border-dashed">
-                        <h3 className="text-lg font-semibold text-foreground">No appointments found</h3>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            You have no {activeTab} appointments at this time.
-                        </p>
-                    </div>
-                )}
+                {/* Content Area */}
+                <div className="p-4 sm:p-6">
+                    {/* Upcoming Appointments Section */}
+                    {activeTab === 'upcoming' && (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* My Previous Appointments */}
+                            <div className="border-r-0 lg:border-r border-border pr-0 lg:pr-6">
+                                <SubSection
+                                    title="My Appointments"
+                                    icon={User}
+                                    appointments={myPreviousAppointments}
+                                    emptyMessage="No previous appointments for you"
+                                    isFamilySection={false}
+                                />
+                            </div>
+
+                            {/* Family Previous Appointments */}
+                            <div className="pl-0 lg:pl-6">
+                                <SubSection
+                                    title="Family Appointments"
+                                    icon={Users}
+                                    appointments={familyPreviousAppointments}
+                                    emptyMessage="No previous appointments for family members"
+                                    isFamilySection={true}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Previous Appointments Section */}
+                    {activeTab === 'previous' && (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* My Upcoming Appointments */}
+                            <div className="border-r-0 lg:border-r border-border pr-0 lg:pr-6">
+                                <SubSection
+                                    title="My Appointments"
+                                    icon={User}
+                                    appointments={myUpcomingAppointments}
+                                    emptyMessage="No upcoming appointments for you"
+                                    isFamilySection={false}
+                                />
+                            </div>
+
+                            {/* Family Upcoming Appointments */}
+                            <div className="pl-0 lg:pl-6">
+                                <SubSection
+                                    title="Family Appointments"
+                                    icon={Users}
+                                    appointments={familyUpcomingAppointments}
+                                    emptyMessage="No upcoming appointments for family members"
+                                    isFamilySection={true}
+                                />
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

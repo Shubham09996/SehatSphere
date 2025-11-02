@@ -56,6 +56,7 @@ import ConsultationSettings from './components/doctor/settings/ConsultationSetti
 import DoctorProfilePage from './pages/doctor/DoctorProfilePage.jsx';
 import DoctorNotificationsPage from './pages/doctor/DoctorNotificationsPage.jsx';
 import PrescriptionWriter from './components/doctor/prescriptions/PrescriptionWriter.jsx'; // NEW: Import PrescriptionWriter
+import TestReportPage from './pages/doctor/TestReportPage.jsx'; // NEW: Import TestReportPage
 
 // Shop Pages
 import ShopDashboardPage from './pages/shop/ShopDashboardPage.jsx';
@@ -214,6 +215,7 @@ function App() {
             <Route path="schedule" element={<SchedulePage />} />
             <Route path="patients" element={<MyPatientsPage />} />
             <Route path="prescriptions" element={<DoctorPrescriptionsPage />} />
+            <Route path="test-reports" element={<TestReportPage />} />
             <Route path="profile" element={<DoctorProfilePage />} />
             <Route path="notifications" element={<DoctorNotificationsPage />} />
             <Route path="prescriptions/new" element={<PrescriptionWriter />} /> {/* New route for PrescriptionWriter */}

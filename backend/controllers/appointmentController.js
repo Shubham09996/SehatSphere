@@ -30,7 +30,18 @@ const getMyAppointments = asyncHandler(async (req, res) => {
             res.status(404);
             throw new Error('Patient profile not found');
         }
-        query = { patient: patient._id };
+        
+        // Get primary patient ID
+        const primaryPatientId = patient._id;
+        
+        // Find all family members (patients with this primaryPatientId)
+        const familyMembers = await Patient.find({ primaryPatient: primaryPatientId }).select('_id');
+        const familyMemberIds = familyMembers.map(fm => fm._id);
+        
+        // Include both primary patient and family member appointments
+        query = { 
+            patient: { $in: [primaryPatientId, ...familyMemberIds] }
+        };
     } else if (req.user.role === 'Doctor') {
         const doctor = await Doctor.findOne({ user: req.user._id });
         if (!doctor) {
@@ -42,7 +53,7 @@ const getMyAppointments = asyncHandler(async (req, res) => {
     // Admins can see all appointments (no specific query needed for admin, already covered by getAppointments if not filtered)
 
     const appointments = await Appointment.find(query)
-      .populate('patient', 'patientId name profilePicture dob gender bloodGroup isPremium user')
+      .populate('patient', 'patientId name profilePicture dob gender bloodGroup isPremium user primaryPatient')
       .populate({
         path: 'doctor',
         select: 'specialty qualifications averageRating numberOfReviews user',
@@ -51,7 +62,8 @@ const getMyAppointments = asyncHandler(async (req, res) => {
           select: 'name profilePicture'
         }
       })
-      .populate('hospital', 'name location');
+      .populate('hospital', 'name location')
+      .sort({ date: -1, time: -1 }); // Sort by date and time descending
 
     res.json(appointments);
 });

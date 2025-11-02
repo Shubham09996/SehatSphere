@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Calendar, Users, Pill, Settings, ChevronsLeft, ChevronsRight, LifeBuoy, X } from 'lucide-react';
+import { LayoutDashboard, Calendar, Users, Pill, Settings, ChevronsLeft, ChevronsRight, LifeBuoy, X, FileText } from 'lucide-react';
 
 const DoctorSidebar = ({ isCollapsed, toggleCollapse, onCloseMobileSidebar }) => {
     const navItems = [
@@ -8,6 +8,7 @@ const DoctorSidebar = ({ isCollapsed, toggleCollapse, onCloseMobileSidebar }) =>
         { icon: Calendar, text: 'My Schedule', path: '/doctor/schedule' },
         { icon: Users, text: 'My Patients', path: '/doctor/patients' },
         { icon: Pill, text: 'Prescriptions', path: '/doctor/prescriptions' },
+        { icon: FileText, text: 'Test Reports', path: '/doctor/test-reports' },
         { icon: Settings, text: 'Settings', path: '/doctor/settings' },
     ];
 
