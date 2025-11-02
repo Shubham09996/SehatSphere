@@ -134,21 +134,18 @@ function App() {
   // 🧩 Step 2: Redirect user once context updates
   useEffect(() => {
     // Ensure user is logged in, not loading, and it's the immediate redirect after initial auth.
-    if (!loading && user && processedRedirectRef.current) {
+    if (!loading && user) {
       const userRole = user.role?.toLowerCase();
 
-      // Removed onboarding specific redirect, now handled by LabProfilePage
-      // if (user.isNewUser && userRole === 'lab') {
-      //   const redirectPath = `/lab-onboarding/${user._id}`;
-      //   console.log(`App.jsx - Redirecting new ${user.role} to onboarding. Navigating to: ${redirectPath}`);
-      //   if (location.pathname !== redirectPath) {
-      //     navigate(redirectPath);
-      //     processedRedirectRef.current = true; // Mark as processed
-      //   } else {
-      //     console.log('App.jsx - Already on target path:', redirectPath);
-      //   }
-      // } else
-      if (!user.isNewUser && location.pathname.includes('onboarding')) { // If user is onboarded but on an onboarding page
+      if (user.isNewUser && userRole === 'patient') {
+          const redirectPath = `/patient-onboarding/${user._id}`;
+          console.log(`App.jsx - Redirecting new ${user.role} to onboarding. Navigating to: ${redirectPath}`);
+          if (location.pathname !== redirectPath) {
+              navigate(redirectPath);
+          } else {
+              console.log('App.jsx - Already on target path:', redirectPath);
+          }
+      } else if (user && !user.isNewUser && location.pathname.includes('onboarding')) { // If user is onboarded but on an onboarding page
         const dashboardPath = `/${userRole}/dashboard`;
         console.log(`App.jsx - User is onboarded but on onboarding page. Redirecting to: ${dashboardPath}`);
         if (location.pathname !== dashboardPath) {
@@ -156,7 +153,7 @@ function App() {
         } else {
           console.log('App.jsx - Already on target path:', dashboardPath);
         }
-      } else if (!user.isNewUser && !location.pathname.startsWith(`/${userRole}`)) {
+      } else if (user && !user.isNewUser && !location.pathname.startsWith(`/${userRole}`)) {
         // If user is logged in, not new, and not on their role's dashboard, redirect to their dashboard.
         const dashboardPath = `/${userRole}/dashboard`;
         console.log(`App.jsx - User is not new, redirecting to dashboard. Navigating to: ${dashboardPath}`);
@@ -165,20 +162,28 @@ function App() {
         } else {
           console.log('App.jsx - Already on target path:', dashboardPath);
         }
-      } else {
-        console.log('App.jsx - No special redirect needed or already on correct path.');
       }
-      processedRedirectRef.current = false; // Reset to allow public route access after initial dashboard redirect
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, location.pathname]);
 
   // 🧩 Step 3: Protect routes for unauthenticated users
   useEffect(() => {
+    console.log('App.jsx - Protect routes useEffect: user', user, 'loading', loading, 'location.pathname', location.pathname);
     if (!loading && !user) {
       const isPublicRoute = [
         '/', '/features', '/roles', '/about',
-        '/login', '/signup', '/forgot-password', '/reset-password', '/patient-onboarding'
-      ].some(route => location.pathname === route || location.pathname.startsWith(route + '/'));
+        '/login', '/signup', '/forgot-password', '/reset-password',
+        /\/patient-onboarding\/[a-zA-Z0-9]+/, // Regex for dynamic patient onboarding route
+      ].some(route => {
+        if (typeof route === 'string') {
+          return location.pathname === route || location.pathname.startsWith(route + '/');
+        } else if (route instanceof RegExp) {
+          return route.test(location.pathname);
+        }
+        return false;
+      });
+
+      console.log('App.jsx - Protect routes useEffect: isPublicRoute', isPublicRoute);
 
       if (!isPublicRoute) {
         navigate('/login', { replace: true });

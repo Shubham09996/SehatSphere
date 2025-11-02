@@ -348,6 +348,34 @@ const createLabTestOrder = asyncHandler(async (req, res) => {
   res.status(201).json(createdLabTestOrder);
 });
 
+// @desc    Add a new test to a lab's offered tests
+// @route   POST /api/labs/:labId/tests
+// @access  Private/Lab
+const addLabTest = asyncHandler(async (req, res) => {
+  const { testName, testType, price } = req.body;
+  const labId = req.params.labId;
+
+  const lab = await Lab.findById(labId);
+
+  if (!lab) {
+    res.status(404);
+    throw new Error('Lab not found');
+  }
+
+  // Check if test already exists (optional, but good for preventing duplicates)
+  const testExists = lab.testsOffered.some(test => test.testName === testName);
+  if (testExists) {
+    res.status(400);
+    throw new Error('Test with this name already offered by this lab');
+  }
+
+  const newTest = { testName, testType, price };
+  lab.testsOffered.push(newTest);
+  await lab.save();
+
+  res.status(201).json({ message: 'Test added successfully', test: newTest });
+});
+
 export {
   getLabProfile,
   updateLabProfile,
@@ -366,4 +394,5 @@ export {
   getAvailableLabs, // NEW: Export getAvailableLabs
   getLabTests, // NEW: Export getLabTests
   createLabTestOrder, // NEW: Export createLabTestOrder
+  addLabTest, // NEW: Export addLabTest
 };
