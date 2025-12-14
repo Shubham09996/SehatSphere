@@ -114,7 +114,7 @@ const NotificationSettings = () => {
                 <div className="flex justify-between items-center p-2 rounded-md hover:bg-muted">
                     <div>
                         <p className="font-semibold text-foreground">In-App Notifications</p>
-                        <p className="text-sm text-muted-foreground">Receive instant notifications within the HealthSphere app.</p>
+                        <p className="text-sm text-muted-foreground">Receive instant notifications within the SehatSphere app.</p>
                     </div>
                     <SwitchToggle enabled={inAppNotificationsEnabled} setEnabled={setInAppNotificationsEnabled}/>
                 </div>

@@ -57,16 +57,16 @@ const DoctorHeader = ({ isSidebarOpen, setIsSidebarOpen }) => {
         <header className="flex items-center justify-between p-4 bg-card border-b border-border sticky top-0 z-40">
             <div className="flex items-center space-x-4">
                 <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="md:hidden p-2 rounded-md hover:bg-muted"><Menu size={24} /></button>
-                {/* Mobile HealthSphere Logo */}
+                {/* Mobile SehatSphere Logo */}
                 <div className="flex items-center space-x-2 md:hidden">
                     <Link to="/" className="flex items-center space-x-2">
-                        <img src={logo} alt="HealthSphere Logo" className="w-16 h-16" />
+                        <img src={logo} alt="SehatSphere Logo" className="w-16 h-16" />
                     </Link>
                 </div>
                 <div className="hidden md:flex items-center space-x-2">
                     <Link to="/" className="flex items-center space-x-2">
-                        <img src={logo} alt="HealthSphere Logo" className="w-16 h-16" />
-                        <span className="text-xl font-semibold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">HealthSphere</span>
+                        <img src={logo} alt="SehatSphere Logo" className="w-16 h-16" />
+                        <span className="text-xl font-semibold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">SehatSphere</span>
                     </Link>
                 </div>
             </div>

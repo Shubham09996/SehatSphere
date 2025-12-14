@@ -26,7 +26,7 @@ const ShopSidebar = ({ isCollapsed, toggleCollapse, onCloseMobileSidebar, isPrem
                  </div>
             </div>
             
-            {/* HealthSphere Logo for Mobile View */}
+            {/* SehatSphere Logo for Mobile View */}
             {!isCollapsed && (
                 <div className="mb-6 flex items-center justify-between md:hidden">
                     <NavLink to="/" className="flex items-center space-x-2" onClick={onCloseMobileSidebar}>

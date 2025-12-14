@@ -55,9 +55,9 @@ const HospitalHeader = ({ isSidebarOpen, setIsSidebarOpen }) => { // Component n
                     <Menu size={24} />
                 </button>
                 <Link to="/" className="flex items-center space-x-2" onClick={(e) => { e.preventDefault(); navigate('/'); }}> {/* NEW: Link to homepage */}
-                    <img src={logo} alt="HealthSphere Logo" className="w-16 h-16" />
+                    <img src={logo} alt="SehatSphere Logo" className="w-16 h-16" />
                     <span className="hidden sm:inline text-2xl font-semibold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">
-                        HealthSphere
+                        SehatSphere
                     </span>
                 </Link>
                 <h2 className="text-xl font-bold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text hidden">

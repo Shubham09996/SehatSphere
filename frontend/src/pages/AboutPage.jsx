@@ -7,11 +7,14 @@ import { Github, Linkedin, Heart } from "lucide-react";
 const team = [
   {
     name: "Shubham Gupta",
-    role: "Team Leader — Full Stack",
+    role: "Full Stack Developer", // Removed "Team Leader"
     line: "Architecting the future of healthcare, one line of code at a time.",
     avatarSeed: "Shubham",
     side: "left",
-    links: { linkedin: "https://www.linkedin.com/in/shubhamgupta0996/", github: "https://github.com/Shubham09996" },
+    links: {
+      linkedin: "https://www.linkedin.com/in/shubhamgupta0996/",
+      github: "https://github.com/Shubham09996",
+    },
   },
   {
     name: "Sneha Gupta",
@@ -19,15 +22,32 @@ const team = [
     line: "Crafting intuitive designs for a seamless and compassionate user experience.",
     avatarSeed: "Sneha",
     side: "right",
-    links: { linkedin: "https://www.linkedin.com/in/sneha-gupta-54a2032a4/", github: "https://github.com/snehagupta1234" },
+    links: {
+      linkedin: "https://www.linkedin.com/in/sneha-gupta-54a2032a4/",
+      github: "https://github.com/snehagupta1234",
+    },
+  },
+  {
+    name: "Swastika Tiwari", // Added New Member
+    role: "Frontend & Research",
+    line: "Blending technical research with modern frontend aesthetics for robust solutions.",
+    avatarSeed: "Swastika",
+    side: "left",
+    links: {
+      linkedin: "https://www.linkedin.com/in/swastika-tiwari-940706329/",
+      github: "https://github.com/Swastika1202",
+    },
   },
   {
     name: "Om Kumar Jha",
     role: "Frontend & Ideas",
     line: "Bringing static designs to life with fluid animations and next-level features.",
     avatarSeed: "OmKumar",
-    side: "left",
-    links: { linkedin: "https://www.linkedin.com/in/omkumarjha08/", github: "https://github.com/Omk228" },
+    side: "right", // Changed to 'right' to maintain zigzag pattern
+    links: {
+      linkedin: "https://www.linkedin.com/in/omkumarjha08/",
+      github: "https://github.com/Omk228",
+    },
   },
 ];
 
@@ -96,7 +116,12 @@ const TeamItem = ({ member, index }) => {
       opacity: 1,
       x: 0,
       scale: 1,
-      transition: { duration: 1, delay: index * 0.2, type: "spring", stiffness: 60 },
+      transition: {
+        duration: 1,
+        delay: index * 0.2,
+        type: "spring",
+        stiffness: 60,
+      },
     },
   };
 
@@ -172,7 +197,7 @@ const AboutPage = () => {
           transition={{ duration: 0.8 }}
           className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold leading-snug bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text"
         >
-          The Story Behind HealthSphere
+          The Story Behind SehatSphere
         </motion.h1>
         <motion.p
           initial={{ opacity: 0 }}
@@ -180,8 +205,8 @@ const AboutPage = () => {
           transition={{ delay: 0.2, duration: 0.8 }}
           className="mt-2 sm:mt-4 text-sm sm:text-base md:text-lg text-muted-foreground max-w-md sm:max-w-2xl"
         >
-          We are a passionate team dedicated to solving healthcare challenges
-          with technology — creating a connected, intelligent, and compassionate
+          We are a passionate team dedicated to solving healthcare challenges with
+          technology — creating a connected, intelligent, and compassionate
           ecosystem.
         </motion.p>
         <motion.div
@@ -239,7 +264,7 @@ const AboutPage = () => {
               Ready to Transform Healthcare?
             </h3>
             <p className="mt-3 text-muted-foreground max-w-2xl mx-auto text-sm sm:text-base">
-              Join HealthSphere today — experience a smarter, connected, and
+              Join SehatSphere today — experience a smarter, connected, and
               patient-first healthcare system.
             </p>
             <div className="mt-6 sm:mt-8">
@@ -256,8 +281,10 @@ const AboutPage = () => {
           </motion.div>
 
           <div className="mt-8 text-xs text-muted-foreground">
-            © {new Date().getFullYear()} HealthSphere — Built by{" "}
-            <span className="font-semibold text-foreground">Shubham & Team</span>{" "}
+            © {new Date().getFullYear()} SehatSphere — Built by{" "}
+            <span className="font-semibold text-foreground">
+              Team SehatSphere
+            </span>{" "}
             with ❤️
           </div>
         </div>

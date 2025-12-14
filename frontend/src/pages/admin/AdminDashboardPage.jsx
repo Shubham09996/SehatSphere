@@ -103,7 +103,7 @@ const AdminDashboardPage = () => {
                  <h1 className="text-3xl font-bold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">
                     Platform Overview
                 </h1>
-                <p className="text-muted-foreground mt-1">Real-time analytics and management for HealthSphere.</p>
+                <p className="text-muted-foreground mt-1">Real-time analytics and management for SehatSphere.</p>
             </div>
 
             <motion.div 

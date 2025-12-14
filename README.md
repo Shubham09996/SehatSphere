@@ -1,10 +1,10 @@
-# HealthSphere 🏥
+# SehatSphere 🏥
 
 ## Project Description 📝
-HealthSphere is a comprehensive healthcare management system designed to streamline various aspects of patient, doctor, hospital, and administrative workflows. It aims to provide an efficient and user-friendly platform for managing appointments, medical records, prescriptions, billing, and more. The project leverages modern web technologies to deliver a robust and scalable solution for healthcare providers and patients.
+SehatSphere is a comprehensive healthcare management system designed to streamline various aspects of patient, doctor, hospital, and administrative workflows. It aims to provide an efficient and user-friendly platform for managing appointments, medical records, prescriptions, billing, and more. The project leverages modern web technologies to deliver a robust and scalable solution for healthcare providers and patients.
 
 ## Features ✨
-HealthSphere offers a wide range of features to enhance the healthcare experience:
+SehatSphere offers a wide range of features to enhance the healthcare experience:
 - **User Authentication & Authorization**: 🔐 Secure login and registration for Patients, Doctors, Hospitals, and Admins with role-based access control.
 - **Google OAuth Integration**: 🌐 Seamless sign-up and login using Google accounts.
 - **Appointment Management**: 🗓️ Patients can book, view, and manage appointments with doctors. Doctors can manage their schedules and appointment queues.
@@ -20,7 +20,7 @@ HealthSphere offers a wide range of features to enhance the healthcare experienc
 - **Password Management**: 🔒 Features for changing and resetting forgotten passwords.
 
 ## UI Screenshots 📸
-Here are some screenshots of the HealthSphere application, showcasing its user interface and key functionalities:
+Here are some screenshots of the SehatSphere application, showcasing its user interface and key functionalities:
 
 ### Login Page
 ![Login Page](frontend/public/images/img1.png)
@@ -75,7 +75,7 @@ _The administrative control panel, offering insights into system performance, us
 - **eslint**: Pluggable JavaScript linter.
 
 ## Installation 🚀
-To set up and run the HealthSphere project locally, follow these steps:
+To set up and run the SehatSphere project locally, follow these steps:
 
 ### Prerequisites ✅
 - Node.js (v14 or higher)
@@ -86,7 +86,7 @@ To set up and run the HealthSphere project locally, follow these steps:
 1. **Clone the repository:**
    ```bash
    git clone <repository_url>
-   cd HealthSphere/backend
+   cd SehatSphere/backend
    ```
 2. **Install dependencies:**
    ```bash
@@ -146,7 +146,7 @@ To set up and run the HealthSphere project locally, follow these steps:
 Once both the backend and frontend servers are running, you can access the application in your web browser, typically at `http://localhost:5173`.
 
 ### Roles and Access 🎭
-HealthSphere supports multiple user roles, each with specific access levels:
+SehatSphere supports multiple user roles, each with specific access levels:
 - **Patient**: 🧑‍⚕️ Can book appointments, view health records, prescriptions, donations, and orders.
 - **Doctor**: 🩺 Can manage appointments, write prescriptions, access patient health records, and update schedules.
 - **Hospital**: 🏥 (Further integration may be needed to define hospital-specific roles and features).
@@ -154,7 +154,7 @@ HealthSphere supports multiple user roles, each with specific access levels:
 - **Admin**: 👑 Full access to the platform, including user management, hospital management, system analytics, and security.
 
 ## Contributing 🤝
-We welcome contributions to HealthSphere! To contribute, please follow these steps:
+We welcome contributions to SehatSphere! To contribute, please follow these steps:
 1. Fork the repository. 🍴
 2. Create a new branch for your feature or bug fix. 🌳
 3. Make your changes and ensure they adhere to the project's coding standards. ✍️

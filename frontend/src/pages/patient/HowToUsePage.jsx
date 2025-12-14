@@ -7,17 +7,17 @@ const HowToUsePage = () => {
         // FIX: Removed container, mx-auto, px, and pt classes to fix margins
         <div className="bg-background text-foreground min-h-screen">
             {/* FIX: Applied theme gradient to the main heading */}
-            <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">How To Use HealthSphere</h1>
+            <h1 className="text-3xl font-bold mb-6 bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">How To Use SehatSphere</h1>
 
             <div className="bg-card p-6 rounded-lg shadow-lg mb-8 border border-border">
                 <h2 className="text-2xl font-semibold mb-4">Website Tutorial Video</h2>
-                <p className="text-muted-foreground mb-4">Watch this video to learn how to navigate and utilize all the features of HealthSphere.</p>
+                <p className="text-muted-foreground mb-4">Watch this video to learn how to navigate and utilize all the features of SehatSphere.</p>
                 
                 <div className="relative w-full overflow-hidden rounded-lg aspect-video">
                     <iframe
                         className="absolute top-0 left-0 w-full h-full"
                         src={`https://www.youtube.com/embed/${youtubeVideoId}`}
-                        title="HealthSphere Tutorial Video"
+                        title="SehatSphere Tutorial Video"
                         frameBorder="0"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen

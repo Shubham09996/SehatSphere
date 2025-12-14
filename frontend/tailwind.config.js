@@ -22,7 +22,7 @@ export default {
         border: 'hsl(var(--border))',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
-        // Global Gradient for HealthSphere Logo Text
+        // Global Gradient for SehatSphere Logo Text
         'hs-gradient-start': '#0096C7',
         'hs-gradient-middle': '#2A9D8F',
         'hs-gradient-end': '#7E57C2',

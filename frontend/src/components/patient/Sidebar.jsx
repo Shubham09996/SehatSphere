@@ -34,7 +34,7 @@ const Sidebar = () => {
                 <div className="bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end p-2 rounded-md">
                     <span className="text-white font-bold text-lg">H</span>
                 </div>
-                <span className="text-xl font-semibold">HealthSphere</span>
+                <span className="text-xl font-semibold">SehatSphere</span>
             </div>
 
             <nav className="flex-1 flex flex-col space-y-2">

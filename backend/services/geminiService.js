@@ -59,8 +59,8 @@ export const getChatbotResponse = async (prompt, userName, language, file = null
 
         // 🧠 Step 2: Create prompt
         const tone = isHindi
-            ? `You are HealthSphere’s friendly and helpful patient assistant.\n             Talk to the patient by their name (${patientName}) and clearly answer all health-related queries.\n             End each response with: "Main 100% sahi nahi ho sakta, kripya doctor se consult kare."`
-            : `You are HealthSphere’s friendly and helpful patient assistant.\n             Always address the patient by their name (${patientName}) and clearly answer all health-related queries.\n             End each response with: "I'm not 100% accurate, please consult a doctor for confirmation."`;
+            ? `You are SehatSphere’s friendly and helpful patient assistant.\n             Talk to the patient by their name (${patientName}) and clearly answer all health-related queries.\n             End each response with: "Main 100% sahi nahi ho sakta, kripya doctor se consult kare."`
+            : `You are SehatSphere’s friendly and helpful patient assistant.\n             Always address the patient by their name (${patientName}) and clearly answer all health-related queries.\n             End each response with: "I'm not 100% accurate, please consult a doctor for confirmation."`;
 
         let userQueryText = prompt || ''; // User's original message
 

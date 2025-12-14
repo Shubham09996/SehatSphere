@@ -90,10 +90,10 @@ const FeaturesPage = () => {
 
   // ❓ FAQs
   const faqs = [
-    { question: "How does HealthSphere ensure my data privacy?", answer: "We use end-to-end encryption and adhere to strict data privacy regulations (like HIPAA/GDPR) to ensure all your health data is secure and confidential." },
-    { question: "Can I use HealthSphere for emergency situations?", answer: "HealthSphere is designed for routine healthcare management and appointments. For medical emergencies, please call your local emergency services immediately." },
-    { question: "Is HealthSphere available globally?", answer: "Currently, HealthSphere is primarily focused on India. We are working on expanding our services to other regions soon." },
-    { question: "How do I connect with a doctor through HealthSphere?", answer: "You can find doctors by specialty or location, view their profiles, and book an appointment directly through the app. You can also opt for virtual consultations where available." },
+    { question: "How does SehatSphere ensure my data privacy?", answer: "We use end-to-end encryption and adhere to strict data privacy regulations (like HIPAA/GDPR) to ensure all your health data is secure and confidential." },
+    { question: "Can I use SehatSphere for emergency situations?", answer: "SehatSphere is designed for routine healthcare management and appointments. For medical emergencies, please call your local emergency services immediately." },
+    { question: "Is SehatSphere available globally?", answer: "Currently, SehatSphere is primarily focused on India. We are working on expanding our services to other regions soon." },
+    { question: "How do I connect with a doctor through SehatSphere?", answer: "You can find doctors by specialty or location, view their profiles, and book an appointment directly through the app. You can also opt for virtual consultations where available." },
   ];
 
   return (
@@ -115,7 +115,7 @@ const FeaturesPage = () => {
             animate={{ opacity: 1, y: 0 }} 
             transition={{ duration: 0.7, delay: 0.2 }}
           >
-            HealthSphere connects patients, doctors, and pharmacies in a single, seamless ecosystem, making healthcare smarter, faster, and more efficient.
+            SehatSphere connects patients, doctors, and pharmacies in a single, seamless ecosystem, making healthcare smarter, faster, and more efficient.
           </motion.p>
           <motion.div 
             className="mt-8 flex justify-center gap-4"
@@ -140,7 +140,7 @@ const FeaturesPage = () => {
             Tailored Features for Your Role
           </h2>
           <p className="text-muted-foreground mt-2">
-            Whether you're a patient seeking care or a doctor providing it, HealthSphere has you covered.
+            Whether you're a patient seeking care or a doctor providing it, SehatSphere has you covered.
           </p>
         </div>
 
@@ -222,7 +222,7 @@ const FeaturesPage = () => {
             Experience the Future of Health
           </h2>
           <p className="text-muted-foreground mt-4 max-w-2xl mx-auto text-lg">
-            Join thousands of users who are already benefiting from HealthSphere's integrated healthcare solutions.
+            Join thousands of users who are already benefiting from SehatSphere's integrated healthcare solutions.
           </p>
           <Link to="/signup" className="mt-8 inline-flex items-center justify-center font-bold py-4 px-10 rounded-full bg-gradient-to-r from-hs-gradient-start to-hs-gradient-end text-white text-lg hover:shadow-xl hover:brightness-110 transition-all duration-300 transform hover:-translate-y-1">
             Start Your Journey Today <ArrowRight size={24} className="ml-3"/>

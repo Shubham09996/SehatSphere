@@ -48,7 +48,7 @@ const PatientSidebar = ({ isCollapsed, toggleCollapse, onCloseMobileSidebar }) =
 
     return (
         <aside className="w-full h-full bg-card text-foreground flex flex-col p-4 border-r border-border relative">
-            {/* HealthSphere Logo for Desktop View */}
+            {/* SehatSphere Logo for Desktop View */}
             <div className={`mb-6 items-center transition-all duration-300 ${isCollapsed ? 'justify-center flex' : 'justify-between px-2 flex'} hidden md:flex`}>
                 <NavLink to="/patient/dashboard" className="flex items-center space-x-2">
                     <div className="bg-gradient-to-r from-[#0096C7] via-[#2A9D8F] to-[#7E57C2] p-2 rounded-md">
@@ -62,7 +62,7 @@ const PatientSidebar = ({ isCollapsed, toggleCollapse, onCloseMobileSidebar }) =
                 </NavLink>
             </div>
 
-            {/* HealthSphere Logo for Mobile View */}
+            {/* SehatSphere Logo for Mobile View */}
             {!isCollapsed && (
                 <div className="mb-6 flex items-center justify-between md:hidden">
                     <NavLink to="/patient/dashboard" className="flex items-center space-x-2" onClick={onCloseMobileSidebar}>

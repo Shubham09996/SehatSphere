@@ -67,7 +67,7 @@ const HomePage = () => {
                 transition={{ delay: 0.4, duration: 0.6 }}
                 className="text-5xl lg:text-7xl font-bold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text leading-tight"
               >
-                Welcome to HealthSphere
+                Welcome to SehatSphere
               </motion.h1>
 
               <motion.p
@@ -76,7 +76,7 @@ const HomePage = () => {
                 transition={{ delay: 0.6, duration: 0.6 }}
                 className="text-xl text-muted-foreground max-w-2xl mx-auto lg:mx-0"
               >
-                HealthSphere: Your all-in-one platform for seamless patient-doctor interactions and comprehensive healthcare management.
+                SehatSphere: Your all-in-one platform for seamless patient-doctor interactions and comprehensive healthcare management.
               </motion.p>
 
               {/* Buttons */}
@@ -184,7 +184,7 @@ const HomePage = () => {
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <img src={logo} alt="CareLink AI Logo" className="w-16 h-16" />
-                <span className="text-2xl font-bold text-foreground">HealthSphere</span>
+                <span className="text-2xl font-bold text-foreground">SehatSphere</span>
               </div>
               <p className="text-muted-foreground">
                 Your trusted AI-powered health companion for families.
@@ -228,7 +228,7 @@ const HomePage = () => {
           {/* Bottom Section */}
           <div className="border-t border-border pt-8 text-center text-muted-foreground">
             <p>
-              &copy; {new Date().getFullYear()} HealthSphere. All rights reserved.
+              &copy; {new Date().getFullYear()} SehatSphere. All rights reserved.
               <span className="mx-1">❤️</span> Made with love for families everywhere.
             </p>
           </div>

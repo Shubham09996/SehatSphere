@@ -354,7 +354,7 @@ const SignupPage = () => {
                          <div className="bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end p-2 rounded-md">
                              <span className="text-primary-foreground font-bold text-lg">H</span>
                          </div>
-                         <span className="text-2xl font-semibold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">HealthSphere</span>
+                         <span className="text-2xl font-semibold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">SehatSphere</span>
                      </div>
 
                     <h2 className="text-3xl sm:text-4xl font-extrabold text-foreground">{currentRoleInfo.title}</h2>

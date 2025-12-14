@@ -124,7 +124,7 @@ const RolesPage = () => {
             variants={fadeUp}
             className="mt-6 text-lg text-muted-foreground leading-relaxed"
           >
-            HealthSphere unites patients, doctors, pharmacies, and donors in one
+            SehatSphere unites patients, doctors, pharmacies, and donors in one
             digital ecosystem — making healthcare smarter, faster, and deeply
             connected.
           </motion.p>
@@ -153,7 +153,7 @@ const RolesPage = () => {
             variants={fadeUp}
             className="text-muted-foreground mt-3 max-w-2xl mx-auto"
           >
-            Whether you’re a patient or a doctor, HealthSphere makes every step
+            Whether you’re a patient or a doctor, SehatSphere makes every step
             intuitive and secure.
           </motion.p>
         </div>

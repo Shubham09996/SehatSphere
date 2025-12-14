@@ -51,9 +51,9 @@ const LabHeader = ({ isSidebarOpen, setIsSidebarOpen }) => {
         {/* Logo and Brand Name */}
         <div className="flex items-center space-x-2">
             <Link to="/" className="flex items-center space-x-2" onClick={(e) => { e.preventDefault(); navigate('/'); }}>
-                <img src={logo} alt="HealthSphere Logo" className="w-16 h-16" />
+                <img src={logo} alt="SehatSphere Logo" className="w-16 h-16" />
                 <span className="hidden sm:inline text-xl font-semibold bg-gradient-to-r from-hs-gradient-start via-hs-gradient-middle to-hs-gradient-end text-transparent bg-clip-text">
-                    HealthSphere Lab
+                    SehatSphere Lab
                 </span>
             </Link>
         </div>
